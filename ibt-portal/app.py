@@ -3,6 +3,12 @@ from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 import json, os, csv, io, re, base64
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
 from pypdf import PdfReader
 from psycopg2cffi import compat
 compat.register()
@@ -755,6 +761,356 @@ def api_analytics():
         g = r.student.grade or 'Unknown'
         by_grade.setdefault(g, []).append(r.percent)
     return jsonify({g: round(sum(v)/len(v),1) for g,v in by_grade.items()})
+
+# ── EXPORTS ──────────────────────────────────────────────────────────────────
+
+@app.route('/admin/export/students')
+@login_required('Resource_Manager')
+def export_students():
+    students = User.query.filter_by(role='student').order_by(User.grade, User.section, User.name).all()
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Students"
+
+    # Styles
+    header_font    = Font(bold=True, color="FFFFFF", size=11)
+    header_fill    = PatternFill("solid", fgColor="1A3C6E")
+    center         = Alignment(horizontal="center", vertical="center")
+    thin           = Side(style="thin", color="CCCCCC")
+    border         = Border(left=thin, right=thin, top=thin, bottom=thin)
+    alt_fill       = PatternFill("solid", fgColor="EEF2FF")
+
+    headers = ["#", "Name", "Username", "Grade", "Section", "Tests Taken", "Average %", "Joined"]
+    col_widths = [5, 28, 18, 12, 10, 12, 13, 16]
+
+    for col, (h, w) in enumerate(zip(headers, col_widths), 1):
+        cell = ws.cell(row=1, column=col, value=h)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = center
+        cell.border = border
+        ws.column_dimensions[get_column_letter(col)].width = w
+    ws.row_dimensions[1].height = 20
+
+    for i, s in enumerate(students, 1):
+        rs = s.results
+        avg = round(sum(r.percent for r in rs) / len(rs), 1) if rs else 0
+        row = [i, s.name, s.username, s.grade, s.section or '', len(rs), avg, s.created.strftime('%d %b %Y')]
+        fill = alt_fill if i % 2 == 0 else PatternFill("solid", fgColor="FFFFFF")
+        for col, val in enumerate(row, 1):
+            cell = ws.cell(row=i+1, column=col, value=val)
+            cell.fill = fill
+            cell.border = border
+            cell.alignment = center if col != 2 else Alignment(vertical="center")
+
+    ws.freeze_panes = "A2"
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return Response(buf.getvalue(), mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': 'attachment; filename=EPS_Students.xlsx'})
+
+
+@app.route('/admin/export/results')
+@login_required('Resource_Manager')
+def export_results():
+    results = TestResult.query.order_by(TestResult.taken_at.desc()).all()
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "All Results"
+
+    header_font = Font(bold=True, color="FFFFFF", size=11)
+    header_fill = PatternFill("solid", fgColor="1A3C6E")
+    center      = Alignment(horizontal="center", vertical="center")
+    thin        = Side(style="thin", color="CCCCCC")
+    border      = Border(left=thin, right=thin, top=thin, bottom=thin)
+    green_fill  = PatternFill("solid", fgColor="DCFCE7")
+    red_fill    = PatternFill("solid", fgColor="FEE2E2")
+    yellow_fill = PatternFill("solid", fgColor="FEF9C3")
+
+    headers    = ["#", "Student Name", "Username", "Grade", "Section", "Test Name", "Subject", "Score", "Total", "Percentage", "Time Taken", "Date"]
+    col_widths = [5, 25, 16, 10, 10, 28, 14, 8, 8, 12, 12, 16]
+
+    for col, (h, w) in enumerate(zip(headers, col_widths), 1):
+        cell = ws.cell(row=1, column=col, value=h)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = center
+        cell.border = border
+        ws.column_dimensions[get_column_letter(col)].width = w
+    ws.row_dimensions[1].height = 20
+
+    for i, r in enumerate(results, 1):
+        mins = r.time_taken // 60
+        secs = r.time_taken % 60
+        row = [i, r.student.name, r.student.username, r.student.grade, r.student.section or '',
+               r.test.name, r.test.subject, r.score, r.total, r.percent,
+               f"{mins}m {secs}s", r.taken_at.strftime('%d %b %Y %H:%M')]
+        # Color by performance
+        if r.percent >= 80:   fill = green_fill
+        elif r.percent >= 60: fill = yellow_fill
+        else:                 fill = red_fill
+        for col, val in enumerate(row, 1):
+            cell = ws.cell(row=i+1, column=col, value=val)
+            cell.fill = fill if col == 10 else PatternFill("solid", fgColor="FFFFFF" if i%2 else "F8FAFC")
+            cell.border = border
+            cell.alignment = center if col not in [2,3,6] else Alignment(vertical="center")
+
+    ws.freeze_panes = "A2"
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return Response(buf.getvalue(), mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': 'attachment; filename=EPS_All_Results.xlsx'})
+
+
+@app.route('/admin/export/test/<int:test_id>')
+@login_required('Resource_Manager')
+def export_test_results(test_id):
+    test    = db.session.get(MockTest, test_id)
+    if not test:
+        flash('Test not found.', 'error')
+        return redirect(url_for('admin_analytics'))
+    results = TestResult.query.filter_by(test_id=test_id).order_by(TestResult.percent.desc()).all()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = test.name[:31]
+
+    header_font = Font(bold=True, color="FFFFFF", size=11)
+    header_fill = PatternFill("solid", fgColor="1A3C6E")
+    center      = Alignment(horizontal="center", vertical="center")
+    thin        = Side(style="thin", color="CCCCCC")
+    border      = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    headers    = ["Rank", "Student Name", "Grade", "Section", "Score", "Total", "Percentage", "Time Taken", "Date"]
+    col_widths = [6, 25, 10, 10, 8, 8, 12, 12, 16]
+
+    for col, (h, w) in enumerate(zip(headers, col_widths), 1):
+        cell = ws.cell(row=1, column=col, value=h)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = center
+        cell.border = border
+        ws.column_dimensions[get_column_letter(col)].width = w
+
+    for i, r in enumerate(results, 1):
+        mins = r.time_taken // 60
+        secs = r.time_taken % 60
+        if r.percent >= 80:        fill = PatternFill("solid", fgColor="DCFCE7")
+        elif r.percent >= 60:      fill = PatternFill("solid", fgColor="FEF9C3")
+        else:                      fill = PatternFill("solid", fgColor="FEE2E2")
+        row = [i, r.student.name, r.student.grade, r.student.section or '',
+               r.score, r.total, r.percent, f"{mins}m {secs}s",
+               r.taken_at.strftime('%d %b %Y')]
+        for col, val in enumerate(row, 1):
+            cell = ws.cell(row=i+1, column=col, value=val)
+            cell.fill = fill
+            cell.border = border
+            cell.alignment = center if col != 2 else Alignment(vertical="center")
+
+    # Summary sheet
+    ws2 = wb.create_sheet("Summary")
+    ws2['A1'] = test.name
+    ws2['A1'].font = Font(bold=True, size=13, color="1A3C6E")
+    summary_data = [
+        ("Subject",         test.subject),
+        ("Grade",           test.grade),
+        ("Total Students",  len(results)),
+        ("Class Average",   f"{round(sum(r.percent for r in results)/len(results),1) if results else 0}%"),
+        ("Highest Score",   f"{max((r.percent for r in results), default=0)}%"),
+        ("Lowest Score",    f"{min((r.percent for r in results), default=0)}%"),
+        ("Scoring 80%+",    sum(1 for r in results if r.percent >= 80)),
+        ("Scoring below 60%", sum(1 for r in results if r.percent < 60)),
+    ]
+    for row_i, (label, val) in enumerate(summary_data, 3):
+        ws2.cell(row=row_i, column=1, value=label).font = Font(bold=True)
+        ws2.cell(row=row_i, column=2, value=val)
+    ws2.column_dimensions['A'].width = 22
+    ws2.column_dimensions['B'].width = 18
+
+    ws2.freeze_panes = "A2"
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    fname = f"EPS_{test.name.replace(' ','_')}.xlsx"
+    return Response(buf.getvalue(), mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': f'attachment; filename={fname}'})
+
+
+# ── EXCEL DOWNLOADS ──────────────────────────────────────────────────────────
+
+def style_header(cell, bg="1a3c6e", fg="FFFFFF"):
+    cell.font      = Font(bold=True, color=fg, size=11)
+    cell.fill      = PatternFill("solid", fgColor=bg)
+    cell.alignment = Alignment(horizontal="center", vertical="center")
+    cell.border    = Border(
+        bottom=Side(style="medium", color="FFFFFF"),
+        right=Side(style="thin", color="CCCCCC")
+    )
+
+def style_row(ws, row, col_count, even=True):
+    fill = PatternFill("solid", fgColor="EBF1F9" if even else "FFFFFF")
+    for c in range(1, col_count + 1):
+        ws.cell(row=row, column=c).fill = fill
+        ws.cell(row=row, column=c).alignment = Alignment(horizontal="center", vertical="center")
+        ws.cell(row=row, column=c).border = Border(
+            bottom=Side(style="thin", color="DDDDDD"),
+            right=Side(style="thin", color="DDDDDD")
+        )
+
+def auto_width(ws):
+    for col in ws.columns:
+        max_len = max((len(str(c.value or '')) for c in col), default=10)
+        ws.column_dimensions[get_column_letter(col[0].column)].width = min(max_len + 4, 50)
+
+
+@app.route('/admin/download/students')
+@login_required('Resource_Manager')
+def download_students_excel():
+    students = User.query.filter_by(role='student').order_by(User.grade, User.section, User.name).all()
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Students"
+    ws.row_dimensions[1].height = 22
+
+    headers = ["#", "Name", "Username", "Grade", "Section", "Tests Taken", "Average %", "Joined"]
+    for i, h in enumerate(headers, 1):
+        style_header(ws.cell(row=1, column=i, value=h))
+
+    for idx, s in enumerate(students, 1):
+        results = s.results
+        avg = round(sum(r.percent for r in results) / len(results), 1) if results else 0
+        row = [idx, s.name, s.username, s.grade, s.section or '-', len(results), avg, s.created.strftime('%d %b %Y')]
+        for c, val in enumerate(row, 1):
+            ws.cell(row=idx+1, column=c, value=val)
+        style_row(ws, idx+1, len(headers), idx % 2 == 0)
+
+    auto_width(ws)
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return Response(buf.read(), mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': 'attachment; filename=EPS_Students.xlsx'})
+
+
+@app.route('/admin/download/results')
+@login_required('Resource_Manager')
+def download_results_excel():
+    results = TestResult.query.order_by(TestResult.taken_at.desc()).all()
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "All Results"
+    ws.row_dimensions[1].height = 22
+
+    headers = ["#", "Student Name", "Username", "Grade", "Section", "Test Name", "Subject", "Score", "Total", "Percentage", "Time Taken", "Date"]
+    for i, h in enumerate(headers, 1):
+        style_header(ws.cell(row=1, column=i, value=h))
+
+    for idx, r in enumerate(results, 1):
+        mins = r.time_taken // 60
+        secs = r.time_taken % 60
+        row = [
+            idx, r.student.name, r.student.username,
+            r.student.grade, r.student.section or '-',
+            r.test.name, r.test.subject,
+            r.score, r.total, r.percent,
+            f"{mins}m {secs}s",
+            r.taken_at.strftime('%d %b %Y %H:%M')
+        ]
+        for c, val in enumerate(row, 1):
+            ws.cell(row=idx+1, column=c, value=val)
+        style_row(ws, idx+1, len(headers), idx % 2 == 0)
+        # Color the percentage cell
+        pct_cell = ws.cell(row=idx+1, column=10)
+        pct_cell.font = Font(bold=True, color="166534" if r.percent >= 80 else "92400e" if r.percent >= 60 else "dc2626")
+
+    auto_width(ws)
+
+    # Grade summary sheet
+    ws2 = wb.create_sheet("Grade Summary")
+    ws2.row_dimensions[1].height = 22
+    h2 = ["Grade", "Students", "Tests Taken", "Average %", "Above 80%", "Below 60%"]
+    for i, h in enumerate(h2, 1):
+        style_header(ws2.cell(row=1, column=i, value=h))
+    for gi, grade in enumerate(['Grade 3', 'Grade 4', 'Grade 5'], 1):
+        grade_results = [r for r in results if r.student.grade == grade]
+        avg = round(sum(r.percent for r in grade_results) / len(grade_results), 1) if grade_results else 0
+        students_in_grade = User.query.filter_by(role='student', grade=grade).count()
+        row2 = [grade, students_in_grade, len(grade_results), avg,
+                sum(1 for r in grade_results if r.percent >= 80),
+                sum(1 for r in grade_results if r.percent < 60)]
+        for c, val in enumerate(row2, 1):
+            ws2.cell(row=gi+1, column=c, value=val)
+        style_row(ws2, gi+1, len(h2), gi % 2 == 0)
+    auto_width(ws2)
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return Response(buf.read(), mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': 'attachment; filename=EPS_Results.xlsx'})
+
+
+@app.route('/admin/download/test/<int:test_id>')
+@login_required('Resource_Manager')
+def download_test_excel(test_id):
+    test    = db.session.get(MockTest, test_id)
+    if not test:
+        flash('Test not found.', 'error')
+        return redirect(url_for('admin_analytics'))
+    results = TestResult.query.filter_by(test_id=test_id).order_by(TestResult.percent.desc()).all()
+    questions = json.loads(test.questions or '[]')
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Results"
+    ws.row_dimensions[1].height = 22
+
+    headers = ["#", "Name", "Grade", "Section", "Score", "Total", "%", "Time"]
+    for i, h in enumerate(headers, 1):
+        style_header(ws.cell(row=1, column=i, value=h))
+
+    for idx, r in enumerate(results, 1):
+        mins = r.time_taken // 60
+        secs = r.time_taken % 60
+        row = [idx, r.student.name, r.student.grade, r.student.section or '-',
+               r.score, r.total, r.percent, f"{mins}m {secs}s"]
+        for c, val in enumerate(row, 1):
+            ws.cell(row=idx+1, column=c, value=val)
+        style_row(ws, idx+1, len(headers), idx % 2 == 0)
+        ws.cell(row=idx+1, column=7).font = Font(bold=True,
+            color="166534" if r.percent >= 80 else "92400e" if r.percent >= 60 else "dc2626")
+
+    auto_width(ws)
+
+    # Section breakdown sheet
+    ws2 = wb.create_sheet("Section Breakdown")
+    ws2.row_dimensions[1].height = 22
+    all_sections = list({q.get('section','General') for q in questions})
+    h2 = ["Student", "Grade"] + all_sections + ["Overall %"]
+    for i, h in enumerate(h2, 1):
+        style_header(ws2.cell(row=1, column=i, value=h))
+    for idx, r in enumerate(results, 1):
+        sec_scores = json.loads(r.section_scores or '{}')
+        row2 = [r.student.name, r.student.grade]
+        for sec in all_sections:
+            v = sec_scores.get(sec, {'correct': 0, 'total': 0})
+            pct = round(v['correct']/v['total']*100, 1) if v['total'] else 0
+            row2.append(f"{v['correct']}/{v['total']} ({pct}%)")
+        row2.append(r.percent)
+        for c, val in enumerate(row2, 1):
+            ws2.cell(row=idx+1, column=c, value=val)
+        style_row(ws2, idx+1, len(h2), idx % 2 == 0)
+    auto_width(ws2)
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    fname = test.name.replace(' ', '_')
+    return Response(buf.read(), mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': f'attachment; filename=EPS_{fname}.xlsx'})
+
 
 # ── MAIN ──────────────────────────────────────────────────────────────────────
 
