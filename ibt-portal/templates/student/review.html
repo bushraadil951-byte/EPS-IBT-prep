@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% block title %}Review — {{ test.name }}{% endblock %}
+{% block page_title %}{{ test.name }} — Review{% endblock %}
+{% block back_button %}<a href="/student/scores" class="btn btn-secondary btn-sm">← My Scores</a>{% endblock %}
+
+{% block content %}
+
+<!-- Score Summary -->
+<div class="card" style="margin-bottom:24px;background:linear-gradient(135deg,#1e3a5f,#2d5a8e);color:#fff;padding:24px">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px">
+    <div>
+      <div style="font-size:.82rem;opacity:.8;margin-bottom:4px">{{ test.subject }} · {{ test.grade }}</div>
+      <div style="font-size:1.5rem;font-weight:800">{{ result.percent }}%</div>
+      <div style="font-size:.88rem;opacity:.9;margin-top:2px">{{ result.score }} out of {{ result.total }} correct</div>
+    </div>
+    <div style="display:flex;gap:20px;text-align:center">
+      <div>
+        <div style="font-size:1.6rem;font-weight:800;color:#4ade80">{{ review|selectattr('status','eq','correct')|list|length }}</div>
+        <div style="font-size:.75rem;opacity:.8">Correct</div>
+      </div>
+      <div>
+        <div style="font-size:1.6rem;font-weight:800;color:#f87171">{{ review|selectattr('status','eq','wrong')|list|length }}</div>
+        <div style="font-size:.75rem;opacity:.8">Wrong</div>
+      </div>
+      <div>
+        <div style="font-size:1.6rem;font-weight:800;color:#fbbf24">{{ review|selectattr('status','eq','unattempted')|list|length }}</div>
+        <div style="font-size:.75rem;opacity:.8">Skipped</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Filter Tabs -->
+<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+  <button onclick="filterReview('all')" id="tab-all"
+    style="padding:6px 16px;border-radius:20px;border:none;cursor:pointer;font-size:.82rem;font-weight:600;background:#1d4ed8;color:#fff">
+    All ({{ review|length }})
+  </button>
+  <button onclick="filterReview('correct')" id="tab-correct"
+    style="padding:6px 16px;border-radius:20px;border:1px solid #86efac;cursor:pointer;font-size:.82rem;font-weight:600;background:#f0fdf4;color:#166534">
+    ✅ Correct ({{ review|selectattr('status','eq','correct')|list|length }})
+  </button>
+  <button onclick="filterReview('wrong')" id="tab-wrong"
+    style="padding:6px 16px;border-radius:20px;border:1px solid #fca5a5;cursor:pointer;font-size:.82rem;font-weight:600;background:#fef2f2;color:#dc2626">
+    ❌ Wrong ({{ review|selectattr('status','eq','wrong')|list|length }})
+  </button>
+  <button onclick="filterReview('unattempted')" id="tab-unattempted"
+    style="padding:6px 16px;border-radius:20px;border:1px solid #fcd34d;cursor:pointer;font-size:.82rem;font-weight:600;background:#fffbeb;color:#92400e">
+    ⏭ Skipped ({{ review|selectattr('status','eq','unattempted')|list|length }})
+  </button>
+</div>
+
+<!-- Questions Review -->
+<div style="display:flex;flex-direction:column;gap:12px" id="review-list">
+  {% for r in review %}
+  <div class="review-item card" data-status="{{ r.status }}" style="padding:18px;border-left:4px solid {{ '#22c55e' if r.status=='correct' else '#ef4444' if r.status=='wrong' else '#f59e0b' }}">
+
+    <!-- Question Header -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="font-size:.75rem;font-weight:700;color:var(--ink3)">
+        Q{{ loop.index }} &nbsp;·&nbsp; {{ r.question.section }}
+      </div>
+      <span style="font-size:.75rem;font-weight:700;padding:3px 10px;border-radius:10px;
+        background:{{ '#dcfce7' if r.status=='correct' else '#fee2e2' if r.status=='wrong' else '#fef9c3' }};
+        color:{{ '#166534' if r.status=='correct' else '#dc2626' if r.status=='wrong' else '#92400e' }}">
+        {{ '✅ Correct' if r.status=='correct' else '❌ Wrong' if r.status=='wrong' else '⏭ Skipped' }}
+      </span>
+    </div>
+
+    <!-- Passage -->
+    {% if r.question.passage %}
+    <div style="background:#f8fafc;border-left:3px solid #c7d2fe;padding:8px 12px;font-size:.82rem;color:#475569;margin-bottom:8px;border-radius:0 4px 4px 0">
+      {{ r.question.passage }}
+    </div>
+    {% endif %}
+
+    <!-- Question Text -->
+    <div style="font-weight:600;font-size:.9rem;margin-bottom:10px;color:#1e293b">
+      {{ r.question.question }}
+    </div>
+
+    <!-- Image -->
+    {% if r.question.get('image') %}
+    <div style="margin-bottom:10px">
+      <img src="{{ r.question.image }}" style="max-width:320px;max-height:220px;border-radius:8px;border:1px solid #e2e8f0"/>
+    </div>
+    {% endif %}
+
+    <!-- Options -->
+    <div style="display:flex;flex-direction:column;gap:6px">
+      {% for opt in r.question.options %}{% if opt %}
+      {% set i = loop.index0 %}
+      {% set is_correct = (i == r.correct) %}
+      {% set is_given   = (r.given is not none and i == r.given) %}
+      <div style="padding:8px 12px;border-radius:6px;font-size:.85rem;display:flex;align-items:center;gap:10px;
+        {% if is_correct %}
+          background:#dcfce7;border:1.5px solid #22c55e;color:#166534;
+        {% elif is_given and not is_correct %}
+          background:#fee2e2;border:1.5px solid #ef4444;color:#dc2626;
+        {% else %}
+          background:#f8fafc;border:1px solid #e5e7eb;color:#374151;
+        {% endif %}">
+        <span style="font-weight:700;min-width:24px">{{ ['A','B','C','D'][i] }})</span>
+        <span style="flex:1">{{ opt }}</span>
+        {% if is_correct %}
+          <span style="font-size:.75rem;font-weight:700">✅ Correct answer</span>
+        {% elif is_given and not is_correct %}
+          <span style="font-size:.75rem;font-weight:700">❌ Your answer</span>
+        {% endif %}
+      </div>
+      {% endif %}{% endfor %}
+    </div>
+
+    <!-- Unattempted note -->
+    {% if r.status == 'unattempted' %}
+    <div style="margin-top:8px;font-size:.8rem;color:#92400e;background:#fffbeb;padding:6px 10px;border-radius:5px">
+      ⏭ You did not attempt this question. The correct answer is highlighted above in green.
+    </div>
+    {% endif %}
+
+  </div>
+  {% endfor %}
+</div>
+
+<script>
+function filterReview(status) {
+  // Update tab styles
+  ['all','correct','wrong','unattempted'].forEach(s => {
+    const tab = document.getElementById('tab-' + s);
+    if (s === status) {
+      tab.style.background = '#1d4ed8';
+      tab.style.color = '#fff';
+      tab.style.border = 'none';
+    } else {
+      tab.style.background = '';
+      tab.style.color = '';
+    }
+  });
+  // Show/hide questions
+  document.querySelectorAll('.review-item').forEach(el => {
+    el.style.display = (status === 'all' || el.dataset.status === status) ? 'block' : 'none';
+  });
+}
+</script>
+{% endblock %}
