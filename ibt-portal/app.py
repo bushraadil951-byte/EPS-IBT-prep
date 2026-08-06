@@ -707,6 +707,43 @@ def student_scores():
     results = sorted(student.results, key=lambda r: r.taken_at, reverse=True)
     return render_template('student/scores.html', student=student, results=results)
 
+
+@app.route('/student/review/<int:result_id>')
+@login_required('student')
+def student_review(result_id):
+    result = db.session.get(TestResult, result_id)
+    if not result:
+        flash('Result not found.', 'error')
+        return redirect(url_for('student_scores'))
+    # Make sure this result belongs to the logged-in student
+    student = db.session.get(User, session['user_id'])
+    if result.student_id != student.id:
+        flash('Access denied.', 'error')
+        return redirect(url_for('student_scores'))
+    test      = result.test
+    questions = json.loads(test.questions or '[]')
+    answers   = json.loads(result.answers or '{}')
+    # Build review data
+    review = []
+    for q in questions:
+        qid       = str(q['id'])
+        given_idx = answers.get(qid)
+        correct   = q.get('answer', 0)
+        if given_idx is None:
+            status = 'unattempted'
+        elif int(given_idx) == correct:
+            status = 'correct'
+        else:
+            status = 'wrong'
+        review.append({
+            'question': q,
+            'given':    int(given_idx) if given_idx is not None else None,
+            'correct':  correct,
+            'status':   status,
+        })
+    return render_template('student/review.html',
+        student=student, test=test, result=result, review=review)
+
 # ── API ───────────────────────────────────────────────────────────────────────
 
 @app.route('/api/analytics')
