@@ -674,7 +674,7 @@ def student_dashboard():
         db.or_(MockTest.grade==student.grade, MockTest.grade=='All Grades')
     ).all()
     # Mark which tests are already completed
-    completed_test_ids = {r.test_id for r in results}
+    completed_test_ids = [r.test_id for r in results]
     avg_sc  = safe_avg([r.percent for r in results])
     return render_template('student/dashboard.html',
         student=student, results=results, tests=tests,
