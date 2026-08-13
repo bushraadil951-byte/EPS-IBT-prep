@@ -1,59 +1,101 @@
-{% extends "base.html" %}
-{% block title %}My Dashboard — EPS IBT Portal{% endblock %}
+{% extends 'base.html' %}
+{% block title %}My Dashboard{% endblock %}
 {% block page_title %}My Dashboard{% endblock %}
+
 {% block content %}
+<!-- Welcome -->
 <div style="margin-bottom:20px">
-  <h2 style="font-size:1.05rem">Welcome, {{ student.name }}! 👋</h2>
-  <p style="font-size:.78rem;color:var(--ink3);margin-top:2px">{{ student.grade }} · Section {{ student.section or 'A' }}</p>
-</div>
-<div class="stat-grid">
-  <div class="stat-card"><div class="stat-icon" style="background:#eef2ff">📝</div><div class="stat-value">{{ results|length }}</div><div class="stat-label">Tests Taken</div></div>
-  <div class="stat-card"><div class="stat-icon" style="background:#ecfdf5">📊</div><div class="stat-value">{{ avg_sc }}%</div><div class="stat-label">My Average</div></div>
-  <div class="stat-card"><div class="stat-icon" style="background:#fffbeb">🎯</div><div class="stat-value">{{ tests|length }}</div><div class="stat-label">Tests Available</div></div>
-  <div class="stat-card"><div class="stat-icon" style="background:#f5f3ff">🏆</div><div class="stat-value">{% if avg_sc>=80 %}A{% elif avg_sc>=60 %}B{% elif avg_sc>0 %}C{% else %}—{% endif %}</div><div class="stat-label">Grade</div></div>
+  <div style="font-size:1.1rem;font-weight:700;color:#1e293b">Welcome, {{ student.name }}! 👋</div>
+  <div style="font-size:.82rem;color:var(--ink3)">{{ student.grade }} · Section {{ student.section }}</div>
 </div>
 
-<div class="card" style="margin-bottom:16px">
-  <div class="sec-header"><div class="sec-title">Available Tests for {{ student.grade }}</div></div>
-  {% if tests %}
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px">
-    {% for t in tests %}
-    {% set qs = t.questions|from_json %}
-    <div style="border:1px solid var(--border);border-radius:var(--r);padding:14px;border-top:3px solid {% if t.subject=='English' %}#3b82f6{% elif t.subject=='Mathematics' %}#10b981{% elif t.subject=='Science' %}#f59e0b{% else %}#8b5cf6{% endif %}">
-      <div style="font-weight:600;font-size:.85rem;margin-bottom:6px">{{ t.name }}</div>
-      <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px">
-        <span class="badge badge-blue">{{ t.subject }}</span>
-        <span class="badge {{ 'badge-green' if t.difficulty=='Easy' else ('badge-amber' if t.difficulty=='Medium' else 'badge-red') }}">{{ t.difficulty }}</span>
-      </div>
-      <div style="font-size:.72rem;color:var(--ink3);margin-bottom:10px">⏱ {{ t.duration }} min &nbsp;·&nbsp; 📝 {{ qs|length }} questions</div>
-      <a href="/student/test/{{ t.id }}" class="btn btn-primary btn-sm" style="width:100%;justify-content:center">▶ Start Test</a>
-    </div>
-    {% endfor %}
+<!-- Stats -->
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:24px">
+  <div class="card" style="text-align:center;padding:16px">
+    <div style="font-size:1.6rem;font-weight:800;color:#1d4ed8">{{ results|length }}</div>
+    <div style="font-size:.78rem;color:var(--ink3)">Tests Completed</div>
   </div>
-  {% else %}
-  <p style="color:var(--ink3);font-size:.8rem;text-align:center;padding:20px 0">No active tests for your grade yet. Check back soon!</p>
-  {% endif %}
+  <div class="card" style="text-align:center;padding:16px">
+    <div style="font-size:1.6rem;font-weight:800;color:{{ '#16a34a' if avg_sc >= 80 else '#f59e0b' if avg_sc >= 60 else '#dc2626' }}">
+      {{ avg_sc }}%
+    </div>
+    <div style="font-size:.78rem;color:var(--ink3)">Average Score</div>
+  </div>
+  <div class="card" style="text-align:center;padding:16px">
+    <div style="font-size:1.6rem;font-weight:800;color:#6366f1">
+      {{ tests|length - completed_test_ids|length }}
+    </div>
+    <div style="font-size:.78rem;color:var(--ink3)">Tests Pending</div>
+  </div>
 </div>
 
+<!-- Available Tests -->
+<h3 style="font-size:.9rem;font-weight:700;margin-bottom:12px;color:#374151">📝 Available Tests</h3>
+{% if not tests %}
+<div class="card" style="text-align:center;padding:32px;color:var(--ink3)">
+  No tests published for your grade yet.
+</div>
+{% else %}
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:28px">
+  {% for t in tests %}
+  {% set done = t.id in completed_test_ids %}
+  <div class="card" style="padding:18px;border-left:4px solid {{ '#22c55e' if done else '#6366f1' }}">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+      <div style="font-weight:700;font-size:.92rem">{{ t.name }}</div>
+      {% if done %}
+      <span style="background:#dcfce7;color:#166534;font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:10px">✅ Done</span>
+      {% else %}
+      <span style="background:#eef2ff;color:#4f46e5;font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:10px">Pending</span>
+      {% endif %}
+    </div>
+    <div style="font-size:.8rem;color:var(--ink3);margin-bottom:12px">
+      {{ t.subject }} &nbsp;·&nbsp; ⏱ {{ t.duration }} min &nbsp;·&nbsp; {{ t.difficulty }}
+    </div>
+    {% if done %}
+      {% for r in results if r.test_id == t.id %}
+      <div style="margin-bottom:10px;font-size:.82rem">
+        <span style="font-weight:700;color:{{ '#16a34a' if r.percent >= 80 else '#f59e0b' if r.percent >= 60 else '#dc2626' }}">
+          {{ r.percent }}%
+        </span>
+        &nbsp; ({{ r.score }}/{{ r.total }} correct)
+      </div>
+      <a href="/student/review/{{ r.id }}"
+         style="display:inline-block;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:7px 14px;border-radius:6px;text-decoration:none;font-size:.8rem;font-weight:600">
+        📋 Review Answers
+      </a>
+      {% endfor %}
+    {% else %}
+      <a href="/student/test/{{ t.id }}"
+         style="display:inline-block;background:#4f46e5;color:#fff;padding:8px 18px;border-radius:6px;text-decoration:none;font-size:.82rem;font-weight:600">
+        Start Test →
+      </a>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Recent Results -->
 {% if results %}
-<div class="card">
-  <div class="sec-header"><div class="sec-title">Recent Results</div><a href="/student/scores" class="btn btn-secondary btn-sm">All scores →</a></div>
-  <div class="table-wrap">
-  <table>
-    <thead><tr><th>Test</th><th>Subject</th><th>Score</th><th>Percent</th><th>Date</th></tr></thead>
+<h3 style="font-size:.9rem;font-weight:700;margin-bottom:12px;color:#374151">📊 Recent Scores</h3>
+<div class="card" style="padding:0;overflow:hidden">
+  <table class="data-table">
+    <thead><tr><th>Test</th><th>Score</th><th>%</th><th>Date</th><th></th></tr></thead>
     <tbody>
       {% for r in results[:5] %}
       <tr>
-        <td style="font-weight:500">{{ r.test.name }}</td>
-        <td><span class="badge badge-blue">{{ r.test.subject }}</span></td>
+        <td style="font-weight:600">{{ r.test.name }}</td>
         <td>{{ r.score }}/{{ r.total }}</td>
-        <td><span style="font-weight:700;color:{% if r.percent>=80 %}var(--green){% elif r.percent>=60 %}var(--amber){% else %}var(--red){% endif %}">{{ r.percent }}%</span></td>
-        <td style="color:var(--ink4)">{{ r.taken_at.strftime('%d %b %Y') }}</td>
+        <td><span style="font-weight:700;color:{{ '#16a34a' if r.percent >= 80 else '#f59e0b' if r.percent >= 60 else '#dc2626' }}">{{ r.percent }}%</span></td>
+        <td style="font-size:.78rem;color:var(--ink3)">{{ r.taken_at.strftime('%d %b') }}</td>
+        <td><a href="/student/review/{{ r.id }}" style="color:#1d4ed8;font-size:.78rem;font-weight:600;text-decoration:none">Review</a></td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
-  </div>
+</div>
+<div style="margin-top:10px;text-align:right">
+  <a href="/student/scores" style="font-size:.82rem;color:#4f46e5;font-weight:600;text-decoration:none">View all scores →</a>
 </div>
 {% endif %}
 {% endblock %}
