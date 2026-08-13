@@ -661,20 +661,37 @@ def teacher_analytics():
 @login_required('student')
 def student_dashboard():
     student = db.session.get(User, session['user_id'])
-    results = sorted(student.results, key=lambda r: r.taken_at, reverse=True)
+    # Deduplicate results — keep only the first attempt per test
+    seen_tests = set()
+    unique_results = []
+    for r in sorted(student.results, key=lambda r: r.taken_at):
+        if r.test_id not in seen_tests:
+            seen_tests.add(r.test_id)
+            unique_results.append(r)
+    results = sorted(unique_results, key=lambda r: r.taken_at, reverse=True)
     tests   = MockTest.query.filter(
         MockTest.status=='active',
         db.or_(MockTest.grade==student.grade, MockTest.grade=='All Grades')
     ).all()
+    # Mark which tests are already completed
+    completed_test_ids = {r.test_id for r in results}
     avg_sc  = safe_avg([r.percent for r in results])
     return render_template('student/dashboard.html',
-        student=student, results=results, tests=tests, avg_sc=avg_sc, subjects=SUBJECTS)
+        student=student, results=results, tests=tests,
+        completed_test_ids=completed_test_ids, avg_sc=avg_sc, subjects=SUBJECTS)
 
 @app.route('/student/test/<int:test_id>')
 @login_required('student')
 def student_test(test_id):
     test = db.session.get(MockTest, test_id)
     if not test: return redirect(url_for('student_dashboard'))
+    # Block if already attempted
+    existing = TestResult.query.filter_by(
+        student_id=session['user_id'], test_id=test_id
+    ).first()
+    if existing:
+        flash('You have already completed this test. Check your scores to review it.', 'error')
+        return redirect(url_for('student_dashboard'))
     questions = json.loads(test.questions or '[]')
     return render_template('student/test.html', test=test, questions=questions)
 
@@ -683,6 +700,20 @@ def student_test(test_id):
 def submit_test(test_id):
     test = db.session.get(MockTest, test_id)
     if not test: return jsonify({'error':'not found'}), 404
+
+    # Prevent duplicate submissions — if result already exists, return existing
+    existing = TestResult.query.filter_by(
+        student_id=session['user_id'], test_id=test_id
+    ).first()
+    if existing:
+        sec_scores = json.loads(existing.section_scores or '{}')
+        return jsonify({
+            'score': existing.score,
+            'total': existing.total,
+            'percent': existing.percent,
+            'section_scores': sec_scores
+        })
+
     questions  = json.loads(test.questions or '[]')
     data       = request.get_json() or {}
     answers    = data.get('answers', {})
@@ -710,7 +741,14 @@ def submit_test(test_id):
 @login_required('student')
 def student_scores():
     student = db.session.get(User, session['user_id'])
-    results = sorted(student.results, key=lambda r: r.taken_at, reverse=True)
+    # Deduplicate — keep first attempt per test only
+    seen_tests = set()
+    unique_results = []
+    for r in sorted(student.results, key=lambda r: r.taken_at):
+        if r.test_id not in seen_tests:
+            seen_tests.add(r.test_id)
+            unique_results.append(r)
+    results = sorted(unique_results, key=lambda r: r.taken_at, reverse=True)
     return render_template('student/scores.html', student=student, results=results)
 
 
