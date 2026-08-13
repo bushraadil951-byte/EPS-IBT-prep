@@ -21,18 +21,18 @@
     </div>
     <div style="font-size:.78rem;color:var(--ink3)">Average Score</div>
   </div>
- <div class="card" style="text-align:center;padding:16px">
-    <div style="font-size:1.6rem;font-weight:800;color:#6366f1">
-      {% set pending_count = namespace(value=0) %}
-      {% for t in tests %}
-        {% if t.id not in completed_test_ids %}
-          {% set pending_count.value = pending_count.value + 1 %}
-        {% endif %}
-      {% endfor %}
-      {{ pending_count.value }}
-    </div>
-    <div style="font-size:.78rem;color:var(--ink3)">Tests Pending</div>
+<div class="card" style="text-align:center;padding:16px">
+  <div style="font-size:1.6rem;font-weight:800;color:#6366f1">
+    {% set ns = namespace(count=0) %}
+    {% for t in tests %}
+      {% if t.id not in completed_test_ids %}
+        {% set ns.count = ns.count + 1 %}
+      {% endif %}
+    {% endfor %}
+    {{ ns.count }}
   </div>
+  <div style="font-size:.78rem;color:var(--ink3)">Tests Pending</div>
+</div>
 </div>
 
 <!-- Available Tests -->
