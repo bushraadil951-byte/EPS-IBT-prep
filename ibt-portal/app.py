@@ -1148,7 +1148,10 @@ def download_test_excel(test_id):
     fname = test.name.replace(' ', '_')
     return Response(buf.read(), mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         headers={'Content-Disposition': f'attachment; filename=EPS_{fname}.xlsx'})
-
+    
+@app.route('/health')
+def health():
+    return 'OK', 200
 
 # ── MAIN ──────────────────────────────────────────────────────────────────────
 
