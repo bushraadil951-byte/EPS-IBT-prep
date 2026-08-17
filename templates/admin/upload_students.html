@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% block title %}Bulk Upload Students{% endblock %}
+{% block page_title %}Bulk Upload Students{% endblock %}
+{% block back_button %}<a href="/admin/students" class="btn btn-secondary btn-sm">← Back</a>{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width:700px;margin-bottom:24px">
+  <h3 style="margin-top:0">📂 Upload Students via CSV</h3>
+  <p style="color:var(--ink3);font-size:.85rem">
+    Upload a CSV file with columns: <strong>name, grade, section</strong><br/>
+    The system will auto-generate a <strong>username</strong> and <strong>password</strong> for each student.
+  </p>
+
+  <a href="/admin/students/download-template" class="btn btn-secondary btn-sm" style="margin-bottom:16px">
+    ⬇ Download Sample CSV Template
+  </a>
+
+  <form method="POST" enctype="multipart/form-data" action="/admin/students/upload">
+    <input type="hidden" name="action" value="preview"/>
+    <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+      <div style="flex:1">
+        <label style="font-size:.82rem;font-weight:600;display:block;margin-bottom:6px">Select CSV File</label>
+        <input type="file" name="csv_file" accept=".csv" required
+               style="border:1px solid var(--border);border-radius:6px;padding:8px;width:100%;font-size:.85rem"/>
+      </div>
+      <button type="submit" class="btn btn-primary">Preview Students →</button>
+    </div>
+  </form>
+</div>
+
+{% if preview %}
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <h3 style="margin:0">👁 Preview — {{ preview|length }} students found</h3>
+    <span style="font-size:.8rem;color:var(--ink3)">Review credentials before saving</span>
+  </div>
+
+  <form method="POST" action="/admin/students/upload">
+    <input type="hidden" name="action" value="confirm"/>
+
+    <div style="overflow-x:auto">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Grade</th>
+            <th>Section</th>
+            <th>Auto Username</th>
+            <th>Auto Password</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in preview %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>
+              {{ s.name }}
+              <input type="hidden" name="name" value="{{ s.name }}"/>
+            </td>
+            <td>
+              {{ s.grade }}
+              <input type="hidden" name="grade" value="{{ s.grade }}"/>
+            </td>
+            <td>
+              {{ s.section }}
+              <input type="hidden" name="section" value="{{ s.section }}"/>
+            </td>
+            <td>
+              <code style="background:#f0f2f5;padding:2px 6px;border-radius:4px">{{ s.username }}</code>
+              <input type="hidden" name="username" value="{{ s.username }}"/>
+            </td>
+            <td>
+              <code style="background:#f0f2f5;padding:2px 6px;border-radius:4px">{{ s.password }}</code>
+              <input type="hidden" name="password" value="{{ s.password }}"/>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div style="margin-top:20px;display:flex;gap:12px">
+      <button type="submit" class="btn btn-primary">✅ Confirm & Save All Students</button>
+      <a href="/admin/students/upload" class="btn btn-secondary">✖ Cancel</a>
+    </div>
+  </form>
+
+  <div style="margin-top:16px;padding:12px;background:#fff8e1;border-radius:8px;font-size:.82rem;color:#856404">
+    💡 <strong>Tip:</strong> After saving, go to
+    <a href="/admin/students/download-credentials">Download Credentials CSV</a>
+    to get a printable list of all usernames and passwords to distribute to students.
+  </div>
+</div>
+{% endif %}
+{% endblock %}
