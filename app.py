@@ -630,6 +630,130 @@ def download_results_excel():
     return Response(buf.read(), mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         headers={'Content-Disposition': 'attachment; filename=EPS_Results.xlsx'})
 
+# ── RESULTS TEMPLATE DOWNLOAD ────────────────────────────────────────────────
+
+@app.route('/admin/download/results-template')
+@login_required('Resource_Manager')
+def download_results_template():
+    tests = MockTest.query.all()
+    # Get max questions across all tests
+    max_q = max((len(json.loads(t.questions or '[]')) for t in tests), default=8)
+    output = io.StringIO()
+    writer = csv.writer(output)
+    headers = ['username'] + [f'q{i+1}' for i in range(max_q)]
+    writer.writerow(headers)
+    # Sample rows
+    students = User.query.filter_by(role='student').limit(3).all()
+    for s in students:
+        writer.writerow([s.username] + ['' for _ in range(max_q)])
+    output.seek(0)
+    return Response(output.getvalue(), mimetype='text/csv',
+        headers={'Content-Disposition': 'attachment; filename=results_template.csv'})
+
+
+# ── IMPORT RESULTS FROM CSV ──────────────────────────────────────────────────
+
+@app.route('/admin/import-results', methods=['GET','POST'])
+@login_required('Resource_Manager')
+def import_results():
+    tests   = MockTest.query.all()
+    preview = []
+    errors  = []
+
+    if request.method == 'POST':
+        action  = request.form.get('action')
+        test_id = int(request.form.get('test_id', 0))
+        test    = db.session.get(MockTest, test_id)
+        if not test:
+            flash('Test not found.', 'error')
+            return redirect(url_for('import_results'))
+
+        questions  = json.loads(test.questions or '[]')
+        total_q    = len(questions)
+        opt_map    = {'A':0,'B':1,'C':2,'D':3,'a':0,'b':1,'c':2,'d':3}
+
+        if action == 'preview':
+            file = request.files.get('csv_file')
+            if not file or not file.filename.endswith('.csv'):
+                flash('Please upload a valid .csv file.', 'error')
+                return redirect(url_for('import_results'))
+
+            stream = io.StringIO(file.stream.read().decode('utf-8-sig'))
+            reader = csv.DictReader(stream)
+
+            for row in reader:
+                username = row.get('username','').strip()
+                if not username:
+                    continue
+                user = User.query.filter_by(username=username).first()
+                if not user:
+                    errors.append(f"'{username}' not found — skipped")
+                    continue
+                existing = TestResult.query.filter_by(student_id=user.id, test_id=test_id).first()
+                if existing:
+                    errors.append(f"{username} already has a result — skipped")
+                    continue
+
+                answers = {}
+                score   = 0
+                section_scores = {}
+
+                for i, q in enumerate(questions):
+                    col          = f'q{i+1}'
+                    given_letter = row.get(col,'').strip().upper()
+                    given_idx    = opt_map.get(given_letter)
+                    correct_idx  = q['answer']
+                    sec          = q.get('section','General')
+                    section_scores.setdefault(sec, {'correct':0,'total':0})
+                    section_scores[sec]['total'] += 1
+                    if given_idx is not None:
+                        answers[str(q['id'])] = given_idx
+                        if given_idx == correct_idx:
+                            score += 1
+                            section_scores[sec]['correct'] += 1
+
+                percent = round(score/total_q*100, 1) if total_q else 0
+                preview.append({
+                    'username': username, 'name': user.name,
+                    'user_id': user.id, 'score': score,
+                    'total': total_q, 'percent': percent,
+                    'answers': json.dumps(answers),
+                    'section_scores': json.dumps(section_scores),
+                })
+
+            return render_template('admin/import_results.html',
+                tests=tests, preview=preview, errors=errors,
+                test_id=test_id, selected_test=test)
+
+        elif action == 'confirm':
+            userids   = request.form.getlist('user_id')
+            scores    = request.form.getlist('score')
+            totals    = request.form.getlist('total')
+            percents  = request.form.getlist('percent')
+            answers_l = request.form.getlist('answers')
+            secs_l    = request.form.getlist('section_scores')
+            added = 0
+            for i in range(len(userids)):
+                existing = TestResult.query.filter_by(student_id=int(userids[i]), test_id=test_id).first()
+                if existing:
+                    continue
+                db.session.add(TestResult(
+                    student_id=int(userids[i]), test_id=test_id,
+                    score=int(scores[i]), total=int(totals[i]),
+                    percent=float(percents[i]),
+                    answers=answers_l[i], section_scores=secs_l[i],
+                    time_taken=0,
+                ))
+                added += 1
+            db.session.commit()
+            flash(f'✅ {added} student results imported successfully!', 'success')
+            return redirect(url_for('admin_analytics'))
+
+    return render_template('admin/import_results.html',
+        tests=tests, preview=[], errors=[],
+        test_id=None, selected_test=None)
+
+
 # ── TEACHER ───────────────────────────────────────────────────────────────────
 
 @app.route('/teacher')
