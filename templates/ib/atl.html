@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% block title %}ATL Skills{% endblock %}
+{% block page_title %}ATL Skills Rating{% endblock %}
+{% block back_button %}<a href="/ib" class="btn btn-secondary btn-sm">← IB Dashboard</a>{% endblock %}
+
+{% block content %}
+<!-- Filters -->
+<div class="card" style="margin-bottom:20px">
+  <form method="GET" action="/ib/atl" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+    <div>
+      <label style="font-size:.78rem;font-weight:600;display:block;margin-bottom:4px">Student</label>
+      <select name="student_id" style="padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.83rem;min-width:200px">
+        <option value="">Select student...</option>
+        {% for s in students %}
+        <option value="{{ s.id }}" {{ 'selected' if selected_student == s.id }}>{{ s.name }} ({{ s.grade }} {{ s.section }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label style="font-size:.78rem;font-weight:600;display:block;margin-bottom:4px">Term</label>
+      <select name="term" style="padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.83rem">
+        {% for t in terms %}<option value="{{ t }}" {{ 'selected' if selected_term==t }}>{{ t }}</option>{% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Load →</button>
+  </form>
+</div>
+
+{% if selected_student %}
+{% set student = students|selectattr('id','eq',selected_student)|first %}
+<form method="POST" action="/ib/atl">
+  <input type="hidden" name="student_id" value="{{ selected_student }}"/>
+  <input type="hidden" name="term" value="{{ selected_term }}"/>
+
+  {% for skill, grade_descs in atl_skills.items() %}
+  {% set descs = grade_descs.get(student.grade, grade_descs['Grade 3']) %}
+  <input type="hidden" name="skill" value="{{ skill }}"/>
+
+  <div class="card" style="margin-bottom:16px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #f1f5f9">
+      <span style="font-size:1.4rem">{{ {'Communication':'💬','Self-Management':'⚙️','Research':'🔍','Thinking':'🧠','Social':'🤝'}[skill] }}</span>
+      <div>
+        <div style="font-weight:700;font-size:.95rem;color:#1e293b">{{ skill }}</div>
+        <div style="font-size:.75rem;color:#94a3b8">{{ student.grade }} descriptors · {{ selected_term }}</div>
+      </div>
+    </div>
+    {% for desc in descs %}
+    {% set curr = existing_ratings.get((skill, desc), 0) %}
+    <div style="margin-bottom:14px;padding:12px;background:#f8fafc;border-radius:8px">
+      <div style="font-size:.83rem;font-weight:500;color:#374151;margin-bottom:10px">{{ desc }}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        {% for val, label in rating_scale.items() %}
+        <label style="cursor:pointer">
+          <input type="radio" name="rating_{{ loop.parent.loop.index0 }}" value="{{ val }}"
+                 {{ 'checked' if curr == val }} style="display:none"/>
+          <div class="rating-btn" data-val="{{ val }}"
+            style="padding:6px 14px;border-radius:20px;border:2px solid {{ '#10b981' if val==4 else '#3b82f6' if val==3 else '#f59e0b' if val==2 else '#ef4444' }};
+            background:{{ ('#dcfce7' if curr==val else '#f0fdf4') if val==4 else ('#dbeafe' if curr==val else '#eff6ff') if val==3 else ('#fef9c3' if curr==val else '#fffbeb') if val==2 else ('#fee2e2' if curr==val else '#fef2f2') }};
+            font-size:.75rem;font-weight:700;color:{{ '#166534' if val==4 else '#1d4ed8' if val==3 else '#92400e' if val==2 else '#dc2626' }};
+            transition:all .15s;user-select:none">
+            {{ val }} — {{ label }}
+          </div>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+
+  <div style="display:flex;gap:10px;margin-top:8px">
+    <button type="submit" class="btn btn-primary" style="padding:10px 28px">💾 Save ATL Ratings</button>
+    <a href="/ib/atl" class="btn btn-secondary">Cancel</a>
+  </div>
+</form>
+{% else %}
+<div class="card" style="text-align:center;padding:60px;color:#94a3b8">
+  <div style="font-size:3rem;margin-bottom:12px">🎯</div>
+  <div style="font-weight:700;font-size:1rem;color:#1e293b;margin-bottom:6px">Select a student to begin rating</div>
+  <div style="font-size:.85rem">Choose a student and term from the filters above</div>
+</div>
+{% endif %}
+
+<script>
+document.querySelectorAll('label').forEach(label => {
+  label.addEventListener('click', () => {
+    const input = label.querySelector('input[type=radio]');
+    if(!input) return;
+    const name = input.name;
+    document.querySelectorAll(`input[name="${name}"]`).forEach(inp => {
+      const btn = inp.closest('label').querySelector('.rating-btn');
+      const val = parseInt(inp.value);
+      const colors = {4:['#dcfce7','#166534','#10b981'],3:['#dbeafe','#1d4ed8','#3b82f6'],2:['#fef9c3','#92400e','#f59e0b'],1:['#fee2e2','#dc2626','#ef4444']};
+      const base  = {4:'#f0fdf4',3:'#eff6ff',2:'#fffbeb',1:'#fef2f2'};
+      btn.style.background = inp.checked ? colors[val][0] : base[val];
+    });
+  });
+});
+</script>
+{% endblock %}
