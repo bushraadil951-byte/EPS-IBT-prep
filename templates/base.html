@@ -210,9 +210,46 @@
       <a href="/admin/analytics" class="nav-link {% if 'analytics' in request.path %}active{% endif %}">
         <span class="nav-icon">📊</span>Analytics
       </a>
+      <div class="nav-section">🌱 IB Development</div>
+      <a href="/ib/overview" class="nav-link {% if 'ib/overview' in request.path %}active{% endif %}">
+        <span class="nav-icon">🌍</span>IB Overview
+      </a>
+      <a href="/ib/atl" class="nav-link {% if 'ib/atl' in request.path %}active{% endif %}">
+        <span class="nav-icon">🧠</span>ATL Skills
+      </a>
+      <a href="/ib/lp" class="nav-link {% if 'ib/lp' in request.path %}active{% endif %}">
+        <span class="nav-icon">⭐</span>Learner Profile
+      </a>
+      <div class="nav-section">IB Development</div>
+      <a href="/admin/ib-overview" class="nav-link {% if 'ib-overview' in request.path %}active{% endif %}">
+        <span class="nav-icon">🌍</span>IB Overview
+      </a>
+      <a href="/admin/atl" class="nav-link {% if '/atl' in request.path %}active{% endif %}">
+        <span class="nav-icon">🎯</span>ATL Skills
+      </a>
+      <a href="/admin/learner-profile" class="nav-link {% if 'learner-profile' in request.path %}active{% endif %}">
+        <span class="nav-icon">🌱</span>Learner Profile
+      </a>
+      <div class="nav-section">IB Development</div>
+      <a href="/ib" class="nav-link {% if request.path=='/ib' %}active{% endif %}">
+        <span class="nav-icon">🌍</span>IB Dashboard
+      </a>
+      <a href="/ib/atl" class="nav-link {% if 'atl' in request.path %}active{% endif %}">
+        <span class="nav-icon">🎯</span>ATL Skills
+      </a>
+      <a href="/ib/learner-profile" class="nav-link {% if 'learner-profile' in request.path %}active{% endif %}">
+        <span class="nav-icon">🌱</span>Learner Profile
+      </a>
       <div class="nav-section">Tools</div>
       <a href="/admin/import-results" class="nav-link {% if 'import-results' in request.path %}active{% endif %}">
         <span class="nav-icon">📤</span>Import Results
+      </a>
+      <div class="nav-section" style="color:#10b981">IB Development</div>
+      <a href="/ib/dashboard" class="nav-link {% if request.path.startswith('/ib') %}active{% endif %}" style="color:#6ee7b7">
+        <span class="nav-icon">🌱</span>IB Overview
+      </a>
+      <a href="/ib/class-overview" class="nav-link {% if 'class-overview' in request.path %}active{% endif %}" style="color:#6ee7b7">
+        <span class="nav-icon">📋</span>Class Overview
       </a>
       <div class="nav-section">Downloads</div>
       <a href="/admin/download/students" class="nav-link">
@@ -233,6 +270,16 @@
       <a href="/teacher/analytics" class="nav-link {% if 'analytics' in request.path %}active{% endif %}">
         <span class="nav-icon">📊</span>Analytics
       </a>
+      <div class="nav-section">🌱 IB Development</div>
+      <a href="/ib/overview" class="nav-link {% if 'ib/overview' in request.path %}active{% endif %}">
+        <span class="nav-icon">🌍</span>IB Overview
+      </a>
+      <a href="/ib/atl" class="nav-link {% if 'ib/atl' in request.path %}active{% endif %}">
+        <span class="nav-icon">🧠</span>ATL Skills
+      </a>
+      <a href="/ib/lp" class="nav-link {% if 'ib/lp' in request.path %}active{% endif %}">
+        <span class="nav-icon">⭐</span>Learner Profile
+      </a>
 
     {% elif session.role == 'student' %}
       <div class="nav-section">Main</div>
@@ -241,6 +288,23 @@
       </a>
       <a href="/student/scores" class="nav-link {% if 'scores' in request.path %}active{% endif %}">
         <span class="nav-icon">📊</span>My Scores
+      </a>
+      <a href="/student/ib" class="nav-link {% if 'ib' in request.path %}active{% endif %}" style="color:#6ee7b7">
+        <span class="nav-icon">🌱</span>IB Development
+      </a>
+      <a href="/student/ib" class="nav-link {% if 'ib' in request.path %}active{% endif %}">
+        <span class="nav-icon">🌱</span>IB Development
+      </a>
+      <div class="nav-section">IB Development</div>
+      <a href="/student/learner-profile" class="nav-link {% if 'learner-profile' in request.path %}active{% endif %}">
+        <span class="nav-icon">🌱</span>My IB Profile
+      </a>
+      <div class="nav-section">🌱 IB Development</div>
+      <a href="/ib/student/atl" class="nav-link {% if 'student/atl' in request.path %}active{% endif %}">
+        <span class="nav-icon">🧠</span>ATL Skills
+      </a>
+      <a href="/ib/student/lp" class="nav-link {% if 'student/lp' in request.path %}active{% endif %}">
+        <span class="nav-icon">⭐</span>Learner Profile
       </a>
     {% endif %}
 
