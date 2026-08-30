@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% block title %}IB Development Dashboard{% endblock %}
+{% block page_title %}IB Holistic Development{% endblock %}
+
+{% block content %}
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:24px">
+  <div class="card" style="text-align:center;padding:20px;border-top:3px solid #6366f1">
+    <div style="font-size:2rem;font-weight:800;color:#6366f1">{{ students|length }}</div>
+    <div style="font-size:.78rem;color:#94a3b8;margin-top:4px">Total Students</div>
+  </div>
+  <div class="card" style="text-align:center;padding:20px;border-top:3px solid #10b981">
+    <div style="font-size:2rem;font-weight:800;color:#10b981">{{ total_atl }}</div>
+    <div style="font-size:.78rem;color:#94a3b8;margin-top:4px">ATL Ratings Given</div>
+  </div>
+  <div class="card" style="text-align:center;padding:20px;border-top:3px solid #f59e0b">
+    <div style="font-size:2rem;font-weight:800;color:#f59e0b">{{ total_lp }}</div>
+    <div style="font-size:.78rem;color:#94a3b8;margin-top:4px">LP Ratings Given</div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+  <!-- Quick Actions -->
+  <div class="card">
+    <div style="font-weight:700;font-size:.95rem;margin-bottom:16px;color:#1e293b">⚡ Quick Actions</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <a href="/ib/atl" style="display:flex;align-items:center;gap:12px;padding:14px;background:#f5f3ff;border-radius:10px;text-decoration:none;border:1px solid #e9d5ff">
+        <span style="font-size:1.5rem">🎯</span>
+        <div>
+          <div style="font-weight:700;font-size:.88rem;color:#6d28d9">Rate ATL Skills</div>
+          <div style="font-size:.75rem;color:#8b5cf6">Communication, Thinking, Research, Social, Self-Management</div>
+        </div>
+      </a>
+      <a href="/ib/learner-profile" style="display:flex;align-items:center;gap:12px;padding:14px;background:#f0fdf4;border-radius:10px;text-decoration:none;border:1px solid #bbf7d0">
+        <span style="font-size:1.5rem">🌱</span>
+        <div>
+          <div style="font-weight:700;font-size:.88rem;color:#166534">Rate Learner Profile</div>
+          <div style="font-size:.75rem;color:#16a34a">10 IB Learner Profile Attributes</div>
+        </div>
+      </a>
+      <a href="#student-reports" style="display:flex;align-items:center;gap:12px;padding:14px;background:#eff6ff;border-radius:10px;text-decoration:none;border:1px solid #bfdbfe">
+        <span style="font-size:1.5rem">📋</span>
+        <div>
+          <div style="font-weight:700;font-size:.88rem;color:#1d4ed8">View Student Reports</div>
+          <div style="font-size:.75rem;color:#3b82f6">Full holistic report per student</div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- LP Overview -->
+  <div class="card">
+    <div style="font-weight:700;font-size:.95rem;margin-bottom:14px;color:#1e293b">🌍 Learner Profile Overview</div>
+    {% if total_lp > 0 %}
+    <div style="display:flex;flex-direction:column;gap:6px">
+      {% for attr, _ in learner_profile %}
+      {% set avg = lp_avgs[attr] %}
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:100px;font-size:.75rem;font-weight:600;color:#475569">{{ attr }}</div>
+        <div style="flex:1;height:8px;background:#f1f5f9;border-radius:99px;overflow:hidden">
+          <div style="width:{{ (avg/4*100)|round }}%;height:100%;background:{{ '#10b981' if avg>=3.5 else '#3b82f6' if avg>=2.5 else '#f59e0b' if avg>=1.5 else '#ef4444' }};border-radius:99px;transition:width .5s"></div>
+        </div>
+        <div style="width:30px;font-size:.75rem;font-weight:700;color:#475569">{{ avg }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:32px;color:#94a3b8">
+      <div style="font-size:2rem;margin-bottom:8px">📭</div>
+      <div style="font-size:.85rem">No ratings yet — start rating students!</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Student Reports -->
+<div class="card" id="student-reports">
+  <div style="font-weight:700;font-size:.95rem;margin-bottom:14px;color:#1e293b">📋 Student Reports</div>
+  <div style="overflow-x:auto">
+    <table class="data-table">
+      <thead><tr><th>Name</th><th>Grade</th><th>Section</th><th></th></tr></thead>
+      <tbody>
+        {% for s in students %}
+        <tr>
+          <td style="font-weight:600">{{ s.name }}</td>
+          <td>{{ s.grade }}</td>
+          <td>{{ s.section or '—' }}</td>
+          <td><a href="/ib/report/{{ s.id }}" style="background:#6366f1;color:#fff;padding:5px 12px;border-radius:6px;text-decoration:none;font-size:.78rem;font-weight:600">View Report</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
