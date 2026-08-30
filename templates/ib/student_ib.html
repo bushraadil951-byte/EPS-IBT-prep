@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% block title %}My IB Profile{% endblock %}
+{% block page_title %}My IB Learner Profile{% endblock %}
+
+{% block content %}
+{% set lp_icons = {'Inquirer':'🔍','Knowledgeable':'📚','Thinker':'🧠','Communicator':'💬','Principled':'⚖️','Open-minded':'🌍','Caring':'❤️','Risk-taker':'🚀','Balanced':'⚖️','Reflective':'🪞'} %}
+{% set atl_icons = {'Communication':'💬','Self-Management':'⚙️','Research':'🔍','Thinking':'🧠','Social':'🤝'} %}
+
+<!-- Header -->
+<div style="background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:14px;padding:24px;margin-bottom:24px;color:#fff">
+  <div style="font-size:1.2rem;font-weight:800;margin-bottom:4px">🌱 My IB Development</div>
+  <div style="opacity:.85;font-size:.85rem">{{ student.grade }} · Section {{ student.section }}</div>
+  <div style="margin-top:12px;font-size:.8rem;opacity:.75">Rate yourself honestly on each IB Learner Profile attribute and write a short reflection. Your teacher can also see your self-assessment.</div>
+</div>
+
+<!-- Term selector -->
+<div style="display:flex;gap:8px;margin-bottom:20px">
+  {% for t in terms %}
+  <a href="/student/ib?term={{ t }}"
+    style="padding:8px 20px;border-radius:20px;border:1.5px solid #e2e8f0;font-size:.82rem;font-weight:600;text-decoration:none;background:{{ '#6366f1' if selected_term==t else '#fff' }};color:{{ '#fff' if selected_term==t else '#475569' }}">
+    {{ t }}
+  </a>
+  {% endfor %}
+</div>
+
+<!-- ATL from Teacher (read-only) -->
+{% if atl_ratings %}
+<div class="card" style="margin-bottom:20px">
+  <div style="font-weight:700;font-size:.92rem;margin-bottom:14px;color:#1e293b">🎯 Your ATL Skills (from teacher) — {{ selected_term }}</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">
+    {% for skill, ratings in atl_ratings.items() %}
+    {% set avg = (ratings|map(attribute='rating')|list|sum / ratings|length)|round(1) %}
+    <div style="padding:12px;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;text-align:center">
+      <div style="font-size:1.3rem;margin-bottom:4px">{{ atl_icons.get(skill,'📌') }}</div>
+      <div style="font-weight:700;font-size:.82rem;color:#1e293b;margin-bottom:6px">{{ skill }}</div>
+      <div style="font-size:1.8rem;font-weight:800;color:{{ '#10b981' if avg>=3.5 else '#3b82f6' if avg>=2.5 else '#f59e0b' if avg>=1.5 else '#ef4444' }}">{{ avg }}</div>
+      <div style="font-size:.68rem;color:#94a3b8">/4</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Self-Rating Form -->
+<form method="POST" action="/student/ib?term={{ selected_term }}">
+  <input type="hidden" name="term" value="{{ selected_term }}"/>
+
+  <div style="font-weight:700;font-size:.92rem;margin-bottom:14px;color:#1e293b">🌍 Rate Yourself — IB Learner Profile</div>
+  <div style="font-size:.8rem;color:#94a3b8;margin-bottom:16px">For each attribute, select how well it describes you right now, then write a short reflection.</div>
+
+  <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:20px">
+    {% for attr, desc in learner_profile %}
+    {% set curr_self    = self_ratings.get(attr, 0) %}
+    {% set curr_teacher = teacher_ratings.get(attr, 0) %}
+    {% set curr_ref     = reflections.get(attr, '') %}
+
+    <div class="card" style="border-left:4px solid {{ rating_colors[curr_self] if curr_self else '#e2e8f0' }}">
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px">
+        <span style="font-size:1.6rem">{{ lp_icons.get(attr,'🌟') }}</span>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:.92rem;color:#1e293b;margin-bottom:2px">{{ attr }}</div>
+          <div style="font-size:.78rem;color:#64748b;line-height:1.5">{{ desc }}</div>
+        </div>
+        {% if curr_teacher %}
+        <div style="text-align:center;padding:8px 12px;background:#f1f5f9;border-radius:8px;min-width:70px">
+          <div style="font-size:.6rem;color:#94a3b8;margin-bottom:2px">Teacher</div>
+          <div style="font-weight:800;font-size:1.1rem;color:{{ rating_colors[curr_teacher] }}">{{ curr_teacher }}</div>
+          <div style="font-size:.6rem;color:#94a3b8">{{ rating_scale[curr_teacher] }}</div>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Self rating -->
+      <div style="margin-bottom:12px">
+        <div style="font-size:.72rem;font-weight:700;color:#475569;margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">My Self-Rating</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          {% for val, label in rating_scale.items() %}
+          <label style="cursor:pointer;flex:1;min-width:100px">
+            <input type="radio" name="self_{{ attr }}" value="{{ val }}" {{ 'checked' if curr_self==val }} style="display:none"/>
+            <div style="padding:10px 6px;border-radius:10px;border:2px solid {{ rating_colors[val] }};text-align:center;transition:all .15s;
+              background:{{ rating_colors[val]+'22' if curr_self==val else '#fff' }}">
+              <div style="font-size:1.1rem;margin-bottom:2px">{{ ['🔴','🟡','🔵','🟢'][val-1] }}</div>
+              <div style="font-size:.7rem;font-weight:700;color:{{ rating_colors[val] }}">{{ val }} — {{ label }}</div>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Reflection -->
+      <div>
+        <div style="font-size:.72rem;font-weight:700;color:#475569;margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">✍️ My Reflection</div>
+        <textarea name="reflection_{{ attr }}" rows="2"
+          placeholder="How do you show this attribute? Give an example from class or home..."
+          style="width:100%;padding:8px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:.8rem;font-family:inherit;resize:vertical;color:#374151">{{ curr_ref }}</textarea>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <button type="submit" class="btn btn-primary" style="padding:12px 32px;font-size:.9rem">
+    💾 Save My Self-Assessment
+  </button>
+</form>
+
+<script>
+document.querySelectorAll('input[type=radio]').forEach(inp => {
+  inp.closest('label').addEventListener('click', () => {
+    const name = inp.name;
+    const colors = {'1':'#ef4444','2':'#f59e0b','3':'#3b82f6','4':'#10b981'};
+    document.querySelectorAll(`input[name="${name}"]`).forEach(i => {
+      const div = i.closest('label').querySelector('div');
+      const c = colors[i.value];
+      div.style.background = i.checked ? c+'22' : '#fff';
+    });
+  });
+});
+</script>
+{% endblock %}
