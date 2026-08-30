@@ -21,6 +21,52 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
 db = SQLAlchemy(app)
 
 SUBJECTS  = ['English', 'Mathematics', 'Science', 'Reasoning']
+
+# ── IB CONSTANTS ──────────────────────────────────────────────────────────────
+TERMS = ['Term 1', 'Term 2', 'Term 3']
+RATING_SCALE = {1: 'Beginning', 2: 'Developing', 3: 'Achieved', 4: 'Exceeding'}
+RATING_COLORS = {1: '#ef4444', 2: '#f59e0b', 3: '#3b82f6', 4: '#10b981'}
+
+LEARNER_PROFILE = [
+    ('Inquirer',      'Nurtures curiosity and love of learning. Acquires skills to inquire and research independently.'),
+    ('Knowledgeable', 'Explores concepts across disciplines. Engages with local and global issues.'),
+    ('Thinker',       'Uses critical and creative thinking to tackle complex problems and make ethical decisions.'),
+    ('Communicator',  'Expresses ideas confidently in multiple modes and collaborates effectively.'),
+    ('Principled',    'Acts with integrity and honesty. Takes responsibility for actions and consequences.'),
+    ('Open-minded',   'Appreciates own and others cultures. Seeks and evaluates diverse perspectives.'),
+    ('Caring',        'Shows empathy, compassion and respect. Makes a positive difference to others.'),
+    ('Risk-taker',    'Approaches uncertainty with courage and creativity. Explores new ideas and strategies.'),
+    ('Balanced',      'Understands importance of intellectual, physical and emotional balance.'),
+    ('Reflective',    'Thoughtfully considers learning and experiences to improve understanding and growth.'),
+]
+
+ATL_SKILLS = {
+    'Communication': {
+        'Grade 3': ['Shares ideas clearly in class discussions','Listens attentively when others speak','Writes sentences with a clear beginning and end','Reads aloud with expression and understanding'],
+        'Grade 4': ['Expresses ideas using appropriate vocabulary','Asks clarifying questions during discussions','Organises written work with introduction and conclusion','Reads and summarises key information'],
+        'Grade 5': ['Communicates effectively for different audiences','Evaluates and responds to others ideas respectfully','Writes structured arguments with evidence','Analyses texts and identifies authors purpose'],
+    },
+    'Self-Management': {
+        'Grade 3': ['Brings required materials to class','Follows classroom routines independently','Manages time during tasks with teacher support','Stays on task with minimal reminders'],
+        'Grade 4': ['Organises work and materials independently','Sets personal goals with teacher guidance','Manages time effectively during class activities','Reflects on learning with prompting'],
+        'Grade 5': ['Plans and organises multi-step tasks independently','Sets and monitors personal learning goals','Manages time across multiple responsibilities','Reflects critically on own learning and progress'],
+    },
+    'Research': {
+        'Grade 3': ['Identifies information from given sources','Distinguishes between fact and opinion with support','Records information in own words','Uses library and digital resources with guidance'],
+        'Grade 4': ['Selects relevant information from multiple sources','Identifies reliable vs unreliable sources','Organises research notes effectively','Cites sources with teacher support'],
+        'Grade 5': ['Independently researches using varied sources','Evaluates credibility and bias in sources','Synthesises information to form conclusions','Properly attributes sources and avoids plagiarism'],
+    },
+    'Thinking': {
+        'Grade 3': ['Makes connections between new and prior learning','Identifies patterns and sequences','Generates ideas during brainstorming','Solves simple problems with support'],
+        'Grade 4': ['Asks why and what if questions','Applies knowledge to new situations','Identifies cause and effect relationships','Evaluates solutions to problems'],
+        'Grade 5': ['Analyses information from multiple perspectives','Creates original solutions to complex problems','Transfers learning across subjects','Justifies reasoning with evidence'],
+    },
+    'Social': {
+        'Grade 3': ['Takes turns and shares during group activities','Shows kindness and respect to classmates','Accepts different roles in group work','Resolves conflicts with teacher support'],
+        'Grade 4': ['Contributes meaningfully to group discussions','Encourages and supports peers','Adapts role based on group needs','Resolves minor conflicts independently'],
+        'Grade 5': ['Leads and participates effectively in groups','Considers diverse perspectives in collaboration','Negotiates and compromises to achieve goals','Mediates conflicts constructively'],
+    },
+}
 GRADES    = ['Grade 3', 'Grade 4', 'Grade 5']
 SECTIONS_BY_SUBJECT = {
     'English':     ['Reading Comprehension', 'Grammar', 'Spelling', 'Vocabulary', 'Punctuation'],
@@ -65,6 +111,589 @@ class TestResult(db.Model):
     section_scores = db.Column(db.Text, default='{}')
     time_taken     = db.Column(db.Integer, default=0)
     taken_at       = db.Column(db.DateTime, default=datetime.utcnow)
+
+# ── IB HOLISTIC MODELS ───────────────────────────────────────────────────────
+
+ATL_SKILLS = {
+    'Communication':    ['Reading & Writing', 'Listening & Speaking', 'Presenting Ideas'],
+    'Self-Management':  ['Organisation', 'Time Management', 'Reflection'],
+    'Research':         ['Information Literacy', 'Media Literacy', 'Using Sources'],
+    'Thinking':         ['Critical Thinking', 'Creative Thinking', 'Problem Solving'],
+    'Social':           ['Collaboration', 'Respecting Others', 'Leadership'],
+}
+
+LEARNER_PROFILE = [
+    'Inquirer', 'Knowledgeable', 'Thinker', 'Communicator', 'Principled',
+    'Open-minded', 'Caring', 'Risk-taker', 'Balanced', 'Reflective'
+]
+
+LP_DESCRIPTIONS = {
+    'Inquirer':      'Nurtures curiosity and love of learning',
+    'Knowledgeable': 'Explores concepts across disciplines',
+    'Thinker':       'Uses critical and creative thinking skills',
+    'Communicator':  'Expresses ideas confidently in many ways',
+    'Principled':    'Acts with integrity and honesty',
+    'Open-minded':   'Appreciates other perspectives and cultures',
+    'Caring':        'Shows empathy, compassion and respect',
+    'Risk-taker':    'Approaches uncertainty with courage',
+    'Balanced':      'Understands importance of all aspects of life',
+    'Reflective':    'Thoughtfully considers own learning and growth',
+}
+
+ATL_DESCRIPTORS = {
+    'Grade 3': {
+        1: 'I am just starting to learn this skill',
+        2: 'I sometimes use this skill with help',
+        3: 'I often use this skill on my own',
+        4: 'I always use this skill and help my friends',
+    },
+    'Grade 4': {
+        1: 'I am aware of this skill but need reminders',
+        2: 'I use this skill sometimes with support',
+        3: 'I independently use this skill most of the time',
+        4: 'I consistently use and model this skill for others',
+    },
+    'Grade 5': {
+        1: 'I am beginning to develop this skill with guidance',
+        2: 'I apply this skill in familiar situations with some support',
+        3: 'I consistently apply this skill across different contexts',
+        4: 'I demonstrate this skill with sophistication and mentor peers',
+    },
+}
+
+LP_DESCRIPTORS = {
+    'Grade 3': {1:'Just starting',  2:'Sometimes',  3:'Often',        4:'Always'},
+    'Grade 4': {1:'Beginning',      2:'Developing', 3:'Achieved',     4:'Exceeding'},
+    'Grade 5': {1:'Beginning',      2:'Developing', 3:'Consistently', 4:'Exemplary'},
+}
+
+TERMS = ['Term 1', 'Term 2', 'Term 3']
+
+
+class ATLRating(db.Model):
+    __tablename__ = 'atl_rating'
+    id           = db.Column(db.Integer, primary_key=True)
+    student_id   = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    rater_id     = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    rater_type   = db.Column(db.String(10), nullable=False)  # 'teacher' or 'student'
+    term         = db.Column(db.String(20), nullable=False)
+    category     = db.Column(db.String(50), nullable=False)
+    skill        = db.Column(db.String(100), nullable=False)
+    rating       = db.Column(db.Integer, nullable=False)  # 1-4
+    comment      = db.Column(db.Text, nullable=True)
+    created_at   = db.Column(db.DateTime, default=datetime.utcnow)
+    student      = db.relationship('User', foreign_keys=[student_id])
+    rater        = db.relationship('User', foreign_keys=[rater_id])
+
+
+class LearnerProfileRating(db.Model):
+    __tablename__ = 'lp_rating'
+    id           = db.Column(db.Integer, primary_key=True)
+    student_id   = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    rater_id     = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    rater_type   = db.Column(db.String(10), nullable=False)  # 'teacher' or 'student'
+    term         = db.Column(db.String(20), nullable=False)
+    attribute    = db.Column(db.String(50), nullable=False)
+    rating       = db.Column(db.Integer, nullable=False)  # 1-4
+    evidence     = db.Column(db.Text, nullable=True)
+    created_at   = db.Column(db.DateTime, default=datetime.utcnow)
+    student      = db.relationship('User', foreign_keys=[student_id])
+    rater        = db.relationship('User', foreign_keys=[rater_id])
+
+
+class StudentReflection(db.Model):
+    __tablename__ = 'student_reflection'
+    id           = db.Column(db.Integer, primary_key=True)
+    student_id   = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    term         = db.Column(db.String(20), nullable=False)
+    reflection   = db.Column(db.Text, nullable=False)
+    goals        = db.Column(db.Text, nullable=True)
+    created_at   = db.Column(db.DateTime, default=datetime.utcnow)
+    student      = db.relationship('User', foreign_keys=[student_id])
+
+
+# ── IB HOLISTIC MODELS ───────────────────────────────────────────────────────
+
+ATL_SKILLS = {
+    'Communication':   ['Exchanges information clearly','Listens actively','Reads with understanding','Writes effectively','Presents ideas confidently'],
+    'Self-Management': ['Organises time and tasks','Manages materials','Reflects on learning','Shows perseverance','Sets goals'],
+    'Research':        ['Finds reliable information','Evaluates sources','Documents information','Uses data effectively'],
+    'Thinking':        ['Thinks critically','Thinks creatively','Transfers knowledge','Solves problems','Makes connections'],
+    'Social':          ['Collaborates respectfully','Supports peers','Manages disagreements','Contributes to group'],
+}
+
+ATL_DESCRIPTORS = {
+    'Grade 3': {
+        1: 'Beginning — Needs a lot of support to demonstrate this skill',
+        2: 'Developing — Demonstrates this skill with some support',
+        3: 'Achieved — Demonstrates this skill independently most of the time',
+        4: 'Exceeding — Consistently demonstrates this skill and supports others',
+    },
+    'Grade 4': {
+        1: 'Beginning — Rarely demonstrates this skill even with support',
+        2: 'Developing — Demonstrates this skill with teacher guidance',
+        3: 'Achieved — Independently demonstrates this skill consistently',
+        4: 'Exceeding — Applies this skill in new contexts and models it for peers',
+    },
+    'Grade 5': {
+        1: 'Beginning — Limited evidence of this skill',
+        2: 'Developing — Growing evidence with scaffolding required',
+        3: 'Achieved — Consistent and independent application of skill',
+        4: 'Exceeding — Sophisticated application; leads and mentors others',
+    },
+}
+
+LEARNER_PROFILE = [
+    ('Inquirer',     '🔍', 'Nurtures curiosity and love of learning'),
+    ('Knowledgeable','📚', 'Develops conceptual understanding across disciplines'),
+    ('Thinker',      '💡', 'Applies critical and creative thinking skills'),
+    ('Communicator', '🗣️', 'Expresses ideas confidently in multiple modes'),
+    ('Principled',   '⚖️', 'Acts with integrity, honesty and strong ethics'),
+    ('Open-minded',  '🌍', 'Appreciates perspectives, cultures and ideas'),
+    ('Caring',       '❤️', 'Shows empathy, compassion and respect for others'),
+    ('Risk-taker',   '🚀', 'Approaches uncertainty with courage and forethought'),
+    ('Balanced',     '⚖️', 'Understands importance of balance in all life areas'),
+    ('Reflective',   '🪞', 'Thoughtfully considers learning and personal growth'),
+]
+
+TERMS = ['Term 1', 'Term 2', 'Term 3']
+
+
+class ATLRating(db.Model):
+    __tablename__ = 'atl_rating'
+    id          = db.Column(db.Integer, primary_key=True)
+    student_id  = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    teacher_id  = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    term        = db.Column(db.String(20), nullable=False)   # Term 1/2/3
+    category    = db.Column(db.String(50), nullable=False)   # Communication etc
+    skill       = db.Column(db.String(100), nullable=False)  # sub-skill
+    rating      = db.Column(db.Integer, nullable=False)      # 1-4
+    notes       = db.Column(db.Text, nullable=True)
+    rated_at    = db.Column(db.DateTime, default=datetime.utcnow)
+    student     = db.relationship('User', foreign_keys=[student_id])
+    teacher     = db.relationship('User', foreign_keys=[teacher_id])
+
+
+class LearnerProfileRating(db.Model):
+    __tablename__ = 'learner_profile_rating'
+    id          = db.Column(db.Integer, primary_key=True)
+    student_id  = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    rater_id    = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    rater_type  = db.Column(db.String(10), nullable=False)   # 'teacher' or 'student'
+    term        = db.Column(db.String(20), nullable=False)
+    attribute   = db.Column(db.String(50), nullable=False)   # Inquirer etc
+    rating      = db.Column(db.Integer, nullable=False)      # 1-4
+    evidence    = db.Column(db.Text, nullable=True)
+    rated_at    = db.Column(db.DateTime, default=datetime.utcnow)
+    student     = db.relationship('User', foreign_keys=[student_id])
+    rater       = db.relationship('User', foreign_keys=[rater_id])
+
+
+class StudentReflection(db.Model):
+    __tablename__ = 'student_reflection'
+    id          = db.Column(db.Integer, primary_key=True)
+    student_id  = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    term        = db.Column(db.String(20), nullable=False)
+    reflection  = db.Column(db.Text, nullable=False)
+    goal        = db.Column(db.Text, nullable=True)
+    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
+    student     = db.relationship('User', foreign_keys=[student_id])
+
+
+# ── IB DEVELOPMENT MODELS ────────────────────────────────────────────────────
+
+# ATL descriptors per grade and skill
+ATL_SKILLS = {
+    'Communication': {
+        'Grade 3': ['Listens attentively during discussions', 'Expresses ideas clearly in writing', 'Uses appropriate vocabulary', 'Participates in group activities'],
+        'Grade 4': ['Organises ideas logically in writing', 'Listens and responds thoughtfully', 'Uses subject-specific vocabulary', 'Presents information to an audience'],
+        'Grade 5': ['Communicates complex ideas persuasively', 'Adapts communication style for audience', 'Uses evidence to support arguments', 'Gives and receives constructive feedback'],
+    },
+    'Self-Management': {
+        'Grade 3': ['Follows classroom routines independently', 'Completes tasks within given time', 'Keeps materials organised', 'Manages emotions appropriately'],
+        'Grade 4': ['Sets personal learning goals', 'Plans and prioritises tasks', 'Reflects on own learning', 'Manages distractions effectively'],
+        'Grade 5': ['Develops strategies to overcome challenges', 'Monitors own progress toward goals', 'Demonstrates perseverance', 'Balances responsibilities effectively'],
+    },
+    'Research': {
+        'Grade 3': ['Asks relevant questions', 'Locates information from given sources', 'Records findings in own words', 'Identifies fact vs. opinion'],
+        'Grade 4': ['Selects appropriate sources', 'Evaluates reliability of information', 'Takes organised notes', 'Cites sources used'],
+        'Grade 5': ['Formulates focused research questions', 'Critically evaluates multiple sources', 'Synthesises information effectively', 'Acknowledges intellectual property'],
+    },
+    'Thinking': {
+        'Grade 3': ['Makes connections between ideas', 'Identifies patterns and relationships', 'Offers creative solutions', 'Asks "why" and "what if" questions'],
+        'Grade 4': ['Analyses cause and effect', 'Evaluates different perspectives', 'Applies knowledge to new situations', 'Justifies opinions with reasons'],
+        'Grade 5': ['Evaluates arguments critically', 'Generates and tests hypotheses', 'Transfers learning across subjects', 'Reflects on thinking processes (metacognition)'],
+    },
+    'Social': {
+        'Grade 3': ['Takes turns and shares fairly', 'Respects different opinions', 'Helps classmates when needed', 'Follows agreed group rules'],
+        'Grade 4': ['Contributes meaningfully to group work', 'Resolves conflicts respectfully', 'Encourages others', 'Takes on different group roles'],
+        'Grade 5': ['Leads and supports team efforts', 'Negotiates and compromises effectively', 'Advocates for others', 'Builds on others' ideas constructively'],
+    },
+}
+
+IB_LEARNER_PROFILE = [
+    ('Inquirer',     '🔍', 'Nurtures curiosity, developing skills for inquiry and research'),
+    ('Knowledgeable','📚', 'Explores concepts across disciplines with depth and breadth'),
+    ('Thinker',      '💡', 'Uses critical and creative thinking to tackle complex problems'),
+    ('Communicator', '🗣️', 'Expresses ideas confidently in more than one language'),
+    ('Principled',   '⚖️', 'Acts with integrity, honesty and a strong sense of fairness'),
+    ('Open-minded',  '🌍', 'Appreciates own culture and perspectives of others'),
+    ('Caring',       '❤️', 'Shows empathy, compassion and respect for others'),
+    ('Risk-taker',   '🚀', 'Approaches uncertainty with courage and forethought'),
+    ('Balanced',     '⚖️', 'Understands importance of physical, mental and emotional balance'),
+    ('Reflective',   '🪞', 'Thoughtfully considers learning and personal development'),
+]
+
+RATING_LABELS = {1: 'Beginning', 2: 'Developing', 3: 'Achieved', 4: 'Exceeding'}
+TERMS = ['Term 1', 'Term 2', 'Term 3']
+
+
+class ATLRating(db.Model):
+    __tablename__ = 'atl_rating'
+    id         = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    teacher_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    term       = db.Column(db.String(20), nullable=False)
+    skill      = db.Column(db.String(50), nullable=False)
+    descriptor = db.Column(db.String(200), nullable=False)
+    rating     = db.Column(db.Integer, default=1)  # 1-4
+    comment    = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    student    = db.relationship('User', foreign_keys=[student_id])
+    teacher    = db.relationship('User', foreign_keys=[teacher_id])
+
+
+class LPRating(db.Model):
+    __tablename__ = 'lp_rating'
+    id            = db.Column(db.Integer, primary_key=True)
+    student_id    = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    rater_id      = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    rater_type    = db.Column(db.String(10), nullable=False)  # 'teacher' or 'student'
+    term          = db.Column(db.String(20), nullable=False)
+    attribute     = db.Column(db.String(50), nullable=False)
+    rating        = db.Column(db.Integer, default=1)  # 1-4
+    evidence      = db.Column(db.Text, nullable=True)
+    created_at    = db.Column(db.DateTime, default=datetime.utcnow)
+    student       = db.relationship('User', foreign_keys=[student_id])
+    rater         = db.relationship('User', foreign_keys=[rater_id])
+
+
+class StudentReflection(db.Model):
+    __tablename__ = 'student_reflection'
+    id         = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    term       = db.Column(db.String(20), nullable=False)
+    reflection = db.Column(db.Text, nullable=False)
+    goal       = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    student    = db.relationship('User', foreign_keys=[student_id])
+
+
+# ── IB DEVELOPMENT MODELS ────────────────────────────────────────────────────
+
+ATL_CATEGORIES = {
+    'Communication':   ['Reading & Writing', 'Listening & Speaking', 'Presenting Ideas'],
+    'Self-Management': ['Organisation', 'Time Management', 'Emotional Regulation'],
+    'Research':        ['Finding Information', 'Evaluating Sources', 'Recording Data'],
+    'Thinking':        ['Critical Thinking', 'Creative Thinking', 'Problem Solving'],
+    'Social':          ['Collaboration', 'Respecting Others', 'Conflict Resolution'],
+}
+
+LEARNER_PROFILE = [
+    ('Inquirer',      '🔍', 'Develops curiosity and love of learning'),
+    ('Knowledgeable', '📚', 'Explores concepts across disciplines'),
+    ('Thinker',       '💡', 'Applies critical and creative thinking'),
+    ('Communicator',  '🗣️', 'Expresses ideas confidently'),
+    ('Principled',    '⚖️', 'Acts with integrity and honesty'),
+    ('Open-minded',   '🌍', 'Appreciates other perspectives'),
+    ('Caring',        '❤️', 'Shows empathy and compassion'),
+    ('Risk-taker',    '🚀', 'Approaches uncertainty with courage'),
+    ('Balanced',      '⚡', 'Balances intellectual and personal growth'),
+    ('Reflective',    '🪞', 'Thoughtfully considers own learning'),
+]
+
+ATL_DESCRIPTORS = {
+    'Grade 3': {
+        1: 'Beginning — Needs significant support',
+        2: 'Developing — Shows some understanding with guidance',
+        3: 'Achieved — Demonstrates skill independently',
+        4: 'Exceeding — Models skill and supports peers',
+    },
+    'Grade 4': {
+        1: 'Beginning — Rarely demonstrates the skill',
+        2: 'Developing — Sometimes demonstrates with prompting',
+        3: 'Achieved — Consistently demonstrates the skill',
+        4: 'Exceeding — Extends and applies skill in new contexts',
+    },
+    'Grade 5': {
+        1: 'Beginning — Limited awareness of the skill',
+        2: 'Developing — Growing awareness, inconsistent application',
+        3: 'Achieved — Confident and consistent application',
+        4: 'Exceeding — Exemplary — leads and inspires others',
+    },
+}
+
+TERMS = ['Term 1', 'Term 2', 'Term 3']
+ACADEMIC_YEAR = '2025-26'
+
+
+class ATLRating(db.Model):
+    __tablename__ = 'atl_rating'
+    id               = db.Column(db.Integer, primary_key=True)
+    student_id       = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    teacher_id       = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    term             = db.Column(db.String(20), nullable=False)
+    academic_year    = db.Column(db.String(10), default=ACADEMIC_YEAR)
+    skill_category   = db.Column(db.String(50), nullable=False)
+    skill_name       = db.Column(db.String(100), nullable=False)
+    teacher_rating   = db.Column(db.Integer, nullable=True)   # 1-4
+    teacher_comment  = db.Column(db.Text, nullable=True)
+    updated_at       = db.Column(db.DateTime, default=datetime.utcnow)
+    student          = db.relationship('User', foreign_keys=[student_id])
+
+
+class LearnerProfileRating(db.Model):
+    __tablename__ = 'learner_profile_rating'
+    id                  = db.Column(db.Integer, primary_key=True)
+    student_id          = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    term                = db.Column(db.String(20), nullable=False)
+    academic_year       = db.Column(db.String(10), default=ACADEMIC_YEAR)
+    attribute           = db.Column(db.String(50), nullable=False)
+    student_rating      = db.Column(db.Integer, nullable=True)   # 1-4 self
+    teacher_rating      = db.Column(db.Integer, nullable=True)   # 1-4 teacher
+    student_reflection  = db.Column(db.Text, nullable=True)
+    teacher_comment     = db.Column(db.Text, nullable=True)
+    updated_at          = db.Column(db.DateTime, default=datetime.utcnow)
+    student             = db.relationship('User', foreign_keys=[student_id])
+
+
+# ── IB DEVELOPMENT MODELS ────────────────────────────────────────────────────
+
+TERMS = ['Term 1', 'Term 2', 'Term 3']
+
+LEARNER_PROFILE = [
+    ('inquirer',    '🔍 Inquirer',     'Nurtures curiosity, develops skills for inquiry and research'),
+    ('knowledgeable','📚 Knowledgeable','Develops and uses conceptual understanding across disciplines'),
+    ('thinker',     '💭 Thinker',      'Uses critical and creative thinking to analyse complex problems'),
+    ('communicator','💬 Communicator', 'Expresses confidently in more than one language and in many ways'),
+    ('principled',  '⚖️ Principled',   'Acts with integrity and honesty, with strong sense of fairness'),
+    ('open_minded', '🌍 Open-minded',  'Appreciates own culture and others, seeks diverse perspectives'),
+    ('caring',      '❤️ Caring',       'Shows empathy, compassion and respect, makes a positive difference'),
+    ('risk_taker',  '🚀 Risk-taker',   'Approaches uncertainty with forethought and determination'),
+    ('balanced',    '⚖️ Balanced',     'Understands importance of intellectual, physical and emotional balance'),
+    ('reflective',  '🪞 Reflective',   'Thoughtfully considers the world and own ideas and experience'),
+]
+
+ATL_CATEGORIES = {
+    'communication': {
+        'label': '💬 Communication',
+        'skills': ['Reading & Writing', 'Listening & Speaking', 'Digital Communication'],
+        'descriptors': {
+            'Grade 3': {
+                1: 'Rarely communicates ideas clearly',
+                2: 'Sometimes shares ideas with support',
+                3: 'Usually communicates ideas clearly',
+                4: 'Always communicates ideas clearly and confidently',
+            },
+            'Grade 4': {
+                1: 'Struggles to express ideas in writing or speech',
+                2: 'Expresses basic ideas with some support',
+                3: 'Expresses ideas clearly in writing and speech',
+                4: 'Expresses ideas with clarity, detail and confidence',
+            },
+            'Grade 5': {
+                1: 'Has difficulty structuring ideas for different audiences',
+                2: 'Communicates ideas with inconsistent structure',
+                3: 'Communicates effectively for purpose and audience',
+                4: 'Communicates with sophistication adapting to any context',
+            },
+        }
+    },
+    'self_management': {
+        'label': '🗂️ Self-Management',
+        'skills': ['Organisation', 'Time Management', 'Emotional Regulation'],
+        'descriptors': {
+            'Grade 3': {
+                1: 'Needs constant reminders to stay organised',
+                2: 'Sometimes organises tasks with reminders',
+                3: 'Usually organises work and meets deadlines',
+                4: 'Consistently self-organised and meets all deadlines',
+            },
+            'Grade 4': {
+                1: 'Rarely manages time or materials independently',
+                2: 'Manages time with frequent teacher support',
+                3: 'Manages time and materials independently',
+                4: 'Excellently manages time, materials and emotions',
+            },
+            'Grade 5': {
+                1: 'Struggles to set goals or monitor own learning',
+                2: 'Sets goals but rarely follows through consistently',
+                3: 'Sets and works toward goals with reflection',
+                4: 'Independently sets, monitors and achieves goals',
+            },
+        }
+    },
+    'research': {
+        'label': '🔎 Research',
+        'skills': ['Information Literacy', 'Media Literacy', 'Note-taking'],
+        'descriptors': {
+            'Grade 3': {
+                1: 'Rarely finds or uses information independently',
+                2: 'Finds information with significant guidance',
+                3: 'Finds and uses relevant information with some guidance',
+                4: 'Independently researches and evaluates information',
+            },
+            'Grade 4': {
+                1: 'Cannot distinguish reliable from unreliable sources',
+                2: 'Sometimes identifies reliable sources with help',
+                3: 'Usually selects reliable and relevant sources',
+                4: 'Consistently evaluates and synthesises quality sources',
+            },
+            'Grade 5': {
+                1: 'Rarely questions or evaluates information sources',
+                2: 'Begins to question sources with teacher prompting',
+                3: 'Questions sources and identifies bias',
+                4: 'Critically evaluates sources for bias, purpose and reliability',
+            },
+        }
+    },
+    'thinking': {
+        'label': '💡 Thinking',
+        'skills': ['Critical Thinking', 'Creative Thinking', 'Transfer'],
+        'descriptors': {
+            'Grade 3': {
+                1: 'Rarely applies prior knowledge to new tasks',
+                2: 'Sometimes connects ideas with teacher support',
+                3: 'Often makes connections between ideas',
+                4: 'Consistently applies thinking across contexts',
+            },
+            'Grade 4': {
+                1: 'Struggles to generate ideas or solutions independently',
+                2: 'Generates basic ideas with guidance',
+                3: 'Generates creative and logical ideas independently',
+                4: 'Consistently generates innovative, well-reasoned ideas',
+            },
+            'Grade 5': {
+                1: 'Rarely analyses or evaluates complex problems',
+                2: 'Begins to analyse problems with support',
+                3: 'Analyses problems and proposes reasoned solutions',
+                4: 'Critically analyses and evaluates with depth and nuance',
+            },
+        }
+    },
+    'social': {
+        'label': '🤝 Social',
+        'skills': ['Collaboration', 'Conflict Resolution', 'Respect for Others'],
+        'descriptors': {
+            'Grade 3': {
+                1: 'Rarely works cooperatively in groups',
+                2: 'Sometimes cooperates with reminders',
+                3: 'Usually cooperates and contributes to group work',
+                4: 'Always contributes positively and supports peers',
+            },
+            'Grade 4': {
+                1: 'Struggles to listen to or consider others' views',
+                2: 'Sometimes listens and considers others with support',
+                3: 'Listens actively and considers diverse perspectives',
+                4: 'Champions inclusion and mediates group conflict positively',
+            },
+            'Grade 5': {
+                1: 'Rarely takes shared responsibility in collaborative tasks',
+                2: 'Takes limited responsibility in collaborative tasks',
+                3: 'Takes responsibility and supports team goals',
+                4: 'Leads and inspires effective collaboration',
+            },
+        }
+    },
+}
+
+RATING_LABELS = {1: 'Beginning', 2: 'Developing', 3: 'Achieved', 4: 'Exceeding'}
+RATING_COLORS = {1: '#fee2e2', 2: '#fef9c3', 3: '#dcfce7', 4: '#dbeafe'}
+RATING_TEXT   = {1: '#dc2626', 2: '#92400e', 3: '#166534', 4: '#1d4ed8'}
+
+
+class ATLRating(db.Model):
+    __tablename__ = 'atl_rating'
+    id          = db.Column(db.Integer, primary_key=True)
+    student_id  = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    teacher_id  = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    term        = db.Column(db.String(20), nullable=False)   # Term 1/2/3
+    category    = db.Column(db.String(30), nullable=False)   # communication etc.
+    skill       = db.Column(db.String(50), nullable=False)   # specific skill
+    rating      = db.Column(db.Integer, nullable=False)      # 1-4
+    comment     = db.Column(db.Text, nullable=True)
+    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
+    student     = db.relationship('User', foreign_keys=[student_id])
+    teacher_rel = db.relationship('User', foreign_keys=[teacher_id])
+
+
+class LPRating(db.Model):
+    __tablename__ = 'lp_rating'
+    id          = db.Column(db.Integer, primary_key=True)
+    student_id  = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    rater_id    = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    rater_type  = db.Column(db.String(10), nullable=False)   # 'teacher' or 'student'
+    term        = db.Column(db.String(20), nullable=False)
+    attribute   = db.Column(db.String(30), nullable=False)   # inquirer, thinker etc.
+    rating      = db.Column(db.Integer, nullable=False)      # 1-4
+    evidence    = db.Column(db.Text, nullable=True)
+    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
+    student     = db.relationship('User', foreign_keys=[student_id])
+
+
+class StudentReflection(db.Model):
+    __tablename__ = 'student_reflection'
+    id          = db.Column(db.Integer, primary_key=True)
+    student_id  = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    term        = db.Column(db.String(20), nullable=False)
+    reflection  = db.Column(db.Text, nullable=False)
+    goal        = db.Column(db.Text, nullable=True)
+    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
+    student     = db.relationship('User', foreign_keys=[student_id])
+
+
+# ── IB HOLISTIC MODELS ───────────────────────────────────────────────────────
+
+class ATLRating(db.Model):
+    __tablename__ = 'atl_rating'
+    id          = db.Column(db.Integer, primary_key=True)
+    student_id  = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    teacher_id  = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    term        = db.Column(db.String(20), nullable=False)   # "Term 1", "Term 2", "Term 3"
+    skill       = db.Column(db.String(50), nullable=False)   # "Communication" etc
+    descriptor  = db.Column(db.String(200), nullable=False)  # specific descriptor text
+    rating      = db.Column(db.Integer, nullable=False)      # 1-4
+    rater_type  = db.Column(db.String(10), nullable=False)   # "teacher" or "student"
+    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
+    student     = db.relationship('User', foreign_keys=[student_id])
+    teacher     = db.relationship('User', foreign_keys=[teacher_id])
+
+
+class LearnerProfileRating(db.Model):
+    __tablename__ = 'learner_profile_rating'
+    id          = db.Column(db.Integer, primary_key=True)
+    student_id  = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    teacher_id  = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    term        = db.Column(db.String(20), nullable=False)
+    attribute   = db.Column(db.String(50), nullable=False)   # "Inquirer" etc
+    rating      = db.Column(db.Integer, nullable=False)      # 1-4
+    rater_type  = db.Column(db.String(10), nullable=False)   # "teacher" or "student"
+    evidence    = db.Column(db.Text, nullable=True)          # optional note/evidence
+    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
+    student     = db.relationship('User', foreign_keys=[student_id])
+    teacher     = db.relationship('User', foreign_keys=[teacher_id])
+
+
+class StudentReflection(db.Model):
+    __tablename__ = 'student_reflection'
+    id          = db.Column(db.Integer, primary_key=True)
+    student_id  = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    term        = db.Column(db.String(20), nullable=False)
+    attribute   = db.Column(db.String(50), nullable=False)
+    reflection  = db.Column(db.Text, nullable=False)
+    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
+    student     = db.relationship('User', foreign_keys=[student_id])
+
 
 # ── HELPERS ──────────────────────────────────────────────────────────────────
 
@@ -143,12 +772,24 @@ def parse_pdf_questions(file_stream):
         })
     return questions
 
-def build_analytics():
+def build_analytics(filter_grade=None, filter_section=None, filter_subject=None):
     students    = User.query.filter_by(role='student').all()
     all_results = TestResult.query.all()
+
+    # Apply filters
+    if filter_grade:
+        all_results = [r for r in all_results if r.student.grade == filter_grade]
+        students    = [s for s in students if s.grade == filter_grade]
+    if filter_section:
+        all_results = [r for r in all_results if r.student.section == filter_section]
+        students    = [s for s in students if s.section == filter_section]
+    if filter_subject:
+        all_results = [r for r in all_results if r.test.subject == filter_subject]
+
     overall_avg = safe_avg([r.percent for r in all_results])
     above80     = sum(1 for r in all_results if r.percent >= 80)
     below60     = sum(1 for r in all_results if r.percent < 60)
+
     grade_data = {}
     for g in GRADES:
         rs = [r for r in all_results if r.student.grade == g]
@@ -157,16 +798,36 @@ def build_analytics():
             'count': len(rs),
             'students': len([s for s in students if s.grade == g]),
         }
+
     subject_data = {}
     for sub in SUBJECTS:
         rs = [r for r in all_results if r.test.subject == sub]
         subject_data[sub] = {'avg': safe_avg([r.percent for r in rs]), 'count': len(rs)}
+
     grade_subject = {}
     for g in GRADES:
         grade_subject[g] = {}
         for sub in SUBJECTS:
             rs = [r for r in all_results if r.student.grade == g and r.test.subject == sub]
             grade_subject[g][sub] = safe_avg([r.percent for r in rs])
+
+    # Strand-wise breakdown PER SUBJECT
+    subject_strands = {}
+    for sub in SUBJECTS:
+        sub_results = [r for r in all_results if r.test.subject == sub]
+        strand_data = {}
+        for r in sub_results:
+            try:
+                secs = json.loads(r.section_scores or '{}')
+                for sec, v in secs.items():
+                    if v['total'] > 0:
+                        pct = round(v['correct']/v['total']*100, 1)
+                        strand_data.setdefault(sec, []).append(pct)
+            except Exception:
+                pass
+        subject_strands[sub] = {sec: safe_avg(vals) for sec, vals in strand_data.items()}
+
+    # Overall section avgs
     section_data = {}
     for r in all_results:
         try:
@@ -178,6 +839,7 @@ def build_analytics():
         except Exception:
             pass
     section_avgs = {sec: safe_avg(vals) for sec, vals in section_data.items()}
+
     student_rows = []
     for s in students:
         rs = [r for r in all_results if r.student_id == s.id]
@@ -189,11 +851,13 @@ def build_analytics():
             'sub_avgs': sub_avgs,
         })
     student_rows.sort(key=lambda x: -x['overall_avg'])
+
     return dict(
         overall_avg=overall_avg, above80=above80, below60=below60,
         total_results=len(all_results), total_students=len(students),
         grade_data=grade_data, subject_data=subject_data,
         grade_subject=grade_subject, section_avgs=section_avgs,
+        subject_strands=subject_strands,
         student_rows=student_rows, subjects=SUBJECTS, grades=GRADES,
     )
 
@@ -562,7 +1226,18 @@ def delete_question(test_id, q_id):
 @app.route('/admin/analytics')
 @login_required('Resource_Manager')
 def admin_analytics():
-    data = build_analytics()
+    filter_grade   = request.args.get('grade', '')
+    filter_section = request.args.get('section', '')
+    filter_subject = request.args.get('subject', '')
+    data = build_analytics(
+        filter_grade   = filter_grade   or None,
+        filter_section = filter_section or None,
+        filter_subject = filter_subject or None,
+    )
+    data['filter_grade']   = filter_grade
+    data['filter_section'] = filter_section
+    data['filter_subject'] = filter_subject
+    data['sections']       = ['A','B','C','D']
     return render_template('admin/analytics.html', **data)
 
 @app.route('/admin/download/students')
@@ -649,6 +1324,472 @@ def download_results_template():
     output.seek(0)
     return Response(output.getvalue(), mimetype='text/csv',
         headers={'Content-Disposition': 'attachment; filename=results_template.csv'})
+
+
+# ── IB HOLISTIC ROUTES ───────────────────────────────────────────────────────
+
+# ── Teacher: ATL Rating ───────────────────────────────────────────────────────
+@app.route('/ib/atl', methods=['GET','POST'])
+@login_required('Resource_Manager')
+def ib_atl_admin():
+    students = User.query.filter_by(role='student').order_by(User.grade, User.name).all()
+    selected_student = None
+    selected_term = request.args.get('term', 'Term 1')
+    student_id = request.args.get('student_id', type=int)
+    existing_ratings = {}
+    if student_id:
+        selected_student = db.session.get(User, student_id)
+        ratings = ATLRating.query.filter_by(
+            student_id=student_id, term=selected_term, rater_type='teacher'
+        ).all()
+        for r in ratings:
+            existing_ratings[f"{r.category}|{r.skill}"] = {'rating': r.rating, 'comment': r.comment or ''}
+    if request.method == 'POST':
+        sid   = int(request.form.get('student_id'))
+        term  = request.form.get('term')
+        student = db.session.get(User, sid)
+        for cat, skills in ATL_SKILLS.items():
+            for skill in skills:
+                key = f"{cat}|{skill}"
+                rating_val = request.form.get(f'rating_{key}', type=int)
+                comment    = request.form.get(f'comment_{key}', '').strip()
+                if rating_val:
+                    existing = ATLRating.query.filter_by(
+                        student_id=sid, term=term, category=cat,
+                        skill=skill, rater_type='teacher'
+                    ).first()
+                    if existing:
+                        existing.rating = rating_val
+                        existing.comment = comment
+                    else:
+                        db.session.add(ATLRating(
+                            student_id=sid, rater_id=session['user_id'],
+                            rater_type='teacher', term=term,
+                            category=cat, skill=skill,
+                            rating=rating_val, comment=comment
+                        ))
+        db.session.commit()
+        flash(f'ATL ratings saved for {student.name} — {term}', 'success')
+        return redirect(url_for('ib_atl_admin', student_id=sid, term=term))
+    return render_template('ib/atl_admin.html',
+        students=students, selected_student=selected_student,
+        selected_term=selected_term, student_id=student_id,
+        atl_skills=ATL_SKILLS, terms=TERMS,
+        existing_ratings=existing_ratings,
+        atl_descriptors=ATL_DESCRIPTORS)
+
+
+# ── Teacher: Learner Profile Rating ───────────────────────────────────────────
+@app.route('/ib/lp', methods=['GET','POST'])
+@login_required('Resource_Manager')
+def ib_lp_admin():
+    students = User.query.filter_by(role='student').order_by(User.grade, User.name).all()
+    selected_student = None
+    selected_term = request.args.get('term', 'Term 1')
+    student_id = request.args.get('student_id', type=int)
+    teacher_ratings = {}
+    student_ratings = {}
+    if student_id:
+        selected_student = db.session.get(User, student_id)
+        t_ratings = LearnerProfileRating.query.filter_by(
+            student_id=student_id, term=selected_term, rater_type='teacher'
+        ).all()
+        for r in t_ratings:
+            teacher_ratings[r.attribute] = {'rating': r.rating, 'evidence': r.evidence or ''}
+        s_ratings = LearnerProfileRating.query.filter_by(
+            student_id=student_id, term=selected_term, rater_type='student'
+        ).all()
+        for r in s_ratings:
+            student_ratings[r.attribute] = {'rating': r.rating, 'evidence': r.evidence or ''}
+    if request.method == 'POST':
+        sid  = int(request.form.get('student_id'))
+        term = request.form.get('term')
+        student = db.session.get(User, sid)
+        for attr in LEARNER_PROFILE:
+            rating_val = request.form.get(f'rating_{attr}', type=int)
+            evidence   = request.form.get(f'evidence_{attr}', '').strip()
+            if rating_val:
+                existing = LearnerProfileRating.query.filter_by(
+                    student_id=sid, term=term,
+                    attribute=attr, rater_type='teacher'
+                ).first()
+                if existing:
+                    existing.rating = rating_val
+                    existing.evidence = evidence
+                else:
+                    db.session.add(LearnerProfileRating(
+                        student_id=sid, rater_id=session['user_id'],
+                        rater_type='teacher', term=term,
+                        attribute=attr, rating=rating_val, evidence=evidence
+                    ))
+        db.session.commit()
+        flash(f'Learner Profile saved for {student.name} — {term}', 'success')
+        return redirect(url_for('ib_lp_admin', student_id=sid, term=term))
+    return render_template('ib/lp_admin.html',
+        students=students, selected_student=selected_student,
+        selected_term=selected_term, student_id=student_id,
+        learner_profile=LEARNER_PROFILE, lp_descriptions=LP_DESCRIPTIONS,
+        lp_descriptors=LP_DESCRIPTORS, terms=TERMS,
+        teacher_ratings=teacher_ratings, student_ratings=student_ratings)
+
+
+# ── Student: Self-rate ATL ────────────────────────────────────────────────────
+@app.route('/ib/student/atl', methods=['GET','POST'])
+@login_required('student')
+def ib_student_atl():
+    student  = db.session.get(User, session['user_id'])
+    selected_term = request.args.get('term', 'Term 1')
+    my_ratings    = {}
+    teacher_ratings = {}
+    ratings = ATLRating.query.filter_by(student_id=student.id, term=selected_term).all()
+    for r in ratings:
+        key = f"{r.category}|{r.skill}"
+        if r.rater_type == 'student':
+            my_ratings[key] = {'rating': r.rating, 'comment': r.comment or ''}
+        else:
+            teacher_ratings[key] = {'rating': r.rating, 'comment': r.comment or ''}
+    if request.method == 'POST':
+        term = request.form.get('term')
+        for cat, skills in ATL_SKILLS.items():
+            for skill in skills:
+                key = f"{cat}|{skill}"
+                rating_val = request.form.get(f'rating_{key}', type=int)
+                comment    = request.form.get(f'comment_{key}', '').strip()
+                if rating_val:
+                    existing = ATLRating.query.filter_by(
+                        student_id=student.id, term=term,
+                        category=cat, skill=skill, rater_type='student'
+                    ).first()
+                    if existing:
+                        existing.rating = rating_val
+                        existing.comment = comment
+                    else:
+                        db.session.add(ATLRating(
+                            student_id=student.id, rater_id=student.id,
+                            rater_type='student', term=term,
+                            category=cat, skill=skill,
+                            rating=rating_val, comment=comment
+                        ))
+        db.session.commit()
+        flash('Your ATL self-assessment saved!', 'success')
+        return redirect(url_for('ib_student_atl', term=term))
+    grade = student.grade or 'Grade 3'
+    descriptors = ATL_DESCRIPTORS.get(grade, ATL_DESCRIPTORS['Grade 3'])
+    return render_template('ib/student_atl.html',
+        student=student, selected_term=selected_term,
+        atl_skills=ATL_SKILLS, terms=TERMS,
+        my_ratings=my_ratings, teacher_ratings=teacher_ratings,
+        descriptors=descriptors)
+
+
+# ── Student: Self-rate Learner Profile ───────────────────────────────────────
+@app.route('/ib/student/lp', methods=['GET','POST'])
+@login_required('student')
+def ib_student_lp():
+    student      = db.session.get(User, session['user_id'])
+    selected_term = request.args.get('term', 'Term 1')
+    my_ratings    = {}
+    teacher_ratings = {}
+    ratings = LearnerProfileRating.query.filter_by(
+        student_id=student.id, term=selected_term
+    ).all()
+    for r in ratings:
+        if r.rater_type == 'student':
+            my_ratings[r.attribute] = {'rating': r.rating, 'evidence': r.evidence or ''}
+        else:
+            teacher_ratings[r.attribute] = {'rating': r.rating, 'evidence': r.evidence or ''}
+    # Reflection
+    reflection = StudentReflection.query.filter_by(
+        student_id=student.id, term=selected_term
+    ).first()
+    if request.method == 'POST':
+        action = request.form.get('action')
+        term   = request.form.get('term')
+        if action == 'lp':
+            for attr in LEARNER_PROFILE:
+                rating_val = request.form.get(f'rating_{attr}', type=int)
+                evidence   = request.form.get(f'evidence_{attr}', '').strip()
+                if rating_val:
+                    existing = LearnerProfileRating.query.filter_by(
+                        student_id=student.id, term=term,
+                        attribute=attr, rater_type='student'
+                    ).first()
+                    if existing:
+                        existing.rating = rating_val
+                        existing.evidence = evidence
+                    else:
+                        db.session.add(LearnerProfileRating(
+                            student_id=student.id, rater_id=student.id,
+                            rater_type='student', term=term,
+                            attribute=attr, rating=rating_val, evidence=evidence
+                        ))
+            db.session.commit()
+            flash('Learner Profile self-assessment saved!', 'success')
+        elif action == 'reflection':
+            ref_text = request.form.get('reflection','').strip()
+            goals    = request.form.get('goals','').strip()
+            if reflection:
+                reflection.reflection = ref_text
+                reflection.goals = goals
+            else:
+                db.session.add(StudentReflection(
+                    student_id=student.id, term=term,
+                    reflection=ref_text, goals=goals
+                ))
+            db.session.commit()
+            flash('Reflection saved!', 'success')
+        return redirect(url_for('ib_student_lp', term=term))
+    grade = student.grade or 'Grade 3'
+    lp_desc = LP_DESCRIPTORS.get(grade, LP_DESCRIPTORS['Grade 3'])
+    return render_template('ib/student_lp.html',
+        student=student, selected_term=selected_term,
+        learner_profile=LEARNER_PROFILE, lp_descriptions=LP_DESCRIPTIONS,
+        terms=TERMS, my_ratings=my_ratings, teacher_ratings=teacher_ratings,
+        lp_desc=lp_desc, reflection=reflection)
+
+
+# ── IB Overview / Dashboard ────────────────────────────────────────────────────
+@app.route('/ib/overview')
+@login_required('Resource_Manager')
+def ib_overview():
+    students = User.query.filter_by(role='student').order_by(User.grade, User.name).all()
+    term     = request.args.get('term', 'Term 1')
+    grade    = request.args.get('grade', '')
+    # Build summary per student
+    summary = []
+    for s in students:
+        if grade and s.grade != grade:
+            continue
+        t_lp = LearnerProfileRating.query.filter_by(
+            student_id=s.id, term=term, rater_type='teacher'
+        ).all()
+        s_lp = LearnerProfileRating.query.filter_by(
+            student_id=s.id, term=term, rater_type='student'
+        ).all()
+        t_atl = ATLRating.query.filter_by(
+            student_id=s.id, term=term, rater_type='teacher'
+        ).all()
+        t_lp_avg  = round(sum(r.rating for r in t_lp)/len(t_lp), 1) if t_lp else None
+        s_lp_avg  = round(sum(r.rating for r in s_lp)/len(s_lp), 1) if s_lp else None
+        t_atl_avg = round(sum(r.rating for r in t_atl)/len(t_atl), 1) if t_atl else None
+        summary.append({
+            'student': s,
+            't_lp_avg': t_lp_avg,
+            's_lp_avg': s_lp_avg,
+            't_atl_avg': t_atl_avg,
+            'lp_done': len(t_lp),
+            'atl_done': len(t_atl),
+        })
+    grades = ['Grade 3', 'Grade 4', 'Grade 5']
+    return render_template('ib/overview.html',
+        summary=summary, term=term, terms=TERMS,
+        grades=grades, selected_grade=grade,
+        learner_profile=LEARNER_PROFILE)
+
+
+# ── IB HOLISTIC ROUTES ───────────────────────────────────────────────────────
+
+# ── Admin: ATL Rating ──
+@app.route('/admin/atl', methods=['GET','POST'])
+@login_required('Resource_Manager')
+def admin_atl():
+    students = User.query.filter_by(role='student').order_by(User.grade, User.name).all()
+    selected_student_id = request.args.get('student_id', type=int)
+    selected_term = request.args.get('term', 'Term 1')
+    selected_student = db.session.get(User, selected_student_id) if selected_student_id else None
+
+    if request.method == 'POST':
+        student_id = int(request.form.get('student_id'))
+        term       = request.form.get('term')
+        student    = db.session.get(User, student_id)
+        for category, skills in ATL_SKILLS.items():
+            for skill in skills:
+                key = f"{category}|{skill}"
+                rating = request.form.get(key)
+                notes  = request.form.get(f"notes|{key}", '')
+                if rating:
+                    existing = ATLRating.query.filter_by(
+                        student_id=student_id, term=term,
+                        category=category, skill=skill
+                    ).first()
+                    if existing:
+                        existing.rating = int(rating)
+                        existing.notes  = notes
+                        existing.teacher_id = session['user_id']
+                    else:
+                        db.session.add(ATLRating(
+                            student_id=student_id, teacher_id=session['user_id'],
+                            term=term, category=category, skill=skill,
+                            rating=int(rating), notes=notes
+                        ))
+        db.session.commit()
+        flash(f'ATL ratings saved for {student.name} — {term}', 'success')
+        return redirect(url_for('admin_atl', student_id=student_id, term=term))
+
+    # Load existing ratings
+    existing_ratings = {}
+    if selected_student:
+        ratings = ATLRating.query.filter_by(
+            student_id=selected_student_id, term=selected_term
+        ).all()
+        for r in ratings:
+            existing_ratings[f"{r.category}|{r.skill}"] = {'rating': r.rating, 'notes': r.notes or ''}
+
+    return render_template('admin/atl.html',
+        students=students, selected_student=selected_student,
+        selected_term=selected_term, terms=TERMS,
+        atl_skills=ATL_SKILLS, existing_ratings=existing_ratings,
+        descriptors=ATL_DESCRIPTORS.get(selected_student.grade if selected_student else 'Grade 3', ATL_DESCRIPTORS['Grade 3'])
+    )
+
+
+# ── Admin: Learner Profile Rating ──
+@app.route('/admin/learner-profile', methods=['GET','POST'])
+@login_required('Resource_Manager')
+def admin_learner_profile():
+    students = User.query.filter_by(role='student').order_by(User.grade, User.name).all()
+    selected_student_id = request.args.get('student_id', type=int)
+    selected_term = request.args.get('term', 'Term 1')
+    selected_student = db.session.get(User, selected_student_id) if selected_student_id else None
+
+    if request.method == 'POST':
+        student_id = int(request.form.get('student_id'))
+        term       = request.form.get('term')
+        for attr, _, _ in LEARNER_PROFILE:
+            rating   = request.form.get(f'rating|{attr}')
+            evidence = request.form.get(f'evidence|{attr}', '')
+            if rating:
+                existing = LearnerProfileRating.query.filter_by(
+                    student_id=student_id, term=term,
+                    attribute=attr, rater_type='teacher'
+                ).first()
+                if existing:
+                    existing.rating   = int(rating)
+                    existing.evidence = evidence
+                else:
+                    db.session.add(LearnerProfileRating(
+                        student_id=student_id, rater_id=session['user_id'],
+                        rater_type='teacher', term=term,
+                        attribute=attr, rating=int(rating), evidence=evidence
+                    ))
+        db.session.commit()
+        flash('Learner Profile ratings saved!', 'success')
+        return redirect(url_for('admin_learner_profile', student_id=student_id, term=term))
+
+    teacher_ratings = {}
+    student_ratings = {}
+    if selected_student:
+        for r in LearnerProfileRating.query.filter_by(student_id=selected_student_id, term=selected_term).all():
+            if r.rater_type == 'teacher':
+                teacher_ratings[r.attribute] = {'rating': r.rating, 'evidence': r.evidence or ''}
+            else:
+                student_ratings[r.attribute] = {'rating': r.rating, 'evidence': r.evidence or ''}
+
+    return render_template('admin/learner_profile.html',
+        students=students, selected_student=selected_student,
+        selected_term=selected_term, terms=TERMS,
+        learner_profile=LEARNER_PROFILE,
+        teacher_ratings=teacher_ratings, student_ratings=student_ratings,
+    )
+
+
+# ── Admin: IB Overview ──
+@app.route('/admin/ib-overview')
+@login_required('Resource_Manager')
+def admin_ib_overview():
+    students = User.query.filter_by(role='student').order_by(User.grade, User.name).all()
+    term = request.args.get('term', 'Term 1')
+    grade = request.args.get('grade', '')
+    overview = []
+    for s in students:
+        if grade and s.grade != grade:
+            continue
+        atl_avg = 0
+        atl_count = 0
+        for r in ATLRating.query.filter_by(student_id=s.id, term=term).all():
+            atl_avg += r.rating; atl_count += 1
+        atl_avg = round(atl_avg/atl_count, 1) if atl_count else 0
+        lp_avg = 0; lp_count = 0
+        for r in LearnerProfileRating.query.filter_by(student_id=s.id, term=term, rater_type='teacher').all():
+            lp_avg += r.rating; lp_count += 1
+        lp_avg = round(lp_avg/lp_count, 1) if lp_count else 0
+        overview.append({
+            'student': s, 'atl_avg': atl_avg,
+            'lp_avg': lp_avg, 'atl_done': atl_count > 0, 'lp_done': lp_count > 0
+        })
+    return render_template('admin/ib_overview.html',
+        overview=overview, term=term, terms=TERMS,
+        grades=['Grade 3','Grade 4','Grade 5'], selected_grade=grade,
+        learner_profile=LEARNER_PROFILE
+    )
+
+
+# ── Student: Self-rate Learner Profile ──
+@app.route('/student/learner-profile', methods=['GET','POST'])
+@login_required('student')
+def student_learner_profile():
+    student = db.session.get(User, session['user_id'])
+    selected_term = request.args.get('term', 'Term 1')
+
+    if request.method == 'POST':
+        term = request.form.get('term')
+        for attr, _, _ in LEARNER_PROFILE:
+            rating    = request.form.get(f'rating|{attr}')
+            evidence  = request.form.get(f'evidence|{attr}', '')
+            if rating:
+                existing = LearnerProfileRating.query.filter_by(
+                    student_id=student.id, term=term,
+                    attribute=attr, rater_type='student'
+                ).first()
+                if existing:
+                    existing.rating   = int(rating)
+                    existing.evidence = evidence
+                else:
+                    db.session.add(LearnerProfileRating(
+                        student_id=student.id, rater_id=student.id,
+                        rater_type='student', term=term,
+                        attribute=attr, rating=int(rating), evidence=evidence
+                    ))
+        # Save reflection
+        reflection_text = request.form.get('reflection', '')
+        goal_text       = request.form.get('goal', '')
+        if reflection_text:
+            existing_r = StudentReflection.query.filter_by(
+                student_id=student.id, term=term
+            ).first()
+            if existing_r:
+                existing_r.reflection = reflection_text
+                existing_r.goal       = goal_text
+            else:
+                db.session.add(StudentReflection(
+                    student_id=student.id, term=term,
+                    reflection=reflection_text, goal=goal_text
+                ))
+        db.session.commit()
+        flash('Your self-assessment saved!', 'success')
+        return redirect(url_for('student_learner_profile', term=term))
+
+    # Load ratings
+    my_ratings      = {}
+    teacher_ratings = {}
+    for r in LearnerProfileRating.query.filter_by(student_id=student.id, term=selected_term).all():
+        if r.rater_type == 'student':
+            my_ratings[r.attribute]      = {'rating': r.rating, 'evidence': r.evidence or ''}
+        else:
+            teacher_ratings[r.attribute] = {'rating': r.rating, 'evidence': r.evidence or ''}
+
+    my_atl = ATLRating.query.filter_by(student_id=student.id, term=selected_term).all()
+    reflection = StudentReflection.query.filter_by(
+        student_id=student.id, term=selected_term
+    ).first()
+
+    return render_template('student/learner_profile.html',
+        student=student, selected_term=selected_term, terms=TERMS,
+        learner_profile=LEARNER_PROFILE, my_ratings=my_ratings,
+        teacher_ratings=teacher_ratings, my_atl=my_atl,
+        atl_skills=ATL_SKILLS, reflection=reflection,
+        descriptors=ATL_DESCRIPTORS.get(student.grade, ATL_DESCRIPTORS['Grade 3'])
+    )
 
 
 # ── IMPORT RESULTS FROM CSV ──────────────────────────────────────────────────
@@ -754,6 +1895,450 @@ def import_results():
         test_id=None, selected_test=None)
 
 
+# ── IB DEVELOPMENT ROUTES ────────────────────────────────────────────────────
+
+@app.route('/admin/ib')
+@login_required('Resource_Manager')
+def ib_dashboard():
+    students = User.query.filter_by(role='student').order_by(User.grade, User.name).all()
+    total_atl = ATLRating.query.count()
+    total_lp  = LPRating.query.count()
+    return render_template('ib/dashboard.html',
+        students=students, total_atl=total_atl, total_lp=total_lp,
+        terms=TERMS, atl_skills=list(ATL_SKILLS.keys()),
+        lp_attributes=IB_LEARNER_PROFILE)
+
+
+@app.route('/admin/ib/atl/<int:student_id>', methods=['GET','POST'])
+@login_required('Resource_Manager')
+def ib_atl_teacher(student_id):
+    student = db.session.get(User, student_id)
+    if not student: return redirect(url_for('ib_dashboard'))
+    grade = student.grade or 'Grade 3'
+    descriptors = ATL_SKILLS
+
+    if request.method == 'POST':
+        term = request.form.get('term')
+        for skill, grade_descs in descriptors.items():
+            descs = grade_descs.get(grade, [])
+            for i, desc in enumerate(descs):
+                key = f"{skill}_{i}"
+                rating = request.form.get(key)
+                comment = request.form.get(f"comment_{skill}_{i}", '')
+                if rating:
+                    # Update or create
+                    existing = ATLRating.query.filter_by(
+                        student_id=student_id, term=term,
+                        skill=skill, descriptor=desc
+                    ).first()
+                    if existing:
+                        existing.rating = int(rating)
+                        existing.comment = comment
+                    else:
+                        db.session.add(ATLRating(
+                            student_id=student_id,
+                            teacher_id=session['user_id'],
+                            term=term, skill=skill,
+                            descriptor=desc, rating=int(rating),
+                            comment=comment
+                        ))
+        db.session.commit()
+        flash(f'ATL ratings saved for {student.name} — {term}', 'success')
+
+    # Load existing ratings
+    ratings = {}
+    for r in ATLRating.query.filter_by(student_id=student_id).all():
+        ratings[(r.term, r.skill, r.descriptor)] = {'rating': r.rating, 'comment': r.comment or ''}
+
+    return render_template('ib/atl_teacher.html',
+        student=student, grade=grade, terms=TERMS,
+        atl_skills=descriptors, ratings=ratings,
+        rating_labels=RATING_LABELS)
+
+
+@app.route('/admin/ib/lp/<int:student_id>', methods=['GET','POST'])
+@login_required('Resource_Manager')
+def ib_lp_teacher(student_id):
+    student = db.session.get(User, student_id)
+    if not student: return redirect(url_for('ib_dashboard'))
+
+    if request.method == 'POST':
+        term = request.form.get('term')
+        for attr, icon, desc in IB_LEARNER_PROFILE:
+            rating   = request.form.get(f'rating_{attr}')
+            evidence = request.form.get(f'evidence_{attr}', '')
+            if rating:
+                existing = LPRating.query.filter_by(
+                    student_id=student_id, term=term,
+                    attribute=attr, rater_type='teacher'
+                ).first()
+                if existing:
+                    existing.rating = int(rating)
+                    existing.evidence = evidence
+                else:
+                    db.session.add(LPRating(
+                        student_id=student_id,
+                        rater_id=session['user_id'],
+                        rater_type='teacher', term=term,
+                        attribute=attr, rating=int(rating),
+                        evidence=evidence
+                    ))
+        db.session.commit()
+        flash(f'Learner Profile saved for {student.name} — {term}', 'success')
+
+    teacher_ratings = {}
+    student_ratings = {}
+    for r in LPRating.query.filter_by(student_id=student_id).all():
+        if r.rater_type == 'teacher':
+            teacher_ratings[(r.term, r.attribute)] = {'rating': r.rating, 'evidence': r.evidence or ''}
+        else:
+            student_ratings[(r.term, r.attribute)] = {'rating': r.rating, 'evidence': r.evidence or ''}
+
+    return render_template('ib/lp_teacher.html',
+        student=student, terms=TERMS,
+        lp_attributes=IB_LEARNER_PROFILE,
+        teacher_ratings=teacher_ratings,
+        student_ratings=student_ratings,
+        rating_labels=RATING_LABELS)
+
+
+@app.route('/student/ib')
+@login_required('student')
+def student_ib():
+    student = db.session.get(User, session['user_id'])
+    atl_ratings = ATLRating.query.filter_by(student_id=student.id).all()
+    lp_ratings  = LPRating.query.filter_by(student_id=student.id).all()
+    reflections = StudentReflection.query.filter_by(student_id=student.id).order_by(StudentReflection.term).all()
+
+    teacher_lp = {}
+    student_lp = {}
+    for r in lp_ratings:
+        if r.rater_type == 'teacher':
+            teacher_lp[(r.term, r.attribute)] = {'rating': r.rating, 'evidence': r.evidence or ''}
+        else:
+            student_lp[(r.term, r.attribute)]  = {'rating': r.rating, 'evidence': r.evidence or ''}
+
+    atl_by_term = {}
+    for r in atl_ratings:
+        atl_by_term.setdefault(r.term, {}).setdefault(r.skill, []).append(r)
+
+    return render_template('ib/student_ib.html',
+        student=student, terms=TERMS,
+        atl_by_term=atl_by_term,
+        lp_attributes=IB_LEARNER_PROFILE,
+        teacher_lp=teacher_lp, student_lp=student_lp,
+        reflections=reflections, rating_labels=RATING_LABELS,
+        atl_skills=list(ATL_SKILLS.keys()))
+
+
+@app.route('/student/ib/self-rate', methods=['POST'])
+@login_required('student')
+def student_lp_selfrate():
+    student_id = session['user_id']
+    term = request.form.get('term')
+    for attr, icon, desc in IB_LEARNER_PROFILE:
+        rating   = request.form.get(f'rating_{attr}')
+        evidence = request.form.get(f'evidence_{attr}', '')
+        if rating:
+            existing = LPRating.query.filter_by(
+                student_id=student_id, term=term,
+                attribute=attr, rater_type='student'
+            ).first()
+            if existing:
+                existing.rating = int(rating)
+                existing.evidence = evidence
+            else:
+                db.session.add(LPRating(
+                    student_id=student_id, rater_id=student_id,
+                    rater_type='student', term=term,
+                    attribute=attr, rating=int(rating), evidence=evidence
+                ))
+    db.session.commit()
+    flash('Your self-rating has been saved!', 'success')
+    return redirect(url_for('student_ib'))
+
+
+@app.route('/student/ib/reflect', methods=['POST'])
+@login_required('student')
+def student_reflect():
+    student_id = session['user_id']
+    term       = request.form.get('term')
+    reflection = request.form.get('reflection', '').strip()
+    goal       = request.form.get('goal', '').strip()
+    if reflection:
+        existing = StudentReflection.query.filter_by(
+            student_id=student_id, term=term
+        ).first()
+        if existing:
+            existing.reflection = reflection
+            existing.goal = goal
+        else:
+            db.session.add(StudentReflection(
+                student_id=student_id, term=term,
+                reflection=reflection, goal=goal
+            ))
+        db.session.commit()
+        flash('Reflection saved!', 'success')
+    return redirect(url_for('student_ib'))
+
+
+@app.route('/admin/ib/report/<int:student_id>')
+@login_required('Resource_Manager')
+def ib_student_report(student_id):
+    student     = db.session.get(User, student_id)
+    atl_ratings = ATLRating.query.filter_by(student_id=student_id).all()
+    lp_ratings  = LPRating.query.filter_by(student_id=student_id).all()
+    reflections = StudentReflection.query.filter_by(student_id=student_id).all()
+    test_results= TestResult.query.filter_by(student_id=student_id).all()
+
+    teacher_lp = {}
+    student_lp = {}
+    for r in lp_ratings:
+        if r.rater_type == 'teacher':
+            teacher_lp[(r.term, r.attribute)] = r.rating
+        else:
+            student_lp[(r.term, r.attribute)]  = r.rating
+
+    atl_summary = {}
+    for r in atl_ratings:
+        atl_summary.setdefault(r.term, {}).setdefault(r.skill, []).append(r.rating)
+    atl_avgs = {
+        term: {skill: round(sum(vals)/len(vals),1) for skill, vals in skills.items()}
+        for term, skills in atl_summary.items()
+    }
+
+    return render_template('ib/student_report.html',
+        student=student, terms=TERMS,
+        lp_attributes=IB_LEARNER_PROFILE,
+        teacher_lp=teacher_lp, student_lp=student_lp,
+        atl_avgs=atl_avgs, reflections={r.term: r for r in reflections},
+        test_results=test_results, rating_labels=RATING_LABELS,
+        atl_skills=list(ATL_SKILLS.keys()))
+
+
+# ── IB DEVELOPMENT ROUTES ────────────────────────────────────────────────────
+
+@app.route('/ib/dashboard')
+@login_required('Resource_Manager')
+def ib_dashboard():
+    students = User.query.filter_by(role='student').order_by(User.grade, User.name).all()
+    total_atl = ATLRating.query.count()
+    total_lp  = LPRating.query.count()
+    return render_template('ib/dashboard.html',
+        students=students, total_atl=total_atl, total_lp=total_lp,
+        terms=TERMS, atl_categories=ATL_CATEGORIES,
+        learner_profile=LEARNER_PROFILE)
+
+
+@app.route('/ib/student/<int:student_id>', methods=['GET','POST'])
+@login_required('Resource_Manager')
+def ib_student_detail(student_id):
+    student  = db.session.get(User, student_id)
+    if not student:
+        flash('Student not found.', 'error')
+        return redirect(url_for('ib_dashboard'))
+    term = request.args.get('term', 'Term 1')
+
+    if request.method == 'POST':
+        action = request.form.get('action')
+
+        if action == 'save_atl':
+            for cat_key, cat in ATL_CATEGORIES.items():
+                for skill in cat['skills']:
+                    field = f"{cat_key}_{skill.replace(' ','_').replace('&','').replace('/','_')}"
+                    rating_val = request.form.get(field)
+                    comment    = request.form.get(f"{field}_comment", '')
+                    if rating_val:
+                        existing = ATLRating.query.filter_by(
+                            student_id=student_id,
+                            term=term, category=cat_key, skill=skill
+                        ).first()
+                        if existing:
+                            existing.rating  = int(rating_val)
+                            existing.comment = comment
+                            existing.teacher_id = session['user_id']
+                        else:
+                            db.session.add(ATLRating(
+                                student_id=student_id,
+                                teacher_id=session['user_id'],
+                                term=term, category=cat_key, skill=skill,
+                                rating=int(rating_val), comment=comment
+                            ))
+            db.session.commit()
+            flash('ATL ratings saved successfully!', 'success')
+
+        elif action == 'save_lp':
+            for attr, label, desc in LEARNER_PROFILE:
+                rating_val = request.form.get(f"lp_{attr}")
+                evidence   = request.form.get(f"lp_{attr}_evidence", '')
+                if rating_val:
+                    existing = LPRating.query.filter_by(
+                        student_id=student_id, term=term,
+                        attribute=attr, rater_type='teacher'
+                    ).first()
+                    if existing:
+                        existing.rating   = int(rating_val)
+                        existing.evidence = evidence
+                        existing.rater_id = session['user_id']
+                    else:
+                        db.session.add(LPRating(
+                            student_id=student_id,
+                            rater_id=session['user_id'],
+                            rater_type='teacher',
+                            term=term, attribute=attr,
+                            rating=int(rating_val), evidence=evidence
+                        ))
+            db.session.commit()
+            flash('Learner Profile ratings saved!', 'success')
+
+        return redirect(url_for('ib_student_detail', student_id=student_id, term=term))
+
+    # Fetch existing ratings
+    atl_ratings = {}
+    for r in ATLRating.query.filter_by(student_id=student_id, term=term).all():
+        atl_ratings[(r.category, r.skill)] = r
+
+    lp_teacher = {}
+    for r in LPRating.query.filter_by(student_id=student_id, term=term, rater_type='teacher').all():
+        lp_teacher[r.attribute] = r
+
+    lp_student = {}
+    for r in LPRating.query.filter_by(student_id=student_id, term=term, rater_type='student').all():
+        lp_student[r.attribute] = r
+
+    reflection = StudentReflection.query.filter_by(
+        student_id=student_id, term=term
+    ).first()
+
+    return render_template('ib/student_detail.html',
+        student=student, term=term, terms=TERMS,
+        atl_categories=ATL_CATEGORIES, atl_ratings=atl_ratings,
+        learner_profile=LEARNER_PROFILE, lp_teacher=lp_teacher,
+        lp_student=lp_student, reflection=reflection,
+        rating_labels=RATING_LABELS, rating_colors=RATING_COLORS,
+        rating_text=RATING_TEXT)
+
+
+@app.route('/ib/class-overview')
+@login_required('Resource_Manager')
+def ib_class_overview():
+    term  = request.args.get('term', 'Term 1')
+    grade = request.args.get('grade', '')
+    students = User.query.filter_by(role='student')
+    if grade:
+        students = students.filter_by(grade=grade)
+    students = students.order_by(User.grade, User.name).all()
+
+    # Build overview data
+    overview = []
+    for s in students:
+        atl_data = {}
+        for cat_key in ATL_CATEGORIES:
+            ratings = ATLRating.query.filter_by(
+                student_id=s.id, term=term, category=cat_key
+            ).all()
+            avg = round(sum(r.rating for r in ratings)/len(ratings), 1) if ratings else 0
+            atl_data[cat_key] = avg
+
+        lp_data = {}
+        for attr, label, desc in LEARNER_PROFILE:
+            tr = LPRating.query.filter_by(
+                student_id=s.id, term=term,
+                attribute=attr, rater_type='teacher'
+            ).first()
+            lp_data[attr] = tr.rating if tr else 0
+
+        overall_atl = round(sum(atl_data.values())/len(atl_data), 1) if atl_data else 0
+        overview.append({
+            'student': s, 'atl': atl_data,
+            'lp': lp_data, 'overall_atl': overall_atl
+        })
+
+    return render_template('ib/class_overview.html',
+        overview=overview, term=term, terms=TERMS,
+        grade=grade, grades=['Grade 3','Grade 4','Grade 5'],
+        atl_categories=ATL_CATEGORIES,
+        learner_profile=LEARNER_PROFILE,
+        rating_labels=RATING_LABELS,
+        rating_colors=RATING_COLORS,
+        rating_text=RATING_TEXT)
+
+
+# ── STUDENT IB ROUTES ──────────────────────────────────────────────────────
+
+@app.route('/student/ib')
+@login_required('student')
+def student_ib_dashboard():
+    student = db.session.get(User, session['user_id'])
+    term    = request.args.get('term', 'Term 1')
+
+    lp_self    = {r.attribute: r for r in LPRating.query.filter_by(
+        student_id=student.id, term=term, rater_type='student').all()}
+    lp_teacher = {r.attribute: r for r in LPRating.query.filter_by(
+        student_id=student.id, term=term, rater_type='teacher').all()}
+    atl_ratings = {(r.category, r.skill): r for r in ATLRating.query.filter_by(
+        student_id=student.id, term=term).all()}
+    reflection = StudentReflection.query.filter_by(
+        student_id=student.id, term=term).first()
+
+    return render_template('student/ib_dashboard.html',
+        student=student, term=term, terms=TERMS,
+        learner_profile=LEARNER_PROFILE,
+        atl_categories=ATL_CATEGORIES,
+        lp_self=lp_self, lp_teacher=lp_teacher,
+        atl_ratings=atl_ratings, reflection=reflection,
+        rating_labels=RATING_LABELS,
+        rating_colors=RATING_COLORS,
+        rating_text=RATING_TEXT)
+
+
+@app.route('/student/ib/self-rate', methods=['POST'])
+@login_required('student')
+def student_self_rate():
+    student = db.session.get(User, session['user_id'])
+    term    = request.form.get('term', 'Term 1')
+
+    for attr, label, desc in LEARNER_PROFILE:
+        rating_val = request.form.get(f"lp_{attr}")
+        evidence   = request.form.get(f"lp_{attr}_evidence", '')
+        if rating_val:
+            existing = LPRating.query.filter_by(
+                student_id=student.id, term=term,
+                attribute=attr, rater_type='student'
+            ).first()
+            if existing:
+                existing.rating   = int(rating_val)
+                existing.evidence = evidence
+            else:
+                db.session.add(LPRating(
+                    student_id=student.id,
+                    rater_id=student.id,
+                    rater_type='student',
+                    term=term, attribute=attr,
+                    rating=int(rating_val), evidence=evidence
+                ))
+
+    # Save reflection
+    reflection_text = request.form.get('reflection', '')
+    goal_text       = request.form.get('goal', '')
+    if reflection_text:
+        existing_ref = StudentReflection.query.filter_by(
+            student_id=student.id, term=term
+        ).first()
+        if existing_ref:
+            existing_ref.reflection = reflection_text
+            existing_ref.goal       = goal_text
+        else:
+            db.session.add(StudentReflection(
+                student_id=student.id, term=term,
+                reflection=reflection_text, goal=goal_text
+            ))
+
+    db.session.commit()
+    flash('Your self-assessment saved successfully! ✅', 'success')
+    return redirect(url_for('student_ib_dashboard', term=term))
+
+
 # ── TEACHER ───────────────────────────────────────────────────────────────────
 
 @app.route('/teacher')
@@ -780,7 +2365,18 @@ def teacher_students():
 @app.route('/teacher/analytics')
 @login_required('teacher')
 def teacher_analytics():
-    data = build_analytics()
+    filter_grade   = request.args.get('grade', '')
+    filter_section = request.args.get('section', '')
+    filter_subject = request.args.get('subject', '')
+    data = build_analytics(
+        filter_grade   = filter_grade   or None,
+        filter_section = filter_section or None,
+        filter_subject = filter_subject or None,
+    )
+    data['filter_grade']   = filter_grade
+    data['filter_section'] = filter_section
+    data['filter_subject'] = filter_subject
+    data['sections']       = ['A','B','C','D']
     return render_template('teacher/analytics.html', **data)
 
 # ── STUDENT ───────────────────────────────────────────────────────────────────
@@ -902,6 +2498,248 @@ def api_analytics():
         g = r.student.grade or 'Unknown'
         by_grade.setdefault(g, []).append(r.percent)
     return jsonify({g: round(sum(v)/len(v),1) for g,v in by_grade.items()})
+
+# ── IB HOLISTIC ROUTES ────────────────────────────────────────────────────────
+
+@app.route('/ib')
+@login_required('Resource_Manager')
+def ib_dashboard():
+    students = User.query.filter_by(role='student').all()
+    total_atl = ATLRating.query.count()
+    total_lp  = LearnerProfileRating.query.count()
+    # Average LP ratings per attribute
+    lp_avgs = {}
+    for attr, _ in LEARNER_PROFILE:
+        ratings = LearnerProfileRating.query.filter_by(attribute=attr).all()
+        lp_avgs[attr] = round(sum(r.rating for r in ratings)/len(ratings),1) if ratings else 0
+    return render_template('ib/dashboard.html',
+        students=students, total_atl=total_atl, total_lp=total_lp,
+        lp_avgs=lp_avgs, learner_profile=LEARNER_PROFILE,
+        rating_scale=RATING_SCALE, rating_colors=RATING_COLORS,
+        atl_skills=ATL_SKILLS, terms=TERMS)
+
+
+@app.route('/ib/atl', methods=['GET','POST'])
+@login_required('Resource_Manager')
+def ib_atl():
+    students = User.query.filter_by(role='student').order_by(User.grade, User.name).all()
+    if request.method == 'POST':
+        student_id = int(request.form.get('student_id'))
+        term       = request.form.get('term')
+        skill      = request.form.get('skill')
+        rater_type = 'teacher'
+        student    = db.session.get(User, student_id)
+        grade      = student.grade if student else 'Grade 3'
+        descriptors = ATL_SKILLS.get(skill, {}).get(grade, [])
+        saved = 0
+        for i, desc in enumerate(descriptors):
+            rating_val = request.form.get(f'rating_{i}')
+            if rating_val:
+                existing = ATLRating.query.filter_by(
+                    student_id=student_id, term=term,
+                    skill=skill, descriptor=desc, rater_type=rater_type
+                ).first()
+                if existing:
+                    existing.rating = int(rating_val)
+                else:
+                    db.session.add(ATLRating(
+                        student_id=student_id, teacher_id=session['user_id'],
+                        term=term, skill=skill, descriptor=desc,
+                        rating=int(rating_val), rater_type=rater_type
+                    ))
+                saved += 1
+        db.session.commit()
+        flash(f'ATL ratings saved for {student.name} — {skill} ({term})', 'success')
+        return redirect(url_for('ib_atl'))
+
+    selected_student = request.args.get('student_id', type=int)
+    selected_term    = request.args.get('term', 'Term 1')
+
+    # Get existing ratings for selected student
+    existing_ratings = {}
+    if selected_student:
+        ratings = ATLRating.query.filter_by(
+            student_id=selected_student, term=selected_term, rater_type='teacher'
+        ).all()
+        for r in ratings:
+            existing_ratings[(r.skill, r.descriptor)] = r.rating
+
+    return render_template('ib/atl.html',
+        students=students, terms=TERMS,
+        atl_skills=ATL_SKILLS, rating_scale=RATING_SCALE,
+        selected_student=selected_student, selected_term=selected_term,
+        existing_ratings=existing_ratings)
+
+
+@app.route('/ib/learner-profile', methods=['GET','POST'])
+@login_required('Resource_Manager')
+def ib_learner_profile():
+    students = User.query.filter_by(role='student').order_by(User.grade, User.name).all()
+    if request.method == 'POST':
+        student_id = int(request.form.get('student_id'))
+        term       = request.form.get('term')
+        student    = db.session.get(User, student_id)
+        for attr, _ in LEARNER_PROFILE:
+            t_rating = request.form.get(f'teacher_{attr}')
+            evidence = request.form.get(f'evidence_{attr}', '')
+            if t_rating:
+                existing = LearnerProfileRating.query.filter_by(
+                    student_id=student_id, term=term,
+                    attribute=attr, rater_type='teacher'
+                ).first()
+                if existing:
+                    existing.rating = int(t_rating)
+                    existing.evidence = evidence
+                else:
+                    db.session.add(LearnerProfileRating(
+                        student_id=student_id, teacher_id=session['user_id'],
+                        term=term, attribute=attr,
+                        rating=int(t_rating), rater_type='teacher', evidence=evidence
+                    ))
+        db.session.commit()
+        flash(f'Learner Profile saved for {student.name} ({term})', 'success')
+        return redirect(url_for('ib_learner_profile'))
+
+    selected_student = request.args.get('student_id', type=int)
+    selected_term    = request.args.get('term', 'Term 1')
+    existing_ratings = {}
+    existing_evidence = {}
+    if selected_student:
+        ratings = LearnerProfileRating.query.filter_by(
+            student_id=selected_student, term=selected_term, rater_type='teacher'
+        ).all()
+        for r in ratings:
+            existing_ratings[r.attribute]  = r.rating
+            existing_evidence[r.attribute] = r.evidence or ''
+
+    return render_template('ib/learner_profile.html',
+        students=students, terms=TERMS,
+        learner_profile=LEARNER_PROFILE, rating_scale=RATING_SCALE,
+        rating_colors=RATING_COLORS,
+        selected_student=selected_student, selected_term=selected_term,
+        existing_ratings=existing_ratings, existing_evidence=existing_evidence)
+
+
+@app.route('/ib/report/<int:student_id>')
+@login_required('Resource_Manager')
+def ib_student_report(student_id):
+    student = db.session.get(User, student_id)
+    if not student:
+        flash('Student not found.', 'error')
+        return redirect(url_for('ib_dashboard'))
+    report = {}
+    for term in TERMS:
+        atl_data = {}
+        for skill in ATL_SKILLS:
+            ratings = ATLRating.query.filter_by(
+                student_id=student_id, term=term, skill=skill, rater_type='teacher'
+            ).all()
+            if ratings:
+                atl_data[skill] = {
+                    'avg': round(sum(r.rating for r in ratings)/len(ratings), 1),
+                    'descriptors': [(r.descriptor, r.rating) for r in ratings]
+                }
+        lp_data = {}
+        for attr, desc in LEARNER_PROFILE:
+            t_r = LearnerProfileRating.query.filter_by(
+                student_id=student_id, term=term, attribute=attr, rater_type='teacher'
+            ).first()
+            s_r = LearnerProfileRating.query.filter_by(
+                student_id=student_id, term=term, attribute=attr, rater_type='student'
+            ).first()
+            if t_r or s_r:
+                lp_data[attr] = {
+                    'teacher': t_r.rating if t_r else None,
+                    'student': s_r.rating if s_r else None,
+                    'evidence': t_r.evidence if t_r else '',
+                }
+        report[term] = {'atl': atl_data, 'lp': lp_data}
+
+    test_results = TestResult.query.filter_by(student_id=student_id).all()
+    return render_template('ib/student_report.html',
+        student=student, report=report, terms=TERMS,
+        learner_profile=LEARNER_PROFILE, atl_skills=list(ATL_SKILLS.keys()),
+        rating_scale=RATING_SCALE, rating_colors=RATING_COLORS,
+        test_results=test_results)
+
+
+# ── STUDENT IB SELF-RATING ─────────────────────────────────────────────────────
+
+@app.route('/student/ib', methods=['GET','POST'])
+@login_required('student')
+def student_ib():
+    student  = db.session.get(User, session['user_id'])
+    selected_term = request.args.get('term', 'Term 1')
+
+    if request.method == 'POST':
+        term = request.form.get('term')
+        for attr, _ in LEARNER_PROFILE:
+            s_rating    = request.form.get(f'self_{attr}')
+            reflection  = request.form.get(f'reflection_{attr}', '')
+            if s_rating:
+                existing = LearnerProfileRating.query.filter_by(
+                    student_id=student.id, term=term,
+                    attribute=attr, rater_type='student'
+                ).first()
+                if existing:
+                    existing.rating = int(s_rating)
+                else:
+                    db.session.add(LearnerProfileRating(
+                        student_id=student.id, term=term,
+                        attribute=attr, rating=int(s_rating), rater_type='student'
+                    ))
+            if reflection:
+                existing_r = StudentReflection.query.filter_by(
+                    student_id=student.id, term=term, attribute=attr
+                ).first()
+                if existing_r:
+                    existing_r.reflection = reflection
+                else:
+                    db.session.add(StudentReflection(
+                        student_id=student.id, term=term,
+                        attribute=attr, reflection=reflection
+                    ))
+        db.session.commit()
+        flash('Your self-assessment has been saved!', 'success')
+        return redirect(url_for('student_ib', term=term))
+
+    # Load existing self-ratings and reflections
+    self_ratings = {}
+    reflections  = {}
+    ratings = LearnerProfileRating.query.filter_by(
+        student_id=student.id, term=selected_term, rater_type='student'
+    ).all()
+    for r in ratings:
+        self_ratings[r.attribute] = r.rating
+
+    teacher_ratings = {}
+    t_ratings = LearnerProfileRating.query.filter_by(
+        student_id=student.id, term=selected_term, rater_type='teacher'
+    ).all()
+    for r in t_ratings:
+        teacher_ratings[r.attribute] = r.rating
+
+    refs = StudentReflection.query.filter_by(
+        student_id=student.id, term=selected_term
+    ).all()
+    for r in refs:
+        reflections[r.attribute] = r.reflection
+
+    # ATL ratings from teacher
+    atl_ratings = {}
+    atl = ATLRating.query.filter_by(
+        student_id=student.id, term=selected_term, rater_type='teacher'
+    ).all()
+    for r in atl:
+        atl_ratings.setdefault(r.skill, []).append({'desc': r.descriptor, 'rating': r.rating})
+
+    return render_template('student/ib.html',
+        student=student, terms=TERMS, selected_term=selected_term,
+        learner_profile=LEARNER_PROFILE, rating_scale=RATING_SCALE,
+        rating_colors=RATING_COLORS,
+        self_ratings=self_ratings, teacher_ratings=teacher_ratings,
+        reflections=reflections, atl_ratings=atl_ratings)
+
 
 # ── MAIN ──────────────────────────────────────────────────────────────────────
 
