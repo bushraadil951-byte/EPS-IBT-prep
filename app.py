@@ -327,7 +327,7 @@ ATL_SKILLS = {
     'Social': {
         'Grade 3': ['Takes turns and shares fairly', 'Respects different opinions', 'Helps classmates when needed', 'Follows agreed group rules'],
         'Grade 4': ['Contributes meaningfully to group work', 'Resolves conflicts respectfully', 'Encourages others', 'Takes on different group roles'],
-        'Grade 5': ['Leads and supports team efforts', 'Negotiates and compromises effectively', 'Advocates for others', 'Builds on others' ideas constructively'],
+        'Grade 5': ['Leads and supports team efforts', 'Negotiates and compromises effectively', 'Advocates for others', "Builds on others ideas constructively"],
     },
 }
 
@@ -592,7 +592,7 @@ ATL_CATEGORIES = {
                 4: 'Always contributes positively and supports peers',
             },
             'Grade 4': {
-                1: 'Struggles to listen to or consider others' views',
+                1: "Struggles to listen to or consider others views",
                 2: 'Sometimes listens and considers others with support',
                 3: 'Listens actively and considers diverse perspectives',
                 4: 'Champions inclusion and mediates group conflict positively',
