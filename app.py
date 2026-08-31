@@ -259,47 +259,6 @@ LEARNER_PROFILE = [
 TERMS = ['Term 1', 'Term 2', 'Term 3']
 
 
-class ATLRating(db.Model):
-    __tablename__ = 'atl_rating'
-    id          = db.Column(db.Integer, primary_key=True)
-    student_id  = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    teacher_id  = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    term        = db.Column(db.String(20), nullable=False)   # Term 1/2/3
-    category    = db.Column(db.String(50), nullable=False)   # Communication etc
-    skill       = db.Column(db.String(100), nullable=False)  # sub-skill
-    rating      = db.Column(db.Integer, nullable=False)      # 1-4
-    notes       = db.Column(db.Text, nullable=True)
-    rated_at    = db.Column(db.DateTime, default=datetime.utcnow)
-    student     = db.relationship('User', foreign_keys=[student_id])
-    teacher     = db.relationship('User', foreign_keys=[teacher_id])
-
-
-class LearnerProfileRating(db.Model):
-    __tablename__ = 'learner_profile_rating'
-    id          = db.Column(db.Integer, primary_key=True)
-    student_id  = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    rater_id    = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    rater_type  = db.Column(db.String(10), nullable=False)   # 'teacher' or 'student'
-    term        = db.Column(db.String(20), nullable=False)
-    attribute   = db.Column(db.String(50), nullable=False)   # Inquirer etc
-    rating      = db.Column(db.Integer, nullable=False)      # 1-4
-    evidence    = db.Column(db.Text, nullable=True)
-    rated_at    = db.Column(db.DateTime, default=datetime.utcnow)
-    student     = db.relationship('User', foreign_keys=[student_id])
-    rater       = db.relationship('User', foreign_keys=[rater_id])
-
-
-class StudentReflection(db.Model):
-    __tablename__ = 'student_reflection'
-    id          = db.Column(db.Integer, primary_key=True)
-    student_id  = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    term        = db.Column(db.String(20), nullable=False)
-    reflection  = db.Column(db.Text, nullable=False)
-    goal        = db.Column(db.Text, nullable=True)
-    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
-    student     = db.relationship('User', foreign_keys=[student_id])
-
-
 # ── IB DEVELOPMENT MODELS ────────────────────────────────────────────────────
 
 # ATL descriptors per grade and skill
@@ -348,21 +307,6 @@ RATING_LABELS = {1: 'Beginning', 2: 'Developing', 3: 'Achieved', 4: 'Exceeding'}
 TERMS = ['Term 1', 'Term 2', 'Term 3']
 
 
-class ATLRating(db.Model):
-    __tablename__ = 'atl_rating'
-    id         = db.Column(db.Integer, primary_key=True)
-    student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    teacher_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    term       = db.Column(db.String(20), nullable=False)
-    skill      = db.Column(db.String(50), nullable=False)
-    descriptor = db.Column(db.String(200), nullable=False)
-    rating     = db.Column(db.Integer, default=1)  # 1-4
-    comment    = db.Column(db.Text, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    student    = db.relationship('User', foreign_keys=[student_id])
-    teacher    = db.relationship('User', foreign_keys=[teacher_id])
-
-
 class LPRating(db.Model):
     __tablename__ = 'lp_rating'
     id            = db.Column(db.Integer, primary_key=True)
@@ -376,17 +320,6 @@ class LPRating(db.Model):
     created_at    = db.Column(db.DateTime, default=datetime.utcnow)
     student       = db.relationship('User', foreign_keys=[student_id])
     rater         = db.relationship('User', foreign_keys=[rater_id])
-
-
-class StudentReflection(db.Model):
-    __tablename__ = 'student_reflection'
-    id         = db.Column(db.Integer, primary_key=True)
-    student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    term       = db.Column(db.String(20), nullable=False)
-    reflection = db.Column(db.Text, nullable=False)
-    goal       = db.Column(db.Text, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    student    = db.relationship('User', foreign_keys=[student_id])
 
 
 # ── IB DEVELOPMENT MODELS ────────────────────────────────────────────────────
@@ -435,36 +368,6 @@ ATL_DESCRIPTORS = {
 
 TERMS = ['Term 1', 'Term 2', 'Term 3']
 ACADEMIC_YEAR = '2025-26'
-
-
-class ATLRating(db.Model):
-    __tablename__ = 'atl_rating'
-    id               = db.Column(db.Integer, primary_key=True)
-    student_id       = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    teacher_id       = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    term             = db.Column(db.String(20), nullable=False)
-    academic_year    = db.Column(db.String(10), default=ACADEMIC_YEAR)
-    skill_category   = db.Column(db.String(50), nullable=False)
-    skill_name       = db.Column(db.String(100), nullable=False)
-    teacher_rating   = db.Column(db.Integer, nullable=True)   # 1-4
-    teacher_comment  = db.Column(db.Text, nullable=True)
-    updated_at       = db.Column(db.DateTime, default=datetime.utcnow)
-    student          = db.relationship('User', foreign_keys=[student_id])
-
-
-class LearnerProfileRating(db.Model):
-    __tablename__ = 'learner_profile_rating'
-    id                  = db.Column(db.Integer, primary_key=True)
-    student_id          = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    term                = db.Column(db.String(20), nullable=False)
-    academic_year       = db.Column(db.String(10), default=ACADEMIC_YEAR)
-    attribute           = db.Column(db.String(50), nullable=False)
-    student_rating      = db.Column(db.Integer, nullable=True)   # 1-4 self
-    teacher_rating      = db.Column(db.Integer, nullable=True)   # 1-4 teacher
-    student_reflection  = db.Column(db.Text, nullable=True)
-    teacher_comment     = db.Column(db.Text, nullable=True)
-    updated_at          = db.Column(db.DateTime, default=datetime.utcnow)
-    student             = db.relationship('User', foreign_keys=[student_id])
 
 
 # ── IB DEVELOPMENT MODELS ────────────────────────────────────────────────────
@@ -612,21 +515,6 @@ RATING_COLORS = {1: '#fee2e2', 2: '#fef9c3', 3: '#dcfce7', 4: '#dbeafe'}
 RATING_TEXT   = {1: '#dc2626', 2: '#92400e', 3: '#166534', 4: '#1d4ed8'}
 
 
-class ATLRating(db.Model):
-    __tablename__ = 'atl_rating'
-    id          = db.Column(db.Integer, primary_key=True)
-    student_id  = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    teacher_id  = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    term        = db.Column(db.String(20), nullable=False)   # Term 1/2/3
-    category    = db.Column(db.String(30), nullable=False)   # communication etc.
-    skill       = db.Column(db.String(50), nullable=False)   # specific skill
-    rating      = db.Column(db.Integer, nullable=False)      # 1-4
-    comment     = db.Column(db.Text, nullable=True)
-    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
-    student     = db.relationship('User', foreign_keys=[student_id])
-    teacher_rel = db.relationship('User', foreign_keys=[teacher_id])
-
-
 class LPRating(db.Model):
     __tablename__ = 'lp_rating'
     id          = db.Column(db.Integer, primary_key=True)
@@ -641,59 +529,7 @@ class LPRating(db.Model):
     student     = db.relationship('User', foreign_keys=[student_id])
 
 
-class StudentReflection(db.Model):
-    __tablename__ = 'student_reflection'
-    id          = db.Column(db.Integer, primary_key=True)
-    student_id  = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    term        = db.Column(db.String(20), nullable=False)
-    reflection  = db.Column(db.Text, nullable=False)
-    goal        = db.Column(db.Text, nullable=True)
-    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
-    student     = db.relationship('User', foreign_keys=[student_id])
-
-
 # ── IB HOLISTIC MODELS ───────────────────────────────────────────────────────
-
-class ATLRating(db.Model):
-    __tablename__ = 'atl_rating'
-    id          = db.Column(db.Integer, primary_key=True)
-    student_id  = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    teacher_id  = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    term        = db.Column(db.String(20), nullable=False)   # "Term 1", "Term 2", "Term 3"
-    skill       = db.Column(db.String(50), nullable=False)   # "Communication" etc
-    descriptor  = db.Column(db.String(200), nullable=False)  # specific descriptor text
-    rating      = db.Column(db.Integer, nullable=False)      # 1-4
-    rater_type  = db.Column(db.String(10), nullable=False)   # "teacher" or "student"
-    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
-    student     = db.relationship('User', foreign_keys=[student_id])
-    teacher     = db.relationship('User', foreign_keys=[teacher_id])
-
-
-class LearnerProfileRating(db.Model):
-    __tablename__ = 'learner_profile_rating'
-    id          = db.Column(db.Integer, primary_key=True)
-    student_id  = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    teacher_id  = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    term        = db.Column(db.String(20), nullable=False)
-    attribute   = db.Column(db.String(50), nullable=False)   # "Inquirer" etc
-    rating      = db.Column(db.Integer, nullable=False)      # 1-4
-    rater_type  = db.Column(db.String(10), nullable=False)   # "teacher" or "student"
-    evidence    = db.Column(db.Text, nullable=True)          # optional note/evidence
-    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
-    student     = db.relationship('User', foreign_keys=[student_id])
-    teacher     = db.relationship('User', foreign_keys=[teacher_id])
-
-
-class StudentReflection(db.Model):
-    __tablename__ = 'student_reflection'
-    id          = db.Column(db.Integer, primary_key=True)
-    student_id  = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    term        = db.Column(db.String(20), nullable=False)
-    attribute   = db.Column(db.String(50), nullable=False)
-    reflection  = db.Column(db.Text, nullable=False)
-    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
-    student     = db.relationship('User', foreign_keys=[student_id])
-
 
 # ── HELPERS ──────────────────────────────────────────────────────────────────
 
