@@ -307,21 +307,6 @@ RATING_LABELS = {1: 'Beginning', 2: 'Developing', 3: 'Achieved', 4: 'Exceeding'}
 TERMS = ['Term 1', 'Term 2', 'Term 3']
 
 
-class LPRating(db.Model):
-    __tablename__ = 'lp_rating'
-    id            = db.Column(db.Integer, primary_key=True)
-    student_id    = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    rater_id      = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    rater_type    = db.Column(db.String(10), nullable=False)  # 'teacher' or 'student'
-    term          = db.Column(db.String(20), nullable=False)
-    attribute     = db.Column(db.String(50), nullable=False)
-    rating        = db.Column(db.Integer, default=1)  # 1-4
-    evidence      = db.Column(db.Text, nullable=True)
-    created_at    = db.Column(db.DateTime, default=datetime.utcnow)
-    student       = db.relationship('User', foreign_keys=[student_id])
-    rater         = db.relationship('User', foreign_keys=[rater_id])
-
-
 # ── IB DEVELOPMENT MODELS ────────────────────────────────────────────────────
 
 ATL_CATEGORIES = {
@@ -513,20 +498,6 @@ ATL_CATEGORIES = {
 RATING_LABELS = {1: 'Beginning', 2: 'Developing', 3: 'Achieved', 4: 'Exceeding'}
 RATING_COLORS = {1: '#fee2e2', 2: '#fef9c3', 3: '#dcfce7', 4: '#dbeafe'}
 RATING_TEXT   = {1: '#dc2626', 2: '#92400e', 3: '#166534', 4: '#1d4ed8'}
-
-
-class LPRating(db.Model):
-    __tablename__ = 'lp_rating'
-    id          = db.Column(db.Integer, primary_key=True)
-    student_id  = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    rater_id    = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    rater_type  = db.Column(db.String(10), nullable=False)   # 'teacher' or 'student'
-    term        = db.Column(db.String(20), nullable=False)
-    attribute   = db.Column(db.String(30), nullable=False)   # inquirer, thinker etc.
-    rating      = db.Column(db.Integer, nullable=False)      # 1-4
-    evidence    = db.Column(db.Text, nullable=True)
-    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
-    student     = db.relationship('User', foreign_keys=[student_id])
 
 
 # ── IB HOLISTIC MODELS ───────────────────────────────────────────────────────
