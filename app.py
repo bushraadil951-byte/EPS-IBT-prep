@@ -1603,18 +1603,6 @@ def import_results():
 
 @app.route('/admin/download/results-template')
 @login_required('Resource_Manager')
-def download_results_template():
-    tests = MockTest.query.all()
-    max_q = max((len(json.loads(t.questions or '[]')) for t in tests), default=8)
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow(['username'] + [f'q{i+1}' for i in range(max_q)])
-    for s in User.query.filter_by(role='student').limit(3).all():
-        writer.writerow([s.username] + ['' for _ in range(max_q)])
-    output.seek(0)
-    return Response(output.getvalue(), mimetype='text/csv',
-        headers={'Content-Disposition': 'attachment; filename=results_template.csv'})
-
 @app.route('/admin/download/test/<int:test_id>')
 @login_required('Resource_Manager')
 def download_test_excel(test_id):
