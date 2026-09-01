@@ -1378,6 +1378,275 @@ def student_ib():
         reflections=reflections, atl_ratings=atl_ratings)
 
 
+
+# ── TEACHER ───────────────────────────────────────────────────────────────────
+
+@app.route('/teacher')
+@login_required('teacher')
+def teacher_dashboard():
+    students  = User.query.filter_by(role='student').all()
+    results   = TestResult.query.all()
+    tests     = MockTest.query.filter_by(status='active').all()
+    avg_score = safe_avg([r.percent for r in results])
+    recent    = sorted(results, key=lambda r: r.taken_at, reverse=True)[:6]
+    return render_template('teacher/dashboard.html',
+        students=students, results=results, tests=tests,
+        avg_score=avg_score, recent=recent)
+
+@app.route('/teacher/students')
+@login_required('teacher')
+def teacher_students():
+    students = User.query.filter_by(role='student').order_by(User.grade, User.name).all()
+    student_data = []
+    for s in students:
+        rs = list(s.results)
+        student_data.append({
+            'student': s, 'tests_taken': len(rs),
+            'avg': safe_avg([r.percent for r in rs]),
+        })
+    return render_template('teacher/students.html', student_data=student_data)
+
+@app.route('/teacher/analytics')
+@login_required('teacher')
+def teacher_analytics():
+    data = build_analytics()
+    return render_template('teacher/analytics.html', **data)
+
+# ── STUDENT ───────────────────────────────────────────────────────────────────
+
+@app.route('/student')
+@login_required('student')
+def student_dashboard():
+    student = db.session.get(User, session['user_id'])
+    seen_tests = set()
+    unique_results = []
+    for r in sorted(student.results, key=lambda r: r.taken_at):
+        if r.test_id not in seen_tests:
+            seen_tests.add(r.test_id)
+            unique_results.append(r)
+    results = sorted(unique_results, key=lambda r: r.taken_at, reverse=True)
+    tests   = MockTest.query.filter(
+        MockTest.status=='active',
+        db.or_(MockTest.grade==student.grade, MockTest.grade=='All Grades')
+    ).all()
+    completed_test_ids = [r.test_id for r in results]
+    avg_sc = safe_avg([r.percent for r in results])
+    return render_template('student/dashboard.html',
+        student=student, results=results, tests=tests,
+        completed_test_ids=completed_test_ids, avg_sc=avg_sc, subjects=SUBJECTS)
+
+@app.route('/student/test/<int:test_id>')
+@login_required('student')
+def student_test(test_id):
+    test = db.session.get(MockTest, test_id)
+    if not test: return redirect(url_for('student_dashboard'))
+    existing = TestResult.query.filter_by(student_id=session['user_id'], test_id=test_id).first()
+    if existing:
+        flash('You have already completed this test.', 'error')
+        return redirect(url_for('student_dashboard'))
+    questions = json.loads(test.questions or '[]')
+    return render_template('student/test.html', test=test, questions=questions)
+
+@app.route('/student/submit/<int:test_id>', methods=['POST'])
+@login_required('student')
+def submit_test(test_id):
+    test = db.session.get(MockTest, test_id)
+    if not test: return jsonify({'error':'not found'}), 404
+    existing = TestResult.query.filter_by(student_id=session['user_id'], test_id=test_id).first()
+    if existing:
+        return jsonify({'score':existing.score,'total':existing.total,'percent':existing.percent,'section_scores':json.loads(existing.section_scores or '{}')})
+    questions  = json.loads(test.questions or '[]')
+    data       = request.get_json() or {}
+    answers    = data.get('answers', {})
+    time_taken = data.get('time_taken', 0)
+    score = 0
+    section_scores = {}
+    for q in questions:
+        sec = q.get('section', 'General')
+        section_scores.setdefault(sec, {'correct':0,'total':0})
+        section_scores[sec]['total'] += 1
+        if str(q['id']) in answers and answers[str(q['id'])] == q['answer']:
+            score += 1
+            section_scores[sec]['correct'] += 1
+    total   = len(questions)
+    percent = round(score/total*100, 1) if total else 0
+    db.session.add(TestResult(
+        student_id=session['user_id'], test_id=test_id,
+        score=score, total=total, percent=percent,
+        answers=json.dumps(answers), section_scores=json.dumps(section_scores),
+        time_taken=time_taken))
+    db.session.commit()
+    return jsonify({'score':score,'total':total,'percent':percent,'section_scores':section_scores})
+
+@app.route('/student/scores')
+@login_required('student')
+def student_scores():
+    student = db.session.get(User, session['user_id'])
+    seen_tests = set()
+    unique_results = []
+    for r in sorted(student.results, key=lambda r: r.taken_at):
+        if r.test_id not in seen_tests:
+            seen_tests.add(r.test_id)
+            unique_results.append(r)
+    results = sorted(unique_results, key=lambda r: r.taken_at, reverse=True)
+    return render_template('student/scores.html', student=student, results=results)
+
+@app.route('/student/review/<int:result_id>')
+@login_required('student')
+def student_review(result_id):
+    result  = db.session.get(TestResult, result_id)
+    if not result:
+        flash('Result not found.', 'error')
+        return redirect(url_for('student_scores'))
+    student = db.session.get(User, session['user_id'])
+    if result.student_id != student.id:
+        flash('Access denied.', 'error')
+        return redirect(url_for('student_scores'))
+    test      = result.test
+    questions = json.loads(test.questions or '[]')
+    answers   = json.loads(result.answers or '{}')
+    review = []
+    for q in questions:
+        qid       = str(q['id'])
+        given_idx = answers.get(qid)
+        correct   = q.get('answer', 0)
+        if given_idx is None:
+            status = 'unattempted'
+        elif int(given_idx) == correct:
+            status = 'correct'
+        else:
+            status = 'wrong'
+        review.append({'question':q,'given':int(given_idx) if given_idx is not None else None,'correct':correct,'status':status})
+    return render_template('student/review.html', student=student, test=test, result=result, review=review)
+
+# ── API ───────────────────────────────────────────────────────────────────────
+
+@app.route('/api/analytics')
+@login_required('Resource_Manager')
+def api_analytics():
+    results  = TestResult.query.all()
+    by_grade = {}
+    for r in results:
+        g = r.student.grade or 'Unknown'
+        by_grade.setdefault(g, []).append(r.percent)
+    return jsonify({g: round(sum(v)/len(v),1) for g,v in by_grade.items()})
+
+# ── IMPORT RESULTS ────────────────────────────────────────────────────────────
+
+@app.route('/admin/import-results', methods=['GET','POST'])
+@login_required('Resource_Manager')
+def import_results():
+    tests   = MockTest.query.all()
+    preview = []
+    errors  = []
+    if request.method == 'POST':
+        action  = request.form.get('action')
+        test_id = int(request.form.get('test_id', 0))
+        test    = db.session.get(MockTest, test_id)
+        if not test:
+            flash('Test not found.', 'error')
+            return redirect(url_for('import_results'))
+        questions = json.loads(test.questions or '[]')
+        total_q   = len(questions)
+        opt_map   = {'A':0,'B':1,'C':2,'D':3,'a':0,'b':1,'c':2,'d':3}
+        if action == 'preview':
+            file = request.files.get('csv_file')
+            if not file or not file.filename.endswith('.csv'):
+                flash('Please upload a valid .csv file.', 'error')
+                return redirect(url_for('import_results'))
+            stream = io.StringIO(file.stream.read().decode('utf-8-sig'))
+            reader = csv.DictReader(stream)
+            for row in reader:
+                username = row.get('username','').strip()
+                if not username: continue
+                user = User.query.filter_by(username=username).first()
+                if not user:
+                    errors.append(f"'{username}' not found — skipped")
+                    continue
+                existing = TestResult.query.filter_by(student_id=user.id, test_id=test_id).first()
+                if existing:
+                    errors.append(f"{username} already has a result — skipped")
+                    continue
+                answers = {}
+                score   = 0
+                section_scores = {}
+                for i, q in enumerate(questions):
+                    col         = f'q{i+1}'
+                    given_letter = row.get(col,'').strip().upper()
+                    given_idx   = opt_map.get(given_letter)
+                    correct_idx = q['answer']
+                    sec         = q.get('section','General')
+                    section_scores.setdefault(sec, {'correct':0,'total':0})
+                    section_scores[sec]['total'] += 1
+                    if given_idx is not None:
+                        answers[str(q['id'])] = given_idx
+                        if given_idx == correct_idx:
+                            score += 1
+                            section_scores[sec]['correct'] += 1
+                percent = round(score/total_q*100, 1) if total_q else 0
+                preview.append({'username':username,'name':user.name,'user_id':user.id,'score':score,'total':total_q,'percent':percent,'answers':json.dumps(answers),'section_scores':json.dumps(section_scores)})
+            return render_template('admin/import_results.html', tests=tests, preview=preview, errors=errors, test_id=test_id, selected_test=test)
+        elif action == 'confirm':
+            userids=request.form.getlist('user_id'); scores=request.form.getlist('score')
+            totals=request.form.getlist('total'); percents=request.form.getlist('percent')
+            answers_l=request.form.getlist('answers'); secs_l=request.form.getlist('section_scores')
+            added = 0
+            for i in range(len(userids)):
+                existing = TestResult.query.filter_by(student_id=int(userids[i]), test_id=test_id).first()
+                if existing: continue
+                db.session.add(TestResult(student_id=int(userids[i]),test_id=test_id,score=int(scores[i]),total=int(totals[i]),percent=float(percents[i]),answers=answers_l[i],section_scores=secs_l[i],time_taken=0))
+                added += 1
+            db.session.commit()
+            flash(f"✅ {added} student results imported successfully!", 'success')
+            return redirect(url_for('admin_analytics'))
+    return render_template('admin/import_results.html', tests=tests, preview=[], errors=[], test_id=None, selected_test=None)
+
+@app.route('/admin/download/results-template')
+@login_required('Resource_Manager')
+def download_results_template():
+    tests = MockTest.query.all()
+    max_q = max((len(json.loads(t.questions or '[]')) for t in tests), default=8)
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['username'] + [f'q{i+1}' for i in range(max_q)])
+    for s in User.query.filter_by(role='student').limit(3).all():
+        writer.writerow([s.username] + ['' for _ in range(max_q)])
+    output.seek(0)
+    return Response(output.getvalue(), mimetype='text/csv',
+        headers={'Content-Disposition': 'attachment; filename=results_template.csv'})
+
+@app.route('/admin/download/test/<int:test_id>')
+@login_required('Resource_Manager')
+def download_test_excel(test_id):
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from openpyxl.utils import get_column_letter
+    test    = db.session.get(MockTest, test_id)
+    if not test:
+        flash('Test not found.', 'error')
+        return redirect(url_for('admin_analytics'))
+    results   = TestResult.query.filter_by(test_id=test_id).order_by(TestResult.percent.desc()).all()
+    questions = json.loads(test.questions or '[]')
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Results"
+    headers = ["#","Name","Grade","Section","Score","Total","%","Time"]
+    for i, h in enumerate(headers, 1):
+        c = ws.cell(row=1, column=i, value=h)
+        c.font = Font(bold=True, color="FFFFFF")
+        c.fill = PatternFill("solid", fgColor="1a3c6e")
+        c.alignment = Alignment(horizontal="center")
+    for idx, r in enumerate(results, 1):
+        mins = r.time_taken // 60; secs = r.time_taken % 60
+        row = [idx, r.student.name, r.student.grade, r.student.section or '-', r.score, r.total, r.percent, f"{mins}m {secs}s"]
+        for c, val in enumerate(row, 1):
+            ws.cell(row=idx+1, column=c, value=val)
+    buf = io.BytesIO()
+    wb.save(buf); buf.seek(0)
+    fname = test.name.replace(' ','_')
+    return Response(buf.read(), mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': f'attachment; filename=EPS_{fname}.xlsx'})
+
 # ── MAIN ──────────────────────────────────────────────────────────────────────
 
 with app.app_context():
