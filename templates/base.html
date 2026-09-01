@@ -11,175 +11,50 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Inter', sans-serif; background: #f0f4f8; color: #1a202c; }
-
   .app { display: flex; min-height: 100vh; }
-
-  /* ── Sidebar ── */
-  .sidebar {
-    width: 240px; min-height: 100vh;
-    background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
-    display: flex; flex-direction: column;
-    position: fixed; top: 0; left: 0; bottom: 0;
-    z-index: 100; box-shadow: 4px 0 20px rgba(0,0,0,0.15);
-  }
-  .sidebar-logo {
-    padding: 24px 20px 20px;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-  }
-  .logo-mark {
-    font-family: 'Poppins', sans-serif;
-    font-size: 1.3rem; font-weight: 800;
-    background: linear-gradient(135deg, #60a5fa, #a78bfa);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    margin-bottom: 4px;
-  }
-  .sidebar-meta {
-    font-size: .68rem; color: #94a3b8; line-height: 1.5; font-weight: 400;
-  }
-  .nav-section {
-    font-size: .6rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: .1em; color: #475569;
-    padding: 16px 20px 6px;
-  }
-  .nav-link {
-    display: flex; align-items: center; gap: 10px;
-    padding: 9px 20px; font-size: .82rem; font-weight: 500;
-    color: #94a3b8; text-decoration: none;
-    transition: all .15s ease; border-left: 3px solid transparent;
-  }
+  .sidebar { width: 240px; min-height: 100vh; background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 100; box-shadow: 4px 0 20px rgba(0,0,0,0.15); overflow-y: auto; }
+  .sidebar-logo { padding: 24px 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .logo-mark { font-family: 'Poppins', sans-serif; font-size: 1.3rem; font-weight: 800; background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 4px; }
+  .sidebar-meta { font-size: .68rem; color: #94a3b8; line-height: 1.5; }
+  .nav-section { font-size: .6rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #475569; padding: 16px 20px 6px; }
+  .nav-link { display: flex; align-items: center; gap: 10px; padding: 9px 20px; font-size: .82rem; font-weight: 500; color: #94a3b8; text-decoration: none; transition: all .15s; border-left: 3px solid transparent; }
   .nav-link:hover { color: #e2e8f0; background: rgba(255,255,255,0.05); }
-  .nav-link.active {
-    color: #fff; background: rgba(99,102,241,0.2);
-    border-left-color: #6366f1;
-  }
+  .nav-link.active { color: #fff; background: rgba(99,102,241,0.2); border-left-color: #6366f1; }
   .nav-icon { font-size: 1rem; width: 20px; text-align: center; }
-  .sidebar-footer {
-    margin-top: auto; padding: 16px 20px;
-    border-top: 1px solid rgba(255,255,255,0.08);
-  }
+  .sidebar-footer { margin-top: auto; padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.08); }
   .sidebar-user { font-size: .85rem; font-weight: 600; color: #e2e8f0; }
-  .sidebar-role {
-    font-size: .7rem; color: #64748b; margin-bottom: 10px;
-    text-transform: capitalize;
-  }
-  .btn-signout {
-    display: block; width: 100%; padding: 8px;
-    background: rgba(239,68,68,0.15); color: #fca5a5;
-    border: 1px solid rgba(239,68,68,0.3); border-radius: 8px;
-    font-size: .78rem; font-weight: 600; text-align: center;
-    cursor: pointer; text-decoration: none; transition: all .15s;
-  }
-  .btn-signout:hover { background: rgba(239,68,68,0.25); color: #fca5a5; }
-
-  /* ── Main content ── */
+  .sidebar-role { font-size: .7rem; color: #64748b; margin-bottom: 10px; text-transform: capitalize; }
+  .btn-signout { display: block; width: 100%; padding: 8px; background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; font-size: .78rem; font-weight: 600; text-align: center; cursor: pointer; text-decoration: none; transition: all .15s; }
+  .btn-signout:hover { background: rgba(239,68,68,0.25); }
   .main { margin-left: 240px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
-
-  .topbar {
-    background: #fff; padding: 14px 28px;
-    display: flex; justify-content: space-between; align-items: center;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-    position: sticky; top: 0; z-index: 50;
-  }
-  .topbar-title {
-    font-family: 'Poppins', sans-serif;
-    font-size: 1.05rem; font-weight: 700; color: #0f172a;
-  }
-  .topbar-user {
-    font-size: .75rem; color: #94a3b8; font-weight: 500;
-  }
-
+  .topbar { background: #fff; padding: 14px 28px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.06); position: sticky; top: 0; z-index: 50; }
+  .topbar-title { font-family: 'Poppins', sans-serif; font-size: 1.05rem; font-weight: 700; color: #0f172a; }
+  .topbar-user { font-size: .75rem; color: #94a3b8; font-weight: 500; }
   .page { padding: 24px 28px; flex: 1; }
-
-  /* ── Cards ── */
-  .card {
-    background: #fff; border-radius: 12px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
-    padding: 20px;
-  }
-
-  /* ── Alerts ── */
-  .alert {
-    padding: 10px 16px; border-radius: 8px;
-    font-size: .83rem; font-weight: 500; margin-bottom: 16px;
-  }
+  .card { background: #fff; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04); padding: 20px; }
+  .alert { padding: 10px 16px; border-radius: 8px; font-size: .83rem; font-weight: 500; margin-bottom: 16px; }
   .alert-success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
-  .alert-error   { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
-
-  /* ── Buttons ── */
-  .btn {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 8px 16px; border-radius: 8px; font-size: .83rem;
-    font-weight: 600; cursor: pointer; border: none;
-    text-decoration: none; transition: all .15s;
-    font-family: 'Inter', sans-serif;
-  }
+  .alert-error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; font-size: .83rem; font-weight: 600; cursor: pointer; border: none; text-decoration: none; transition: all .15s; font-family: 'Inter', sans-serif; }
   .btn-primary { background: #6366f1; color: #fff; }
   .btn-primary:hover { background: #4f46e5; }
   .btn-secondary { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
   .btn-secondary:hover { background: #e2e8f0; }
   .btn-sm { padding: 5px 12px; font-size: .78rem; }
-
-  /* ── Tables ── */
   .data-table { width: 100%; border-collapse: collapse; font-size: .83rem; }
-  .data-table th {
-    background: #f8fafc; padding: 10px 14px;
-    text-align: left; font-weight: 600; color: #475569;
-    font-size: .75rem; text-transform: uppercase; letter-spacing: .05em;
-    border-bottom: 2px solid #e2e8f0;
-  }
-  .data-table td {
-    padding: 10px 14px; border-bottom: 1px solid #f1f5f9;
-    color: #374151;
-  }
+  .data-table th { background: #f8fafc; padding: 10px 14px; text-align: left; font-weight: 600; color: #475569; font-size: .75rem; text-transform: uppercase; letter-spacing: .05em; border-bottom: 2px solid #e2e8f0; }
+  .data-table td { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; color: #374151; }
   .data-table tr:hover td { background: #fafafa; }
-
-  /* ── Badges ── */
   .badge { padding: 3px 10px; border-radius: 20px; font-size: .72rem; font-weight: 600; }
-  .badge-blue  { background: #eff6ff; color: #1d4ed8; }
-  .badge-purple{ background: #f5f3ff; color: #6d28d9; }
+  .badge-blue { background: #eff6ff; color: #1d4ed8; }
+  .badge-purple { background: #f5f3ff; color: #6d28d9; }
   .badge-green { background: #f0fdf4; color: #166534; }
   .badge-amber { background: #fffbeb; color: #92400e; }
-
-  /* ── Quiz/Test ── */
-  .quiz-wrap { max-width: 760px; margin: 0 auto; }
-  .quiz-passage {
-    background: #f8fafc; border-left: 4px solid #6366f1;
-    padding: 12px 16px; font-size: .85rem; color: #475569;
-    margin-bottom: 14px; border-radius: 0 8px 8px 0; line-height: 1.7;
-  }
   .quiz-q { font-size: 1rem; font-weight: 600; color: #0f172a; margin-bottom: 14px; line-height: 1.6; }
-  .quiz-opt {
-    display: flex; align-items: center; gap: 12px;
-    padding: 12px 16px; border: 2px solid #e2e8f0;
-    border-radius: 10px; margin-bottom: 8px; cursor: pointer;
-    transition: all .15s; font-size: .88rem; background: #fff;
-  }
+  .quiz-opt { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 10px; margin-bottom: 8px; cursor: pointer; transition: all .15s; font-size: .88rem; background: #fff; }
   .quiz-opt:hover { border-color: #6366f1; background: #f5f3ff; }
   .quiz-opt.selected { border-color: #6366f1; background: #eff6ff; }
-  .opt-letter {
-    width: 32px; height: 32px; border-radius: 50%;
-    background: #f1f5f9; display: flex; align-items: center;
-    justify-content: center; font-weight: 700; font-size: .82rem;
-    color: #475569; flex-shrink: 0; transition: all .15s;
-  }
-  .timer {
-    font-family: 'Poppins', sans-serif; font-weight: 700;
-    font-size: 1rem; padding: 6px 16px; border-radius: 20px;
-  }
-  .timer.safe   { background: #f0fdf4; color: #166534; }
-  .timer.warn   { background: #fffbeb; color: #92400e; }
-  .timer.danger { background: #fef2f2; color: #dc2626; }
-  .progress { background: #e2e8f0; border-radius: 99px; overflow: hidden; }
-  .progress-fill { height: 100%; border-radius: 99px; transition: width .3s; }
-  .nav-q { transition: all .15s; }
-  .nav-q:hover { opacity: .8; }
-
-  /* ── Surface vars (used by old templates) ── */
-  :root {
-    --brand: #6366f1; --brand-l: #eff6ff;
-    --surface2: #f1f5f9; --border: #e2e8f0;
-    --ink2: #1e293b; --ink3: #94a3b8;
-  }
+  :root { --brand: #6366f1; --brand-l: #eff6ff; --surface2: #f1f5f9; --border: #e2e8f0; --ink2: #1e293b; --ink3: #94a3b8; }
 </style>
 </head>
 <body>
@@ -193,119 +68,35 @@
 
     {% if session.role == 'admin' or session.role == 'Resource_Manager' %}
       <div class="nav-section">Main</div>
-      <a href="/admin" class="nav-link {% if request.path=='/admin' %}active{% endif %}">
-        <span class="nav-icon">🏠</span>Dashboard
-      </a>
+      <a href="/admin" class="nav-link {% if request.path=='/admin' %}active{% endif %}"><span class="nav-icon">🏠</span>Dashboard</a>
       <div class="nav-section">Manage</div>
-      <a href="/admin/students" class="nav-link {% if 'students' in request.path %}active{% endif %}">
-        <span class="nav-icon">👨‍🎓</span>Students
-      </a>
-      <a href="/admin/teachers" class="nav-link {% if 'teachers' in request.path %}active{% endif %}">
-        <span class="nav-icon">👩‍🏫</span>Teachers
-      </a>
-      <a href="/admin/tests" class="nav-link {% if 'tests' in request.path or 'questions' in request.path %}active{% endif %}">
-        <span class="nav-icon">📝</span>Mock Tests
-      </a>
+      <a href="/admin/students" class="nav-link {% if 'students' in request.path %}active{% endif %}"><span class="nav-icon">👨‍🎓</span>Students</a>
+      <a href="/admin/teachers" class="nav-link {% if 'teachers' in request.path %}active{% endif %}"><span class="nav-icon">👩‍🏫</span>Teachers</a>
+      <a href="/admin/tests" class="nav-link {% if 'tests' in request.path or 'questions' in request.path %}active{% endif %}"><span class="nav-icon">📝</span>Mock Tests</a>
       <div class="nav-section">Reports</div>
-      <a href="/admin/analytics" class="nav-link {% if 'analytics' in request.path %}active{% endif %}">
-        <span class="nav-icon">📊</span>Analytics
-      </a>
-      <div class="nav-section">🌱 IB Development</div>
-      <a href="/ib/overview" class="nav-link {% if 'ib/overview' in request.path %}active{% endif %}">
-        <span class="nav-icon">🌍</span>IB Overview
-      </a>
-      <a href="/ib/atl" class="nav-link {% if 'ib/atl' in request.path %}active{% endif %}">
-        <span class="nav-icon">🧠</span>ATL Skills
-      </a>
-      <a href="/ib/lp" class="nav-link {% if 'ib/lp' in request.path %}active{% endif %}">
-        <span class="nav-icon">⭐</span>Learner Profile
-      </a>
+      <a href="/admin/analytics" class="nav-link {% if 'analytics' in request.path %}active{% endif %}"><span class="nav-icon">📊</span>Analytics</a>
       <div class="nav-section">IB Development</div>
-      <a href="/admin/ib-overview" class="nav-link {% if 'ib-overview' in request.path %}active{% endif %}">
-        <span class="nav-icon">🌍</span>IB Overview
-      </a>
-      <a href="/admin/atl" class="nav-link {% if '/atl' in request.path %}active{% endif %}">
-        <span class="nav-icon">🎯</span>ATL Skills
-      </a>
-      <a href="/admin/learner-profile" class="nav-link {% if 'learner-profile' in request.path %}active{% endif %}">
-        <span class="nav-icon">🌱</span>Learner Profile
-      </a>
-      <div class="nav-section">IB Development</div>
-      <a href="/ib" class="nav-link {% if request.path=='/ib' %}active{% endif %}">
-        <span class="nav-icon">🌍</span>IB Dashboard
-      </a>
-      <a href="/ib/atl" class="nav-link {% if 'atl' in request.path %}active{% endif %}">
-        <span class="nav-icon">🎯</span>ATL Skills
-      </a>
-      <a href="/ib/learner-profile" class="nav-link {% if 'learner-profile' in request.path %}active{% endif %}">
-        <span class="nav-icon">🌱</span>Learner Profile
-      </a>
+      <a href="/ib" class="nav-link {% if request.path=='/ib' %}active{% endif %}"><span class="nav-icon">🌍</span>IB Dashboard</a>
+      <a href="/ib/atl" class="nav-link {% if 'ib/atl' in request.path %}active{% endif %}"><span class="nav-icon">🎯</span>ATL Skills</a>
+      <a href="/ib/learner-profile" class="nav-link {% if 'learner-profile' in request.path %}active{% endif %}"><span class="nav-icon">🌱</span>Learner Profile</a>
       <div class="nav-section">Tools</div>
-      <a href="/admin/import-results" class="nav-link {% if 'import-results' in request.path %}active{% endif %}">
-        <span class="nav-icon">📤</span>Import Results
-      </a>
-      <div class="nav-section" style="color:#10b981">IB Development</div>
-      <a href="/ib/dashboard" class="nav-link {% if request.path.startswith('/ib') %}active{% endif %}" style="color:#6ee7b7">
-        <span class="nav-icon">🌱</span>IB Overview
-      </a>
-      <a href="/ib/class-overview" class="nav-link {% if 'class-overview' in request.path %}active{% endif %}" style="color:#6ee7b7">
-        <span class="nav-icon">📋</span>Class Overview
-      </a>
+      <a href="/admin/import-results" class="nav-link {% if 'import-results' in request.path %}active{% endif %}"><span class="nav-icon">📤</span>Import Results</a>
       <div class="nav-section">Downloads</div>
-      <a href="/admin/download/students" class="nav-link">
-        <span class="nav-icon">📥</span>Students Excel
-      </a>
-      <a href="/admin/download/results" class="nav-link">
-        <span class="nav-icon">📥</span>All Results Excel
-      </a>
+      <a href="/admin/download/students" class="nav-link"><span class="nav-icon">📥</span>Students Excel</a>
+      <a href="/admin/download/results" class="nav-link"><span class="nav-icon">📥</span>All Results Excel</a>
 
     {% elif session.role == 'teacher' %}
       <div class="nav-section">Main</div>
-      <a href="/teacher" class="nav-link {% if request.path=='/teacher' %}active{% endif %}">
-        <span class="nav-icon">🏠</span>Dashboard
-      </a>
-      <a href="/teacher/students" class="nav-link {% if 'students' in request.path %}active{% endif %}">
-        <span class="nav-icon">👨‍🎓</span>Students
-      </a>
-      <a href="/teacher/analytics" class="nav-link {% if 'analytics' in request.path %}active{% endif %}">
-        <span class="nav-icon">📊</span>Analytics
-      </a>
-      <div class="nav-section">🌱 IB Development</div>
-      <a href="/ib/overview" class="nav-link {% if 'ib/overview' in request.path %}active{% endif %}">
-        <span class="nav-icon">🌍</span>IB Overview
-      </a>
-      <a href="/ib/atl" class="nav-link {% if 'ib/atl' in request.path %}active{% endif %}">
-        <span class="nav-icon">🧠</span>ATL Skills
-      </a>
-      <a href="/ib/lp" class="nav-link {% if 'ib/lp' in request.path %}active{% endif %}">
-        <span class="nav-icon">⭐</span>Learner Profile
-      </a>
+      <a href="/teacher" class="nav-link {% if request.path=='/teacher' %}active{% endif %}"><span class="nav-icon">🏠</span>Dashboard</a>
+      <a href="/teacher/students" class="nav-link {% if 'students' in request.path %}active{% endif %}"><span class="nav-icon">👨‍🎓</span>Students</a>
+      <a href="/teacher/analytics" class="nav-link {% if 'analytics' in request.path %}active{% endif %}"><span class="nav-icon">📊</span>Analytics</a>
 
     {% elif session.role == 'student' %}
-      <div class="nav-section">Main</div>
-      <a href="/student" class="nav-link {% if request.path=='/student' %}active{% endif %}">
-        <span class="nav-icon">🏠</span>My Dashboard
-      </a>
-      <a href="/student/scores" class="nav-link {% if 'scores' in request.path %}active{% endif %}">
-        <span class="nav-icon">📊</span>My Scores
-      </a>
-      <a href="/student/ib" class="nav-link {% if 'ib' in request.path %}active{% endif %}" style="color:#6ee7b7">
-        <span class="nav-icon">🌱</span>IB Development
-      </a>
-      <a href="/student/ib" class="nav-link {% if 'ib' in request.path %}active{% endif %}">
-        <span class="nav-icon">🌱</span>IB Development
-      </a>
+      <div class="nav-section">IBT Tests</div>
+      <a href="/student" class="nav-link {% if request.path=='/student' %}active{% endif %}"><span class="nav-icon">🏠</span>My Dashboard</a>
+      <a href="/student/scores" class="nav-link {% if 'scores' in request.path %}active{% endif %}"><span class="nav-icon">📊</span>My Scores</a>
       <div class="nav-section">IB Development</div>
-      <a href="/student/learner-profile" class="nav-link {% if 'learner-profile' in request.path %}active{% endif %}">
-        <span class="nav-icon">🌱</span>My IB Profile
-      </a>
-      <div class="nav-section">🌱 IB Development</div>
-      <a href="/ib/student/atl" class="nav-link {% if 'student/atl' in request.path %}active{% endif %}">
-        <span class="nav-icon">🧠</span>ATL Skills
-      </a>
-      <a href="/ib/student/lp" class="nav-link {% if 'student/lp' in request.path %}active{% endif %}">
-        <span class="nav-icon">⭐</span>Learner Profile
-      </a>
+      <a href="/student/ib" class="nav-link {% if '/student/ib' in request.path %}active{% endif %}"><span class="nav-icon">🌱</span>My IB Profile</a>
     {% endif %}
 
     <div class="sidebar-footer">
