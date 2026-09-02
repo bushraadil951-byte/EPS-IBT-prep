@@ -172,18 +172,20 @@ TERMS = ['Term 1', 'Term 2', 'Term 3']
 
 class ATLRating(db.Model):
     __tablename__ = 'atl_rating'
-    id           = db.Column(db.Integer, primary_key=True)
-    student_id   = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    rater_id     = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    rater_type   = db.Column(db.String(10), nullable=False)  # 'teacher' or 'student'
-    term         = db.Column(db.String(20), nullable=False)
-    category     = db.Column(db.String(50), nullable=False)
-    skill        = db.Column(db.String(100), nullable=False)
-    rating       = db.Column(db.Integer, nullable=False)  # 1-4
-    comment      = db.Column(db.Text, nullable=True)
-    created_at   = db.Column(db.DateTime, default=datetime.utcnow)
-    student      = db.relationship('User', foreign_keys=[student_id])
-    rater        = db.relationship('User', foreign_keys=[rater_id])
+    id          = db.Column(db.Integer, primary_key=True)
+    student_id  = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    teacher_id  = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    rater_id    = db.Column(db.Integer, nullable=True)
+    term        = db.Column(db.String(20), nullable=False)
+    skill       = db.Column(db.String(50), nullable=False)
+    category    = db.Column(db.String(50), nullable=True)
+    descriptor  = db.Column(db.String(200), nullable=False)
+    rating      = db.Column(db.Integer, nullable=False)
+    rater_type  = db.Column(db.String(10), nullable=False)
+    comment     = db.Column(db.Text, nullable=True)
+    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
+    student     = db.relationship('User', foreign_keys=[student_id])
+    teacher     = db.relationship('User', foreign_keys=[teacher_id])
 
 
 class LearnerProfileRating(db.Model):
@@ -203,13 +205,14 @@ class LearnerProfileRating(db.Model):
 
 class StudentReflection(db.Model):
     __tablename__ = 'student_reflection'
-    id           = db.Column(db.Integer, primary_key=True)
-    student_id   = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    term         = db.Column(db.String(20), nullable=False)
-    reflection   = db.Column(db.Text, nullable=False)
-    goals        = db.Column(db.Text, nullable=True)
-    created_at   = db.Column(db.DateTime, default=datetime.utcnow)
-    student      = db.relationship('User', foreign_keys=[student_id])
+    id          = db.Column(db.Integer, primary_key=True)
+    student_id  = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    term        = db.Column(db.String(20), nullable=False)
+    attribute   = db.Column(db.String(50), nullable=False)
+    reflection  = db.Column(db.Text, nullable=False)
+    goals       = db.Column(db.Text, nullable=True)
+    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
+    student     = db.relationship('User', foreign_keys=[student_id])
 
 
 # ── IB HOLISTIC MODELS ───────────────────────────────────────────────────────
