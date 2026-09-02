@@ -1601,8 +1601,6 @@ def import_results():
             return redirect(url_for('admin_analytics'))
     return render_template('admin/import_results.html', tests=tests, preview=[], errors=[], test_id=None, selected_test=None)
 
-@app.route('/admin/download/results-template')
-@login_required('Resource_Manager')
 @app.route('/admin/download/test/<int:test_id>')
 @login_required('Resource_Manager')
 def download_test_excel(test_id):
