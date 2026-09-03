@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Upload Diagnostic Marks{% endblock %}
+{% block page_title %}Upload Diagnostic Marks{% endblock %}
+{% block back_button %}<a href="/{{ role_prefix }}/dt?grade={{ grade }}&section={{ section }}&subject={{ subject }}&dt_number={{ dt_number }}" class="btn btn-secondary btn-sm">← Back</a>{% endblock %}
+{% block content %}
+<div style="max-width:760px">
+  <div class="card" style="margin-bottom:16px;border-left:4px solid #8b5cf6">
+    <h3 style="font-size:1rem;color:#1e293b;margin-bottom:8px">Upload a class mark sheet</h3>
+    <p style="font-size:.82rem;line-height:1.6;color:#64748b">Upload a CSV with <strong>username, marks, remarks</strong>. Existing marks for the same student and diagnostic test will be updated.</p>
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-top:14px;font-family:monospace;font-size:.78rem;color:#475569">username,marks,remarks<br>aarav_g3,18,Good progress<br>priya_g3,21,Strong vocabulary</div>
+  </div>
+  <form method="POST" enctype="multipart/form-data" action="/{{ role_prefix }}/dt/upload" class="card">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">
+      <div><label class="field-label">Grade</label><select class="field-input" name="grade">{% for g in grades %}<option value="{{ g }}" {{ 'selected' if g == grade }}>{{ g }}</option>{% endfor %}</select></div>
+      <div><label class="field-label">Section</label><input class="field-input" name="section" value="{{ section }}" placeholder="A or blank for whole grade"></div>
+      <div><label class="field-label">Subject</label><select class="field-input" name="subject">{% for s in subjects %}<option value="{{ s }}" {{ 'selected' if s == subject }}>{{ s }}</option>{% endfor %}</select></div>
+      <div><label class="field-label">Diagnostic test</label><select class="field-input" name="dt_number">{% for n in dt_numbers %}<option value="{{ n }}" {{ 'selected' if n == dt_number }}>DT{{ n }}</option>{% endfor %}</select></div>
+      <div><label class="field-label">Maximum marks</label><input class="field-input" type="number" name="max_marks" min="1" step="0.5" value="{{ max_marks }}"></div>
+    </div>
+    <div style="margin-top:18px"><label class="field-label">CSV file</label><input class="field-input" type="file" name="csv_file" accept=".csv" required></div>
+    <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap"><button class="btn btn-primary" type="submit">⬆ Upload marks</button><a class="btn btn-secondary" href="/{{ role_prefix }}/dt/upload-template?grade={{ grade }}&section={{ section }}">⬇ Download student template</a></div>
+  </form>
+</div>
+{% endblock %}
