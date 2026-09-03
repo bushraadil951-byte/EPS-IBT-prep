@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% block title %}My Dashboard{% endblock %}
+{% block page_title %}My Dashboard{% endblock %}
+
+{% block content %}
+<!-- Welcome -->
+<div style="margin-bottom:20px">
+  <div style="font-size:1.1rem;font-weight:700;color:#1e293b">Welcome, {{ student.name }}! 👋</div>
+  <div style="font-size:.82rem;color:var(--ink3)">{{ student.grade }} · Section {{ student.section }}</div>
+</div>
+
+<!-- Stats -->
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:24px">
+  <div class="card" style="text-align:center;padding:16px">
+    <div style="font-size:1.6rem;font-weight:800;color:#1d4ed8">{{ results|length }}</div>
+    <div style="font-size:.78rem;color:var(--ink3)">Tests Completed</div>
+  </div>
+  <div class="card" style="text-align:center;padding:16px">
+    <div style="font-size:1.6rem;font-weight:800;color:{{ '#16a34a' if avg_sc >= 80 else '#f59e0b' if avg_sc >= 60 else '#dc2626' }}">
+      {{ avg_sc }}%
+    </div>
+    <div style="font-size:.78rem;color:var(--ink3)">Average Score</div>
+  </div>
+  <div class="card" style="text-align:center;padding:16px">
+    <div style="font-size:1.6rem;font-weight:800;color:#6366f1">
+      {% set ns = namespace(count=0) %}
+      {% for t in tests %}
+        {% if t.id not in completed_test_ids %}
+          {% set ns.count = ns.count + 1 %}
+        {% endif %}
+      {% endfor %}
+      {{ ns.count }}
+    </div>
+    <div style="font-size:.78rem;color:var(--ink3)">Tests Pending</div>
+  </div>
+</div>
+
+<!-- Available Tests -->
+<h3 style="font-size:.9rem;font-weight:700;margin-bottom:12px;color:#374151">📝 Available Tests</h3>
+{% if not tests %}
+<div class="card" style="text-align:center;padding:32px;color:var(--ink3)">
+  No tests published for your grade yet.
+</div>
+{% else %}
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:28px">
+  {% for t in tests %}
+  {% set done = t.id in completed_test_ids %}
+  <div class="card" style="padding:18px;border-left:4px solid {{ '#22c55e' if done else '#6366f1' }}">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+      <div style="font-weight:700;font-size:.92rem">{{ t.name }}</div>
+      {% if done %}
+      <span style="background:#dcfce7;color:#166634;font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:10px">✅ Done</span>
+      {% else %}
+      <span style="background:#eef2ff;color:#4f46e5;font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:10px">Pending</span>
+      {% endif %}
+    </div>
+    <div style="font-size:.8rem;color:var(--ink3);margin-bottom:12px">
+      {{ t.subject }} &nbsp;·&nbsp; ⏱ {{ t.duration }} min &nbsp;·&nbsp; {{ t.difficulty }}
+    </div>
+    {% if done %}
+      {% for r in results if r.test_id == t.id %}
+      <div style="margin-bottom:10px;font-size:.82rem">
+        <span style="font-weight:700;color:{{ '#16a34a' if r.percent >= 80 else '#f59e0b' if r.percent >= 60 else '#dc2626' }}">
+          {{ r.percent }}%
+        </span>
+        &nbsp; ({{ r.score }}/{{ r.total }} correct)
+      </div>
+      <a href="/student/review/{{ r.id }}"
+         style="display:inline-block;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:7px 14px;border-radius:6px;text-decoration:none;font-size:.8rem;font-weight:600">
+        📋 Review Answers
+      </a>
+      {% endfor %}
+    {% else %}
+      <a href="/student/test/{{ t.id }}"
+         style="display:inline-block;background:#4f46e5;color:#fff;padding:8px 18px;border-radius:6px;text-decoration:none;font-size:.82rem;font-weight:600">
+        Start Test →
+      </a>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Recent Results -->
+{% if results %}
+<h3 style="font-size:.9rem;font-weight:700;margin-bottom:12px;color:#374151">📊 Recent Scores</h3>
+<div class="card" style="padding:0;overflow:hidden">
+  <table class="data-table">
+    <thead>
+      <tr><th>Test</th><th>Score</th><th>%</th><th>Date</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for r in results[:5] %}
+      <tr>
+        <td style="font-weight:600">{{ r.test.name }}</td>
+        <td>{{ r.score }}/{{ r.total }}</td>
+        <td>
+          <span style="font-weight:700;color:{{ '#16a34a' if r.percent >= 80 else '#f59e0b' if r.percent >= 60 else '#dc2626' }}">
+            {{ r.percent }}%
+          </span>
+        </td>
+        <td style="font-size:.78rem;color:var(--ink3)">{{ r.taken_at.strftime('%d %b') }}</td>
+        <td>
+          <a href="/student/review/{{ r.id }}"
+             style="color:#1d4ed8;font-size:.78rem;font-weight:600;text-decoration:none">
+            Review
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<div style="margin-top:10px;text-align:right">
+  <a href="/student/scores" style="font-size:.82rem;color:#4f46e5;font-weight:600;text-decoration:none">
+    View all scores →
+  </a>
+</div>
+{% endif %}
+{% endblock %}
