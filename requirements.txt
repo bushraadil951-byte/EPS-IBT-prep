@@ -5,3 +5,4 @@ werkzeug==3.0.1
 psycopg2cffi==2.9.0
 pypdf==4.3.1
 openpyxl==3.1.5
+reportlab
