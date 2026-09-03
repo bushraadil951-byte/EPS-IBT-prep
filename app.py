@@ -778,7 +778,7 @@ def upload_students():
         action = request.form.get('action')
         if action == 'preview':
             file = request.files.get('csv_file')
-            if not file or not file.filename.endswith('.csv'):
+            if not file or not file.filename.lower().endswith('.csv'):
                 flash('Please upload a valid .csv file.', 'error')
                 return redirect(url_for('upload_students'))
             stream = io.StringIO(file.stream.read().decode('utf-8-sig'))
@@ -1431,9 +1431,11 @@ def student_dashboard():
     ).all()
     completed_test_ids = [r.test_id for r in results]
     avg_sc = safe_avg([r.percent for r in results])
+    diagnostic_insights = dt_student_insights(dt_student_series(student.id))
     return render_template('student/dashboard.html',
         student=student, results=results, tests=tests,
-        completed_test_ids=completed_test_ids, avg_sc=avg_sc, subjects=SUBJECTS)
+        completed_test_ids=completed_test_ids, avg_sc=avg_sc, subjects=SUBJECTS,
+        diagnostic_insights=diagnostic_insights)
 
 @app.route('/student/test/<int:test_id>')
 @login_required('student')
@@ -1635,14 +1637,6 @@ def download_test_excel(test_id):
 
 # ── MAIN ──────────────────────────────────────────────────────────────────────
 
-with app.app_context():
-    db.create_all()
-    seed_db()
-
-if __name__ == '__main__':
-    print("\n🎓 Eastern Public School — IBT Portal")
-    print("   Admin: Organizer / bk*123\n")
-    app.run(debug=True, host='0.0.0.0', port=5000)
 
 # ═══════════════════════════════════════════════════════════════════════════
 # DT (DIAGNOSTIC TEST) MODULE — PATCH FOR app.py
@@ -1783,6 +1777,24 @@ def dt_student_series(student_id, academic_year=ACADEMIC_YEAR):
     return series
 
 
+def dt_student_insights(series):
+    """Summarise diagnostic progress for dashboards and reports."""
+    insights = []
+    for subject in SUBJECTS:
+        points = [p for p in series.get(subject, []) if p.get('pct') is not None]
+        values = [p['pct'] for p in points]
+        average = round(sum(values) / len(values), 1) if values else None
+        trend = round(values[-1] - values[0], 1) if len(values) > 1 else None
+        insights.append({
+            'subject': subject, 'average': average, 'trend': trend,
+            'completed': len(points), 'latest': values[-1] if values else None,
+            'status': 'Strong' if average is not None and average >= 80 else
+                      'Developing' if average is not None and average >= 60 else
+                      'Needs focus' if average is not None else 'Not started',
+        })
+    return sorted(insights, key=lambda item: (item['average'] is None, item['average'] or 0))
+
+
 def _pdf_header(c, title, subtitle):
     width, height = A4
     c.setFillColorRGB(0.10, 0.24, 0.43)  # matches your #1a3c6e navy
@@ -1914,6 +1926,9 @@ def dt_upload():
                 continue
             try:
                 marks_val = float(marks_raw)
+                if marks_val < 0 or marks_val > max_marks:
+                    skipped += 1
+                    continue
             except ValueError:
                 skipped += 1
                 continue
@@ -2153,3 +2168,36 @@ def dt_report(student_id):
     fname = f"DT_Progress_Report_{student.name.replace(' ', '_')}.pdf"
     return Response(buf.read(), mimetype='application/pdf',
         headers={'Content-Disposition': f'attachment; filename={fname}'})
+
+
+# ── STUDENT DIAGNOSTIC PROGRESS ────────────────────────────────────────────────
+
+@app.route('/student/diagnostics')
+@login_required('student')
+def student_diagnostics():
+    student = db.session.get(User, session['user_id'])
+    series = dt_student_series(student.id)
+    insights = dt_student_insights(series)
+    weak_subjects = [item['subject'] for item in insights
+                     if item['average'] is not None and item['average'] < 80]
+    practice_tests = MockTest.query.filter(
+        MockTest.status == 'active',
+        db.or_(MockTest.grade == student.grade, MockTest.grade == 'All Grades')
+    ).order_by(MockTest.subject, MockTest.name).all()
+    return render_template('student/diagnostics.html',
+        student=student, series=series, insights=insights,
+        subjects=SUBJECTS, dt_numbers=DT_NUMBERS,
+        weak_subjects=weak_subjects, practice_tests=practice_tests,
+        academic_year=ACADEMIC_YEAR)
+
+
+# Initialise after every model—including diagnostic models—has been declared.
+with app.app_context():
+    db.create_all()
+    seed_db()
+
+
+if __name__ == '__main__':
+    print("\n🎓 Eastern Public School — IBT Portal")
+    print("   Admin: Organizer / bk*123\n")
+    app.run(debug=True, host='0.0.0.0', port=5000)
