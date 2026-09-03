@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}My Diagnostic Progress{% endblock %}
+{% block page_title %}My Diagnostic Progress{% endblock %}
+{% block content %}
+<div style="margin-bottom:18px"><div style="font-size:1.08rem;font-weight:800;color:#1e293b">📈 {{ student.name }}’s diagnostic journey</div><div style="font-size:.8rem;color:#64748b;margin-top:4px">Your subject-by-subject progress across {{ academic_year }}.</div></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin-bottom:18px">
+{% for item in insights %}
+  <div class="card" style="padding:14px;border-top:3px solid {{ '#16a34a' if item.average is not none and item.average >= 80 else '#f59e0b' if item.average is not none and item.average >= 60 else '#dc2626' if item.average is not none else '#94a3b8' }}">
+    <div style="font-size:.76rem;font-weight:700;color:#475569">{{ item.subject }}</div>
+    <div style="font-size:1.35rem;font-weight:800;margin:5px 0;color:{{ '#16a34a' if item.average is not none and item.average >= 80 else '#f59e0b' if item.average is not none and item.average >= 60 else '#dc2626' if item.average is not none else '#94a3b8' }}">{{ item.average|string + '%' if item.average is not none else '—' }}</div>
+    <div style="font-size:.7rem;color:#64748b">{{ item.status }}{% if item.trend is not none %} · {{ '+' if item.trend >= 0 else '' }}{{ item.trend }} pts{% endif %}</div>
+  </div>
+{% endfor %}
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:14px">
+{% for subject in subjects %}
+  <div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="font-weight:700;color:#334155">{{ subject }}</div><span style="font-size:.7rem;color:#64748b">{{ insights[loop.index0].completed }} result(s)</span></div><canvas id="student-chart-{{ loop.index }}" height="190"></canvas></div>
+{% endfor %}
+</div>
+{% set focus = insights|selectattr('average','ne',none)|selectattr('average','lt',80)|list %}
+{% if focus and practice_tests %}
+<div class="card" style="margin-top:18px;border-left:4px solid #f59e0b"><div style="font-weight:800;color:#334155;margin-bottom:5px">🎯 Practice next</div><div style="font-size:.78rem;color:#64748b;margin-bottom:12px">These published tests match subjects where you can build confidence.</div><div style="display:flex;gap:8px;flex-wrap:wrap">{% for test in practice_tests if test.subject in weak_subjects %}<a href="/student/test/{{ test.id }}" class="btn btn-secondary btn-sm">{{ test.subject }} · {{ test.name }}</a>{% endfor %}</div></div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script>
+const studentDiagnosticLabels = [{% for n in dt_numbers %}'DT{{ n }}'{% if not loop.last %},{% endif %}{% endfor %}];
+{% for subject in subjects %}
+new Chart(document.getElementById('student-chart-{{ loop.index }}'), {
+  type:'line',
+  data:{labels:studentDiagnosticLabels,datasets:[
+    {label:'My %',data:[{% for point in series[subject] %}{{ point.pct if point.pct is not none else 'null' }}{% if not loop.last %},{% endif %}{% endfor %}],borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,.12)',tension:.3,spanGaps:true},
+    {label:'Class average %',data:[{% for point in series[subject] %}{{ point.class_avg_pct if point.class_avg_pct is not none else 'null' }}{% if not loop.last %},{% endif %}{% endfor %}],borderColor:'#94a3b8',borderDash:[5,5],tension:.3,spanGaps:true}
+  ]},
+  options:{responsive:true,scales:{y:{min:0,max:100,ticks:{callback:value=>value+'%'}}},plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}}}}
+});
+{% endfor %}
+</script>
+{% endblock %}
