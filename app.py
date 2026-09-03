@@ -1643,3 +1643,513 @@ if __name__ == '__main__':
     print("\n🎓 Eastern Public School — IBT Portal")
     print("   Admin: Organizer / bk*123\n")
     app.run(debug=True, host='0.0.0.0', port=5000)
+
+# ═══════════════════════════════════════════════════════════════════════════
+# DT (DIAGNOSTIC TEST) MODULE — PATCH FOR app.py
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# WHERE TO PASTE EACH SECTION:
+#   1. "NEW IMPORTS"              -> top of app.py, with your other imports
+#   2. "UPDATED login_required"   -> REPLACES your existing login_required()
+#   3. "NEW CONSTANTS"            -> near your SUBJECTS/GRADES constants
+#   4. "NEW MODELS"               -> in the MODELS section, after TestResult
+#   5. "NEW HELPERS"              -> in the HELPERS section, after safe_avg()
+#   6. "NEW ROUTES"               -> anywhere after the teacher/admin routes
+#
+# ALSO REQUIRED:
+#   - Add `reportlab` to requirements.txt (see file 6)
+#   - Add the sidebar nav snippet to base.html (see file 5)
+#   - Drop templates/dt/entry.html, upload.html, graph.html into templates/dt/
+#
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+# ── 1. NEW IMPORTS ────────────────────────────────────────────────────────
+# Add near the top of app.py with your other imports:
+#
+#   from reportlab.pdfgen import canvas as pdfcanvas
+#   from reportlab.lib.pagesizes import A4
+#   from reportlab.lib import colors as rl_colors
+#   from reportlab.graphics.shapes import Drawing
+#   from reportlab.graphics.charts.linecharts import HorizontalLineChart
+#   from reportlab.graphics import renderPDF
+
+
+# ── 2. UPDATED login_required — allows a role OR a tuple of roles ─────────
+# REPLACE your existing login_required() with this version (backward compatible
+# — passing a single string still works exactly as before):
+
+def login_required(role=None):
+    from functools import wraps
+    def decorator(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            if 'user_id' not in session:
+                return redirect(url_for('login'))
+            if role:
+                allowed = role if isinstance(role, (list, tuple)) else (role,)
+                if session.get('role') not in allowed:
+                    flash('Access denied.', 'error')
+                    return redirect(url_for('login'))
+            return f(*args, **kwargs)
+        return decorated
+    return decorator
+
+
+# ── 3. NEW CONSTANTS — add near your SUBJECTS / GRADES constants ──────────
+
+ACADEMIC_YEAR = '2025-26'
+DT_NUMBERS = [1, 2, 3, 4, 5, 6]
+
+
+# ── 4. NEW MODELS — add in the MODELS section, after class TestResult ─────
+
+class DiagnosticTest(db.Model):
+    __tablename__ = 'diagnostic_test'
+    id            = db.Column(db.Integer, primary_key=True)
+    dt_number     = db.Column(db.Integer, nullable=False)          # 1-6
+    subject       = db.Column(db.String(50), nullable=False)
+    grade         = db.Column(db.String(20), nullable=False)
+    section       = db.Column(db.String(10), nullable=True)        # None = whole grade
+    max_marks     = db.Column(db.Float, default=25)
+    academic_year = db.Column(db.String(20), default=ACADEMIC_YEAR)
+    test_date     = db.Column(db.Date, nullable=True)
+    created_by    = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    created       = db.Column(db.DateTime, default=datetime.utcnow)
+    marks         = db.relationship('DTMark', backref='dt', lazy=True, cascade='all,delete-orphan')
+
+    __table_args__ = (db.UniqueConstraint(
+        'dt_number', 'subject', 'grade', 'section', 'academic_year',
+        name='uq_dt_slot'),)
+
+
+class DTMark(db.Model):
+    __tablename__ = 'dt_mark'
+    id             = db.Column(db.Integer, primary_key=True)
+    dt_id          = db.Column(db.Integer, db.ForeignKey('diagnostic_test.id'), nullable=False)
+    student_id     = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    marks_obtained = db.Column(db.Float, nullable=False)
+    remarks        = db.Column(db.Text, nullable=True)
+    entered_by     = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    entered_at     = db.Column(db.DateTime, default=datetime.utcnow)
+    student        = db.relationship('User', foreign_keys=[student_id])
+
+    __table_args__ = (db.UniqueConstraint('dt_id', 'student_id', name='uq_dt_student'),)
+
+
+# ── 5. NEW HELPERS — add in the HELPERS section, after safe_avg() ─────────
+
+def dt_get_or_create(dt_number, subject, grade, section, academic_year=ACADEMIC_YEAR,
+                      max_marks=25, created_by=None):
+    dt = DiagnosticTest.query.filter_by(
+        dt_number=dt_number, subject=subject, grade=grade,
+        section=section, academic_year=academic_year).first()
+    if not dt:
+        dt = DiagnosticTest(dt_number=dt_number, subject=subject, grade=grade,
+                             section=section, academic_year=academic_year,
+                             max_marks=max_marks, created_by=created_by)
+        db.session.add(dt)
+        db.session.commit()
+    return dt
+
+
+def dt_student_series(student_id, academic_year=ACADEMIC_YEAR):
+    """Returns {subject: [{'dt':1,'marks':x,'max':y,'pct':p,'class_avg_pct':a,'date':d}, ...]}"""
+    student = db.session.get(User, student_id)
+    series = {sub: [] for sub in SUBJECTS}
+    for sub in SUBJECTS:
+        for n in DT_NUMBERS:
+            dt = DiagnosticTest.query.filter_by(
+                dt_number=n, subject=sub, grade=student.grade,
+                academic_year=academic_year
+            ).filter(
+                db.or_(DiagnosticTest.section == None, DiagnosticTest.section == student.section)
+            ).first()
+            if not dt:
+                series[sub].append({'dt': n, 'marks': None, 'max': None, 'pct': None,
+                                     'class_avg_pct': None, 'date': None})
+                continue
+            mark = DTMark.query.filter_by(dt_id=dt.id, student_id=student_id).first()
+            class_marks = [m.marks_obtained for m in dt.marks]
+            class_avg_pct = round(sum(class_marks) / len(class_marks) / dt.max_marks * 100, 1) \
+                if class_marks and dt.max_marks else None
+            if mark:
+                pct = round(mark.marks_obtained / dt.max_marks * 100, 1) if dt.max_marks else 0
+                series[sub].append({'dt': n, 'marks': mark.marks_obtained, 'max': dt.max_marks,
+                                     'pct': pct, 'class_avg_pct': class_avg_pct, 'date': dt.test_date})
+            else:
+                series[sub].append({'dt': n, 'marks': None, 'max': dt.max_marks, 'pct': None,
+                                     'class_avg_pct': class_avg_pct, 'date': dt.test_date})
+    return series
+
+
+def _pdf_header(c, title, subtitle):
+    width, height = A4
+    c.setFillColorRGB(0.10, 0.24, 0.43)  # matches your #1a3c6e navy
+    c.rect(0, height - 90, width, 90, fill=1, stroke=0)
+    c.setFillColorRGB(1, 1, 1)
+    c.setFont('Helvetica-Bold', 18)
+    c.drawString(40, height - 45, 'Eastern Public School')
+    c.setFont('Helvetica', 11)
+    c.drawString(40, height - 65, title)
+    c.setFont('Helvetica', 9)
+    c.drawString(40, height - 80, subtitle)
+    c.setFillColorRGB(0, 0, 0)
+    return height
+
+
+# ── 6. NEW ROUTES ───────────────────────────────────────────────────────────
+# These routes are registered TWICE (once under /teacher/, once under /admin/)
+# using stacked @app.route decorators with distinct endpoint names, guarded by
+# the updated login_required(('teacher','Resource_Manager')). Templates use a
+# `role_prefix` variable ('teacher' or 'admin') to build correct links.
+
+def _dt_role_prefix():
+    return 'admin' if session.get('role') == 'Resource_Manager' else 'teacher'
+
+
+@app.route('/teacher/dt', methods=['GET', 'POST'], endpoint='teacher_dt')
+@app.route('/admin/dt', methods=['GET', 'POST'], endpoint='admin_dt')
+@login_required(('teacher', 'Resource_Manager'))
+def dt_entry():
+    if request.method == 'POST':
+        grade     = request.form['grade']
+        section   = request.form.get('section') or None
+        subject   = request.form['subject']
+        dt_number = int(request.form['dt_number'])
+        max_marks = float(request.form.get('max_marks', 25))
+        test_date = request.form.get('test_date') or None
+
+        dt = dt_get_or_create(dt_number, subject, grade, section, ACADEMIC_YEAR,
+                               max_marks, session['user_id'])
+        dt.max_marks = max_marks
+        if test_date:
+            dt.test_date = datetime.strptime(test_date, '%Y-%m-%d').date()
+        db.session.commit()
+
+        student_ids = request.form.getlist('student_id')
+        saved = 0
+        for sid in student_ids:
+            val = request.form.get(f'marks_{sid}', '').strip()
+            if val == '':
+                continue
+            try:
+                marks_val = float(val)
+            except ValueError:
+                continue
+            remark = request.form.get(f'remark_{sid}', '').strip()
+            existing = DTMark.query.filter_by(dt_id=dt.id, student_id=int(sid)).first()
+            if existing:
+                existing.marks_obtained = marks_val
+                existing.remarks = remark
+                existing.entered_by = session['user_id']
+            else:
+                db.session.add(DTMark(dt_id=dt.id, student_id=int(sid),
+                    marks_obtained=marks_val, remarks=remark, entered_by=session['user_id']))
+            saved += 1
+        db.session.commit()
+        flash(f"✅ Marks saved for {saved} student(s) — {subject} DT{dt_number}, "
+              f"{grade}{(' ' + section) if section else ''}", 'success')
+        return redirect(url_for(f'{_dt_role_prefix()}_dt', grade=grade,
+                                 section=section or '', subject=subject, dt_number=dt_number))
+
+    grade     = request.args.get('grade', GRADES[0])
+    section   = request.args.get('section', '')
+    subject   = request.args.get('subject', SUBJECTS[0])
+    dt_number = int(request.args.get('dt_number', 1))
+
+    q = User.query.filter_by(role='student', grade=grade)
+    if section:
+        q = q.filter_by(section=section)
+    students = q.order_by(User.name).all()
+
+    dt = DiagnosticTest.query.filter_by(
+        dt_number=dt_number, subject=subject, grade=grade,
+        section=section or None, academic_year=ACADEMIC_YEAR).first()
+    existing_marks = {}
+    if dt:
+        for m in dt.marks:
+            existing_marks[m.student_id] = {'marks': m.marks_obtained, 'remarks': m.remarks or ''}
+
+    sections = sorted({s.section for s in User.query.filter_by(role='student', grade=grade).all()
+                        if s.section})
+
+    return render_template('dt/entry.html',
+        students=students, grades=GRADES, subjects=SUBJECTS, dt_numbers=DT_NUMBERS,
+        sections=sections, grade=grade, section=section, subject=subject, dt_number=dt_number,
+        dt=dt, existing_marks=existing_marks, academic_year=ACADEMIC_YEAR,
+        role_prefix=_dt_role_prefix())
+
+
+@app.route('/teacher/dt/upload', methods=['GET', 'POST'], endpoint='teacher_dt_upload')
+@app.route('/admin/dt/upload', methods=['GET', 'POST'], endpoint='admin_dt_upload')
+@login_required(('teacher', 'Resource_Manager'))
+def dt_upload():
+    grade     = request.values.get('grade', GRADES[0])
+    section   = request.values.get('section', '')
+    subject   = request.values.get('subject', SUBJECTS[0])
+    dt_number = int(request.values.get('dt_number', 1))
+    max_marks = float(request.values.get('max_marks', 25))
+
+    if request.method == 'POST':
+        file = request.files.get('csv_file')
+        if not file or not file.filename.endswith('.csv'):
+            flash('Please upload a valid .csv file.', 'error')
+            return redirect(url_for(f'{_dt_role_prefix()}_dt_upload', grade=grade, section=section,
+                                     subject=subject, dt_number=dt_number, max_marks=max_marks))
+        dt = dt_get_or_create(dt_number, subject, grade, section or None, ACADEMIC_YEAR,
+                               max_marks, session['user_id'])
+        stream = io.StringIO(file.stream.read().decode('utf-8-sig'))
+        reader = csv.DictReader(stream)
+        added = 0
+        skipped = 0
+        for row in reader:
+            username  = row.get('username', '').strip()
+            marks_raw = row.get('marks', '').strip()
+            if not username or marks_raw == '':
+                continue
+            student = User.query.filter_by(username=username, role='student').first()
+            if not student:
+                skipped += 1
+                continue
+            try:
+                marks_val = float(marks_raw)
+            except ValueError:
+                skipped += 1
+                continue
+            existing = DTMark.query.filter_by(dt_id=dt.id, student_id=student.id).first()
+            if existing:
+                existing.marks_obtained = marks_val
+                existing.remarks = row.get('remarks', '').strip()
+            else:
+                db.session.add(DTMark(dt_id=dt.id, student_id=student.id,
+                    marks_obtained=marks_val, remarks=row.get('remarks', '').strip(),
+                    entered_by=session['user_id']))
+            added += 1
+        db.session.commit()
+        flash(f'✅ {added} marks uploaded ({skipped} skipped — check usernames/marks)', 'success')
+        return redirect(url_for(f'{_dt_role_prefix()}_dt', grade=grade, section=section,
+                                 subject=subject, dt_number=dt_number))
+
+    return render_template('dt/upload.html', grade=grade, section=section, subject=subject,
+        dt_number=dt_number, max_marks=max_marks, grades=GRADES, subjects=SUBJECTS,
+        dt_numbers=DT_NUMBERS, role_prefix=_dt_role_prefix())
+
+
+@app.route('/teacher/dt/upload-template', endpoint='teacher_dt_upload_template')
+@app.route('/admin/dt/upload-template', endpoint='admin_dt_upload_template')
+@login_required(('teacher', 'Resource_Manager'))
+def dt_upload_template():
+    grade = request.args.get('grade', '')
+    section = request.args.get('section', '')
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['username', 'marks', 'remarks'])
+    q = User.query.filter_by(role='student')
+    if grade:
+        q = q.filter_by(grade=grade)
+    if section:
+        q = q.filter_by(section=section)
+    for s in q.order_by(User.name).all():
+        writer.writerow([s.username, '', ''])
+    output.seek(0)
+    return Response(output.getvalue(), mimetype='text/csv',
+        headers={'Content-Disposition': 'attachment; filename=DT_marks_template.csv'})
+
+
+@app.route('/teacher/dt/graph', endpoint='teacher_dt_graph')
+@app.route('/admin/dt/graph', endpoint='admin_dt_graph')
+@login_required(('teacher', 'Resource_Manager'))
+def dt_graph():
+    student_id = request.args.get('student_id', type=int)
+    grade   = request.args.get('grade', GRADES[0])
+    section = request.args.get('section', '')
+
+    q = User.query.filter_by(role='student', grade=grade)
+    if section:
+        q = q.filter_by(section=section)
+    students = q.order_by(User.name).all()
+    sections = sorted({s.section for s in User.query.filter_by(role='student', grade=grade).all()
+                        if s.section})
+
+    series = None
+    student = None
+    if student_id:
+        student = db.session.get(User, student_id)
+        series = dt_student_series(student_id)
+
+    return render_template('dt/graph.html', students=students, grades=GRADES, sections=sections,
+        grade=grade, section=section, student=student, series=series, subjects=SUBJECTS,
+        dt_numbers=DT_NUMBERS, academic_year=ACADEMIC_YEAR, role_prefix=_dt_role_prefix())
+
+
+@app.route('/teacher/dt/pdf/<int:student_id>/<int:dt_number>', endpoint='teacher_dt_pdf_single')
+@app.route('/admin/dt/pdf/<int:student_id>/<int:dt_number>', endpoint='admin_dt_pdf_single')
+@login_required(('teacher', 'Resource_Manager'))
+def dt_pdf_single(student_id, dt_number):
+    student = db.session.get(User, student_id)
+    if not student:
+        flash('Student not found.', 'error')
+        return redirect(url_for(f'{_dt_role_prefix()}_dt'))
+
+    rows = []
+    for sub in SUBJECTS:
+        dt = DiagnosticTest.query.filter_by(
+            dt_number=dt_number, subject=sub, grade=student.grade, academic_year=ACADEMIC_YEAR
+        ).filter(db.or_(DiagnosticTest.section == None,
+                         DiagnosticTest.section == student.section)).first()
+        if not dt:
+            continue
+        mark = DTMark.query.filter_by(dt_id=dt.id, student_id=student_id).first()
+        if mark:
+            pct = round(mark.marks_obtained / dt.max_marks * 100, 1) if dt.max_marks else 0
+            rows.append((sub, mark.marks_obtained, dt.max_marks, pct, mark.remarks or ''))
+
+    buf = io.BytesIO()
+    c = pdfcanvas.Canvas(buf, pagesize=A4)
+    width, height = A4
+    y = _pdf_header(c, f'Diagnostic Test {dt_number} — Result',
+        f"{student.grade}{(' ' + student.section) if student.section else ''} · {ACADEMIC_YEAR}")
+
+    c.setFont('Helvetica-Bold', 12)
+    c.drawString(40, y - 115, f'Student: {student.name}')
+    c.setFont('Helvetica', 10)
+    c.drawString(40, y - 132, f'Username: {student.username}')
+
+    ty = y - 165
+    c.setFillColorRGB(0.95, 0.96, 0.98)
+    c.rect(40, ty - 4, width - 80, 22, fill=1, stroke=0)
+    c.setFillColorRGB(0.2, 0.25, 0.35)
+    c.setFont('Helvetica-Bold', 9)
+    headers = ['Subject', 'Marks Obtained', 'Max Marks', 'Percentage', 'Remarks']
+    xpos = [50, 210, 310, 400, 480]
+    for h, x in zip(headers, xpos):
+        c.drawString(x, ty + 2, h)
+    ty -= 26
+
+    c.setFont('Helvetica', 9)
+    total_obt = total_max = 0
+    if not rows:
+        c.setFillColorRGB(0.6, 0.6, 0.6)
+        c.drawString(50, ty + 2, 'No marks recorded for this DT yet.')
+        ty -= 20
+    for sub, obt, mx, pct, remark in rows:
+        c.setFillColorRGB(0, 0, 0)
+        c.drawString(50, ty + 2, sub)
+        c.drawString(210, ty + 2, str(obt))
+        c.drawString(310, ty + 2, str(mx))
+        color = (0.06, 0.4, 0.2) if pct >= 80 else (0.57, 0.25, 0.05) if pct >= 60 else (0.6, 0.12, 0.12)
+        c.setFillColorRGB(*color)
+        c.drawString(400, ty + 2, f'{pct}%')
+        c.setFillColorRGB(0, 0, 0)
+        c.drawString(480, ty + 2, remark[:22])
+        total_obt += obt
+        total_max += mx
+        ty -= 20
+
+    if rows:
+        ty -= 6
+        c.setFont('Helvetica-Bold', 10)
+        overall_pct = round(total_obt / total_max * 100, 1) if total_max else 0
+        c.drawString(50, ty, f'Overall: {total_obt}/{total_max}  ({overall_pct}%)')
+
+    c.setFont('Helvetica-Oblique', 8)
+    c.setFillColorRGB(0.5, 0.5, 0.5)
+    c.drawString(40, 40, f'Generated on {datetime.utcnow().strftime("%d %b %Y")} · '
+                         f'Eastern Public School IBT Portal — for parent sharing')
+    c.showPage()
+    c.save()
+    buf.seek(0)
+    fname = f"DT{dt_number}_{student.name.replace(' ', '_')}.pdf"
+    return Response(buf.read(), mimetype='application/pdf',
+        headers={'Content-Disposition': f'attachment; filename={fname}'})
+
+
+@app.route('/teacher/dt/report/<int:student_id>', endpoint='teacher_dt_report')
+@app.route('/admin/dt/report/<int:student_id>', endpoint='admin_dt_report')
+@login_required(('teacher', 'Resource_Manager'))
+def dt_report(student_id):
+    student = db.session.get(User, student_id)
+    if not student:
+        flash('Student not found.', 'error')
+        return redirect(url_for(f'{_dt_role_prefix()}_dt'))
+    series = dt_student_series(student_id)
+
+    buf = io.BytesIO()
+    c = pdfcanvas.Canvas(buf, pagesize=A4)
+    width, height = A4
+    y = _pdf_header(c, 'Diagnostic Test — Progress Report',
+        f"{student.grade}{(' ' + student.section) if student.section else ''} · {ACADEMIC_YEAR}")
+    c.setFont('Helvetica-Bold', 12)
+    c.drawString(40, y - 115, f'Student: {student.name}  ({student.username})')
+
+    chart_hex = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6']
+    chart_colors = [rl_colors.HexColor(h) for h in chart_hex]
+
+    d = Drawing(width - 80, 190)
+    lc = HorizontalLineChart()
+    lc.x = 30
+    lc.y = 20
+    lc.width = width - 160
+    lc.height = 150
+    lc.data = []
+    lc.categoryAxis.categoryNames = [f'DT{n}' for n in DT_NUMBERS]
+    lc.valueAxis.valueMin = 0
+    lc.valueAxis.valueMax = 100
+    lc.valueAxis.valueStep = 20
+    for i, sub in enumerate(SUBJECTS):
+        pts = [(p['pct'] if p['pct'] is not None else 0) for p in series[sub]]
+        while len(pts) < 6:
+            pts.append(0)
+        lc.data.append(pts[:6])
+        lc.lines[i].strokeColor = chart_colors[i % len(chart_colors)]
+        lc.lines[i].strokeWidth = 2
+    d.add(lc)
+    renderPDF.draw(d, c, 40, y - 320)
+
+    lx = 40
+    c.setFont('Helvetica', 8)
+    for i, sub in enumerate(SUBJECTS):
+        c.setFillColor(chart_colors[i % len(chart_colors)])
+        c.rect(lx, y - 335, 8, 8, fill=1, stroke=0)
+        c.setFillColorRGB(0, 0, 0)
+        c.drawString(lx + 12, y - 335, sub)
+        lx += 115
+
+    ty = y - 370
+    c.setFont('Helvetica-Bold', 10)
+    c.drawString(40, ty, 'DT-wise Marks (% of max)')
+    ty -= 18
+    c.setFont('Helvetica-Bold', 8)
+    headers = ['Subject'] + [f'DT{n}' for n in DT_NUMBERS] + ['Avg']
+    xpos = [45, 135, 180, 225, 270, 315, 360, 415]
+    for h, x in zip(headers, xpos):
+        c.drawString(x, ty, h)
+    ty -= 14
+
+    c.setFont('Helvetica', 8)
+    for sub in SUBJECTS:
+        c.setFillColorRGB(0, 0, 0)
+        c.drawString(45, ty, sub)
+        vals = []
+        for i in range(6):
+            p = series[sub][i]['pct'] if i < len(series[sub]) else None
+            c.drawString(xpos[i + 1], ty, f'{p}%' if p is not None else '—')
+            if p is not None:
+                vals.append(p)
+        avg = round(sum(vals) / len(vals), 1) if vals else 0
+        c.setFont('Helvetica-Bold', 8)
+        c.drawString(xpos[-1], ty, f'{avg}%')
+        c.setFont('Helvetica', 8)
+        ty -= 14
+
+    c.setFont('Helvetica-Oblique', 8)
+    c.setFillColorRGB(0.5, 0.5, 0.5)
+    c.drawString(40, 40, f'Generated on {datetime.utcnow().strftime("%d %b %Y")} · '
+                         f'Eastern Public School IBT Portal — for parent sharing')
+    c.showPage()
+    c.save()
+    buf.seek(0)
+    fname = f"DT_Progress_Report_{student.name.replace(' ', '_')}.pdf"
+    return Response(buf.read(), mimetype='application/pdf',
+        headers={'Content-Disposition': f'attachment; filename={fname}'})
