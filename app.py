@@ -2214,14 +2214,7 @@ def dt_entry():
                 'marks': mark.marks_obtained,
                 'remarks': mark.remarks or ''
             }
-    sections = sorted({
-        student.section
-        for student in User.query.filter_by(
-            role='student',
-            grade=grade
-        ).all()
-        if student.section
-    })
+   sections = DT_SECTIONS
     return render_template(
         'dt/entry.html',
         students=students,
