@@ -1717,6 +1717,19 @@ DT_SUBJECTS = [
     'Urdu',
     'ICT'
 ]
+DT_GRADES = [
+    'Grade 1',
+    'Grade 2',
+    'Grade 3',
+    'Grade 4',
+    'Grade 5'
+]
+DT_SECTIONS = [
+    'A',
+    'B',
+    'C',
+    'D'
+]
 # ── DT MODELS ────────────────────────────────────────────────────────────────
 class DiagnosticTest(db.Model):
     __tablename__ = 'diagnostic_test'
