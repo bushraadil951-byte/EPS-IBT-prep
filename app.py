@@ -27,6 +27,7 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
 db = SQLAlchemy(app)
 
 SUBJECTS  = ['English', 'Mathematics', 'Science', 'Reasoning']
+DT_SUBJECTS = ['English', 'Hindi', 'Maths', 'Science', 'Urdu', 'ICT']
 
 # ── IB CONSTANTS ──────────────────────────────────────────────────────────────
 TERMS = ['Term 1', 'Term 2', 'Term 3']
@@ -1687,363 +1688,956 @@ def login_required(role=None):
             if 'user_id' not in session:
                 return redirect(url_for('login'))
             if role:
-                allowed = role if isinstance(role, (list, tuple)) else (role,)
-                if session.get('role') not in allowed:
+                allowed_roles = (
+                    role
+                    if isinstance(role, (list, tuple))
+                    else (role,)
+                )
+                if session.get('role') not in allowed_roles:
                     flash('Access denied.', 'error')
                     return redirect(url_for('login'))
             return f(*args, **kwargs)
         return decorated
     return decorator
-
-
-# ── 3. NEW CONSTANTS — add near your SUBJECTS / GRADES constants ──────────
-
+# ── DT CONSTANTS ─────────────────────────────────────────────────────────────
 ACADEMIC_YEAR = '2025-26'
-DT_NUMBERS = [1, 2, 3, 4, 5, 6]
-
-
-# ── 4. NEW MODELS — add in the MODELS section, after class TestResult ─────
-
+DT_NUMBERS = [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+]
+DT_SUBJECTS = [
+    'English',
+    'Hindi',
+    'Maths',
+    'Science',
+    'Urdu',
+    'ICT'
+]
+# ── DT MODELS ────────────────────────────────────────────────────────────────
 class DiagnosticTest(db.Model):
     __tablename__ = 'diagnostic_test'
-    id            = db.Column(db.Integer, primary_key=True)
-    dt_number     = db.Column(db.Integer, nullable=False)          # 1-6
-    subject       = db.Column(db.String(50), nullable=False)
-    grade         = db.Column(db.String(20), nullable=False)
-    section       = db.Column(db.String(10), nullable=True)        # None = whole grade
-    max_marks     = db.Column(db.Float, default=25)
-    academic_year = db.Column(db.String(20), default=ACADEMIC_YEAR)
-    test_date     = db.Column(db.Date, nullable=True)
-    created_by    = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    created       = db.Column(db.DateTime, default=datetime.utcnow)
-    marks         = db.relationship('DTMark', backref='dt', lazy=True, cascade='all,delete-orphan')
-
-    __table_args__ = (db.UniqueConstraint(
-        'dt_number', 'subject', 'grade', 'section', 'academic_year',
-        name='uq_dt_slot'),)
-
-
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+    dt_number = db.Column(
+        db.Integer,
+        nullable=False
+    )
+    subject = db.Column(
+        db.String(50),
+        nullable=False
+    )
+    grade = db.Column(
+        db.String(20),
+        nullable=False
+    )
+    section = db.Column(
+        db.String(10),
+        nullable=True
+    )
+    max_marks = db.Column(
+        db.Float,
+        default=25
+    )
+    academic_year = db.Column(
+        db.String(20),
+        default=ACADEMIC_YEAR
+    )
+    test_date = db.Column(
+        db.Date,
+        nullable=True
+    )
+    created_by = db.Column(
+        db.Integer,
+        db.ForeignKey('user.id'),
+        nullable=True
+    )
+    created = db.Column(
+        db.DateTime,
+        default=datetime.utcnow
+    )
+    marks = db.relationship(
+        'DTMark',
+        backref='dt',
+        lazy=True,
+        cascade='all,delete-orphan'
+    )
+    __table_args__ = (
+        db.UniqueConstraint(
+            'dt_number',
+            'subject',
+            'grade',
+            'section',
+            'academic_year',
+            name='uq_dt_slot'
+        ),
+    )
 class DTMark(db.Model):
     __tablename__ = 'dt_mark'
-    id             = db.Column(db.Integer, primary_key=True)
-    dt_id          = db.Column(db.Integer, db.ForeignKey('diagnostic_test.id'), nullable=False)
-    student_id     = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    marks_obtained = db.Column(db.Float, nullable=False)
-    remarks        = db.Column(db.Text, nullable=True)
-    entered_by     = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    entered_at     = db.Column(db.DateTime, default=datetime.utcnow)
-    student        = db.relationship('User', foreign_keys=[student_id])
-
-    __table_args__ = (db.UniqueConstraint('dt_id', 'student_id', name='uq_dt_student'),)
-
-
-# ── 5. NEW HELPERS — add in the HELPERS section, after safe_avg() ─────────
-
-def dt_get_or_create(dt_number, subject, grade, section, academic_year=ACADEMIC_YEAR,
-                      max_marks=25, created_by=None):
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+    dt_id = db.Column(
+        db.Integer,
+        db.ForeignKey('diagnostic_test.id'),
+        nullable=False
+    )
+    student_id = db.Column(
+        db.Integer,
+        db.ForeignKey('user.id'),
+        nullable=False
+    )
+    marks_obtained = db.Column(
+        db.Float,
+        nullable=False
+    )
+    remarks = db.Column(
+        db.Text,
+        nullable=True
+    )
+    entered_by = db.Column(
+        db.Integer,
+        db.ForeignKey('user.id'),
+        nullable=True
+    )
+    entered_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow
+    )
+    student = db.relationship(
+        'User',
+        foreign_keys=[student_id]
+    )
+    __table_args__ = (
+        db.UniqueConstraint(
+            'dt_id',
+            'student_id',
+            name='uq_dt_student'
+        ),
+    )
+# ── DT HELPERS ───────────────────────────────────────────────────────────────
+def dt_get_or_create(
+    dt_number,
+    subject,
+    grade,
+    section,
+    academic_year=ACADEMIC_YEAR,
+    max_marks=25,
+    created_by=None
+):
     dt = DiagnosticTest.query.filter_by(
-        dt_number=dt_number, subject=subject, grade=grade,
-        section=section, academic_year=academic_year).first()
+        dt_number=dt_number,
+        subject=subject,
+        grade=grade,
+        section=section,
+        academic_year=academic_year
+    ).first()
     if not dt:
-        dt = DiagnosticTest(dt_number=dt_number, subject=subject, grade=grade,
-                             section=section, academic_year=academic_year,
-                             max_marks=max_marks, created_by=created_by)
+        dt = DiagnosticTest(
+            dt_number=dt_number,
+            subject=subject,
+            grade=grade,
+            section=section,
+            academic_year=academic_year,
+            max_marks=max_marks,
+            created_by=created_by
+        )
         db.session.add(dt)
         db.session.commit()
     return dt
-
-
-def dt_student_series(student_id, academic_year=ACADEMIC_YEAR):
-    """Returns {subject: [{'dt':1,'marks':x,'max':y,'pct':p,'class_avg_pct':a,'date':d}, ...]}"""
+def dt_student_series(
+    student_id,
+    academic_year=ACADEMIC_YEAR
+):
+    """
+    Returns:
+    {
+        'English': [
+            {
+                'dt': 1,
+                'marks': 20,
+                'max': 25,
+                'pct': 80.0,
+                'class_avg_pct': 72.5,
+                'date': ...
+            }
+        ]
+    }
+    """
     student = db.session.get(User, student_id)
-    series = {sub: [] for sub in SUBJECTS}
-    for sub in SUBJECTS:
-        for n in DT_NUMBERS:
+    if not student:
+        return {
+            subject: []
+            for subject in DT_SUBJECTS
+        }
+    series = {
+        subject: []
+        for subject in DT_SUBJECTS
+    }
+    for subject in DT_SUBJECTS:
+        for dt_number in DT_NUMBERS:
             dt = DiagnosticTest.query.filter_by(
-                dt_number=n, subject=sub, grade=student.grade,
+                dt_number=dt_number,
+                subject=subject,
+                grade=student.grade,
                 academic_year=academic_year
             ).filter(
-                db.or_(DiagnosticTest.section == None, DiagnosticTest.section == student.section)
+                db.or_(
+                    DiagnosticTest.section == None,
+                    DiagnosticTest.section == student.section
+                )
             ).first()
             if not dt:
-                series[sub].append({'dt': n, 'marks': None, 'max': None, 'pct': None,
-                                     'class_avg_pct': None, 'date': None})
+                series[subject].append({
+                    'dt': dt_number,
+                    'marks': None,
+                    'max': None,
+                    'pct': None,
+                    'class_avg_pct': None,
+                    'date': None
+                })
                 continue
-            mark = DTMark.query.filter_by(dt_id=dt.id, student_id=student_id).first()
-            class_marks = [m.marks_obtained for m in dt.marks]
-            class_avg_pct = round(sum(class_marks) / len(class_marks) / dt.max_marks * 100, 1) \
-                if class_marks and dt.max_marks else None
+            mark = DTMark.query.filter_by(
+                dt_id=dt.id,
+                student_id=student_id
+            ).first()
+            class_marks = [
+                item.marks_obtained
+                for item in dt.marks
+            ]
+            class_avg_pct = (
+                round(
+                    sum(class_marks)
+                    / len(class_marks)
+                    / dt.max_marks
+                    * 100,
+                    1
+                )
+                if class_marks and dt.max_marks
+                else None
+            )
             if mark:
-                pct = round(mark.marks_obtained / dt.max_marks * 100, 1) if dt.max_marks else 0
-                series[sub].append({'dt': n, 'marks': mark.marks_obtained, 'max': dt.max_marks,
-                                     'pct': pct, 'class_avg_pct': class_avg_pct, 'date': dt.test_date})
+                pct = (
+                    round(
+                        mark.marks_obtained
+                        / dt.max_marks
+                        * 100,
+                        1
+                    )
+                    if dt.max_marks
+                    else 0
+                )
+                series[subject].append({
+                    'dt': dt_number,
+                    'marks': mark.marks_obtained,
+                    'max': dt.max_marks,
+                    'pct': pct,
+                    'class_avg_pct': class_avg_pct,
+                    'date': dt.test_date
+                })
             else:
-                series[sub].append({'dt': n, 'marks': None, 'max': dt.max_marks, 'pct': None,
-                                     'class_avg_pct': class_avg_pct, 'date': dt.test_date})
+                series[subject].append({
+                    'dt': dt_number,
+                    'marks': None,
+                    'max': dt.max_marks,
+                    'pct': None,
+                    'class_avg_pct': class_avg_pct,
+                    'date': dt.test_date
+                })
     return series
-
-
 def dt_student_insights(series):
-    """Summarise diagnostic progress for dashboards and reports."""
+    """
+    Summarises diagnostic progress for dashboards and reports.
+    """
     insights = []
-    for subject in SUBJECTS:
-        points = [p for p in series.get(subject, []) if p.get('pct') is not None]
-        values = [p['pct'] for p in points]
-        average = round(sum(values) / len(values), 1) if values else None
-        trend = round(values[-1] - values[0], 1) if len(values) > 1 else None
+    for subject in DT_SUBJECTS:
+        points = [
+            point
+            for point in series.get(subject, [])
+            if point.get('pct') is not None
+        ]
+        values = [
+            point['pct']
+            for point in points
+        ]
+        average = (
+            round(sum(values) / len(values), 1)
+            if values
+            else None
+        )
+        trend = (
+            round(values[-1] - values[0], 1)
+            if len(values) > 1
+            else None
+        )
+        if average is not None and average >= 80:
+            status = 'Strong'
+        elif average is not None and average >= 60:
+            status = 'Developing'
+        elif average is not None:
+            status = 'Needs focus'
+        else:
+            status = 'Not started'
         insights.append({
-            'subject': subject, 'average': average, 'trend': trend,
-            'completed': len(points), 'latest': values[-1] if values else None,
-            'status': 'Strong' if average is not None and average >= 80 else
-                      'Developing' if average is not None and average >= 60 else
-                      'Needs focus' if average is not None else 'Not started',
+            'subject': subject,
+            'average': average,
+            'trend': trend,
+            'completed': len(points),
+            'latest': values[-1] if values else None,
+            'status': status
         })
-    return sorted(insights, key=lambda item: (item['average'] is None, item['average'] or 0))
-
-
+    return sorted(
+        insights,
+        key=lambda item: (
+            item['average'] is None,
+            item['average'] or 0
+        )
+    )
 def _pdf_header(c, title, subtitle):
     width, height = A4
-    c.setFillColorRGB(0.10, 0.24, 0.43)  # matches your #1a3c6e navy
-    c.rect(0, height - 90, width, 90, fill=1, stroke=0)
-    c.setFillColorRGB(1, 1, 1)
-    c.setFont('Helvetica-Bold', 18)
-    c.drawString(40, height - 45, 'Eastern Public School')
-    c.setFont('Helvetica', 11)
-    c.drawString(40, height - 65, title)
-    c.setFont('Helvetica', 9)
-    c.drawString(40, height - 80, subtitle)
-    c.setFillColorRGB(0, 0, 0)
+    c.setFillColorRGB(
+        0.10,
+        0.24,
+        0.43
+    )
+    c.rect(
+        0,
+        height - 90,
+        width,
+        90,
+        fill=1,
+        stroke=0
+    )
+    c.setFillColorRGB(
+        1,
+        1,
+        1
+    )
+    c.setFont(
+        'Helvetica-Bold',
+        18
+    )
+    c.drawString(
+        40,
+        height - 45,
+        'Eastern Public School'
+    )
+    c.setFont(
+        'Helvetica',
+        11
+    )
+    c.drawString(
+        40,
+        height - 65,
+        title
+    )
+    c.setFont(
+        'Helvetica',
+        9
+    )
+    c.drawString(
+        40,
+        height - 80,
+        subtitle
+    )
+    c.setFillColorRGB(
+        0,
+        0,
+        0
+    )
     return height
-
-
-# ── 6. NEW ROUTES ───────────────────────────────────────────────────────────
-# These routes are registered TWICE (once under /teacher/, once under /admin/)
-# using stacked @app.route decorators with distinct endpoint names, guarded by
-# the updated login_required(('teacher','Resource_Manager')). Templates use a
-# `role_prefix` variable ('teacher' or 'admin') to build correct links.
-
 def _dt_role_prefix():
-    return 'admin' if session.get('role') == 'Resource_Manager' else 'teacher'
-
-
-@app.route('/teacher/dt', methods=['GET', 'POST'], endpoint='teacher_dt')
-@app.route('/admin/dt', methods=['GET', 'POST'], endpoint='admin_dt')
-@login_required(('teacher', 'Resource_Manager'))
+    if session.get('role') == 'Resource_Manager':
+        return 'admin'
+    return 'teacher'
+# ── DT MARK ENTRY ────────────────────────────────────────────────────────────
+@app.route(
+    '/teacher/dt',
+    methods=['GET', 'POST'],
+    endpoint='teacher_dt'
+)
+@app.route(
+    '/admin/dt',
+    methods=['GET', 'POST'],
+    endpoint='admin_dt'
+)
+@login_required(
+    ('teacher', 'Resource_Manager')
+)
 def dt_entry():
     if request.method == 'POST':
-        grade     = request.form['grade']
-        section   = request.form.get('section') or None
-        subject   = request.form['subject']
+        grade = request.form['grade']
+        section = request.form.get('section') or None
+        subject = request.form['subject']
         dt_number = int(request.form['dt_number'])
-        max_marks = float(request.form.get('max_marks', 25))
-        test_date = request.form.get('test_date') or None
-
-        dt = dt_get_or_create(dt_number, subject, grade, section, ACADEMIC_YEAR,
-                               max_marks, session['user_id'])
+        max_marks = float(
+            request.form.get(
+                'max_marks',
+                25
+            )
+        )
+        test_date = request.form.get(
+            'test_date'
+        ) or None
+        dt = dt_get_or_create(
+            dt_number=dt_number,
+            subject=subject,
+            grade=grade,
+            section=section,
+            academic_year=ACADEMIC_YEAR,
+            max_marks=max_marks,
+            created_by=session['user_id']
+        )
         dt.max_marks = max_marks
         if test_date:
-            dt.test_date = datetime.strptime(test_date, '%Y-%m-%d').date()
+            dt.test_date = datetime.strptime(
+                test_date,
+                '%Y-%m-%d'
+            ).date()
         db.session.commit()
-
-        student_ids = request.form.getlist('student_id')
+        student_ids = request.form.getlist(
+            'student_id'
+        )
         saved = 0
-        for sid in student_ids:
-            val = request.form.get(f'marks_{sid}', '').strip()
-            if val == '':
+        for student_id in student_ids:
+            value = request.form.get(
+                f'marks_{student_id}',
+                ''
+            ).strip()
+            if value == '':
                 continue
             try:
-                marks_val = float(val)
+                marks_value = float(value)
             except ValueError:
                 continue
-            remark = request.form.get(f'remark_{sid}', '').strip()
-            existing = DTMark.query.filter_by(dt_id=dt.id, student_id=int(sid)).first()
+            remark = request.form.get(
+                f'remark_{student_id}',
+                ''
+            ).strip()
+            existing = DTMark.query.filter_by(
+                dt_id=dt.id,
+                student_id=int(student_id)
+            ).first()
             if existing:
-                existing.marks_obtained = marks_val
+                existing.marks_obtained = marks_value
                 existing.remarks = remark
                 existing.entered_by = session['user_id']
+                existing.entered_at = datetime.utcnow()
             else:
-                db.session.add(DTMark(dt_id=dt.id, student_id=int(sid),
-                    marks_obtained=marks_val, remarks=remark, entered_by=session['user_id']))
+                db.session.add(
+                    DTMark(
+                        dt_id=dt.id,
+                        student_id=int(student_id),
+                        marks_obtained=marks_value,
+                        remarks=remark,
+                        entered_by=session['user_id']
+                    )
+                )
             saved += 1
         db.session.commit()
-        flash(f"✅ Marks saved for {saved} student(s) — {subject} DT{dt_number}, "
-              f"{grade}{(' ' + section) if section else ''}", 'success')
-        return redirect(url_for(f'{_dt_role_prefix()}_dt', grade=grade,
-                                 section=section or '', subject=subject, dt_number=dt_number))
-
-    grade     = request.args.get('grade', GRADES[0])
-    section   = request.args.get('section', '')
-    subject   = request.args.get('subject', SUBJECTS[0])
-    dt_number = int(request.args.get('dt_number', 1))
-
-    q = User.query.filter_by(role='student', grade=grade)
+        flash(
+            f'✅ Marks saved for {saved} student(s) — '
+            f'{subject} DT{dt_number}, '
+            f'{grade}{(" " + section) if section else ""}',
+            'success'
+        )
+        return redirect(
+            url_for(
+                f'{_dt_role_prefix()}_dt',
+                grade=grade,
+                section=section or '',
+                subject=subject,
+                dt_number=dt_number
+            )
+        )
+    grade = request.args.get(
+        'grade',
+        GRADES[0]
+    )
+    section = request.args.get(
+        'section',
+        ''
+    )
+    subject = request.args.get(
+        'subject',
+        DT_SUBJECTS[0]
+    )
+    dt_number = int(
+        request.args.get(
+            'dt_number',
+            1
+        )
+    )
+    query = User.query.filter_by(
+        role='student',
+        grade=grade
+    )
     if section:
-        q = q.filter_by(section=section)
-    students = q.order_by(User.name).all()
-
+        query = query.filter_by(
+            section=section
+        )
+    students = query.order_by(
+        User.name
+    ).all()
     dt = DiagnosticTest.query.filter_by(
-        dt_number=dt_number, subject=subject, grade=grade,
-        section=section or None, academic_year=ACADEMIC_YEAR).first()
+        dt_number=dt_number,
+        subject=subject,
+        grade=grade,
+        section=section or None,
+        academic_year=ACADEMIC_YEAR
+    ).first()
     existing_marks = {}
     if dt:
-        for m in dt.marks:
-            existing_marks[m.student_id] = {'marks': m.marks_obtained, 'remarks': m.remarks or ''}
-
-    sections = sorted({s.section for s in User.query.filter_by(role='student', grade=grade).all()
-                        if s.section})
-
-    return render_template('dt/entry.html',
-        students=students, grades=GRADES, subjects=SUBJECTS, dt_numbers=DT_NUMBERS,
-        sections=sections, grade=grade, section=section, subject=subject, dt_number=dt_number,
-        dt=dt, existing_marks=existing_marks, academic_year=ACADEMIC_YEAR,
-        role_prefix=_dt_role_prefix())
-
-
-@app.route('/teacher/dt/upload', methods=['GET', 'POST'], endpoint='teacher_dt_upload')
-@app.route('/admin/dt/upload', methods=['GET', 'POST'], endpoint='admin_dt_upload')
-@login_required(('teacher', 'Resource_Manager'))
+        for mark in dt.marks:
+            existing_marks[mark.student_id] = {
+                'marks': mark.marks_obtained,
+                'remarks': mark.remarks or ''
+            }
+    sections = sorted({
+        student.section
+        for student in User.query.filter_by(
+            role='student',
+            grade=grade
+        ).all()
+        if student.section
+    })
+    return render_template(
+        'dt/entry.html',
+        students=students,
+        grades=GRADES,
+        subjects=DT_SUBJECTS,
+        dt_numbers=DT_NUMBERS,
+        sections=sections,
+        grade=grade,
+        section=section,
+        subject=subject,
+        dt_number=dt_number,
+        dt=dt,
+        existing_marks=existing_marks,
+        academic_year=ACADEMIC_YEAR,
+        role_prefix=_dt_role_prefix()
+    )
+# ── DT CSV UPLOAD ────────────────────────────────────────────────────────────
+@app.route(
+    '/teacher/dt/upload',
+    methods=['GET', 'POST'],
+    endpoint='teacher_dt_upload'
+)
+@app.route(
+    '/admin/dt/upload',
+    methods=['GET', 'POST'],
+    endpoint='admin_dt_upload'
+)
+@login_required(
+    ('teacher', 'Resource_Manager')
+)
 def dt_upload():
-    grade     = request.values.get('grade', GRADES[0])
-    section   = request.values.get('section', '')
-    subject   = request.values.get('subject', SUBJECTS[0])
-    dt_number = int(request.values.get('dt_number', 1))
-    max_marks = float(request.values.get('max_marks', 25))
-
+    grade = request.values.get(
+        'grade',
+        GRADES[0]
+    )
+    section = request.values.get(
+        'section',
+        ''
+    )
+    subject = request.values.get(
+        'subject',
+        DT_SUBJECTS[0]
+    )
+    dt_number = int(
+        request.values.get(
+            'dt_number',
+            1
+        )
+    )
+    max_marks = float(
+        request.values.get(
+            'max_marks',
+            25
+        )
+    )
     if request.method == 'POST':
-        file = request.files.get('csv_file')
-        if not file or not file.filename.endswith('.csv'):
-            flash('Please upload a valid .csv file.', 'error')
-            return redirect(url_for(f'{_dt_role_prefix()}_dt_upload', grade=grade, section=section,
-                                     subject=subject, dt_number=dt_number, max_marks=max_marks))
-        dt = dt_get_or_create(dt_number, subject, grade, section or None, ACADEMIC_YEAR,
-                               max_marks, session['user_id'])
-        stream = io.StringIO(file.stream.read().decode('utf-8-sig'))
-        reader = csv.DictReader(stream)
+        file = request.files.get(
+            'csv_file'
+        )
+        if not file or not file.filename.lower().endswith('.csv'):
+            flash(
+                'Please upload a valid .csv file.',
+                'error'
+            )
+            return redirect(
+                url_for(
+                    f'{_dt_role_prefix()}_dt_upload',
+                    grade=grade,
+                    section=section,
+                    subject=subject,
+                    dt_number=dt_number,
+                    max_marks=max_marks
+                )
+            )
+        dt = dt_get_or_create(
+            dt_number=dt_number,
+            subject=subject,
+            grade=grade,
+            section=section or None,
+            academic_year=ACADEMIC_YEAR,
+            max_marks=max_marks,
+            created_by=session['user_id']
+        )
+        stream = io.StringIO(
+            file.stream.read().decode(
+                'utf-8-sig'
+            )
+        )
+        reader = csv.DictReader(
+            stream
+        )
         added = 0
         skipped = 0
         for row in reader:
-            username  = row.get('username', '').strip()
-            marks_raw = row.get('marks', '').strip()
+            username = row.get(
+                'username',
+                ''
+            ).strip()
+            marks_raw = row.get(
+                'marks',
+                ''
+            ).strip()
             if not username or marks_raw == '':
                 continue
-            student = User.query.filter_by(username=username, role='student').first()
+            student = User.query.filter_by(
+                username=username,
+                role='student'
+            ).first()
             if not student:
                 skipped += 1
                 continue
             try:
-                marks_val = float(marks_raw)
-                if marks_val < 0 or marks_val > max_marks:
+                marks_value = float(
+                    marks_raw
+                )
+                if marks_value < 0 or marks_value > max_marks:
                     skipped += 1
                     continue
             except ValueError:
                 skipped += 1
                 continue
-            existing = DTMark.query.filter_by(dt_id=dt.id, student_id=student.id).first()
+            existing = DTMark.query.filter_by(
+                dt_id=dt.id,
+                student_id=student.id
+            ).first()
+            remarks = row.get(
+                'remarks',
+                ''
+            ).strip()
             if existing:
-                existing.marks_obtained = marks_val
-                existing.remarks = row.get('remarks', '').strip()
+                existing.marks_obtained = marks_value
+                existing.remarks = remarks
+                existing.entered_by = session['user_id']
+                existing.entered_at = datetime.utcnow()
             else:
-                db.session.add(DTMark(dt_id=dt.id, student_id=student.id,
-                    marks_obtained=marks_val, remarks=row.get('remarks', '').strip(),
-                    entered_by=session['user_id']))
+                db.session.add(
+                    DTMark(
+                        dt_id=dt.id,
+                        student_id=student.id,
+                        marks_obtained=marks_value,
+                        remarks=remarks,
+                        entered_by=session['user_id']
+                    )
+                )
             added += 1
         db.session.commit()
-        flash(f'✅ {added} marks uploaded ({skipped} skipped — check usernames/marks)', 'success')
-        return redirect(url_for(f'{_dt_role_prefix()}_dt', grade=grade, section=section,
-                                 subject=subject, dt_number=dt_number))
-
-    return render_template('dt/upload.html', grade=grade, section=section, subject=subject,
-        dt_number=dt_number, max_marks=max_marks, grades=GRADES, subjects=SUBJECTS,
-        dt_numbers=DT_NUMBERS, role_prefix=_dt_role_prefix())
-
-
-@app.route('/teacher/dt/upload-template', endpoint='teacher_dt_upload_template')
-@app.route('/admin/dt/upload-template', endpoint='admin_dt_upload_template')
-@login_required(('teacher', 'Resource_Manager'))
+        flash(
+            f'✅ {added} marks uploaded '
+            f'({skipped} skipped — check usernames/marks)',
+            'success'
+        )
+        return redirect(
+            url_for(
+                f'{_dt_role_prefix()}_dt',
+                grade=grade,
+                section=section,
+                subject=subject,
+                dt_number=dt_number
+            )
+        )
+    return render_template(
+        'dt/upload.html',
+        grade=grade,
+        section=section,
+        subject=subject,
+        dt_number=dt_number,
+        max_marks=max_marks,
+        grades=GRADES,
+        subjects=DT_SUBJECTS,
+        dt_numbers=DT_NUMBERS,
+        role_prefix=_dt_role_prefix()
+    )
+# ── DT CSV TEMPLATE ─────────────────────────────────────────────────────────
+@app.route(
+    '/teacher/dt/upload-template',
+    endpoint='teacher_dt_upload_template'
+)
+@app.route(
+    '/admin/dt/upload-template',
+    endpoint='admin_dt_upload_template'
+)
+@login_required(
+    ('teacher', 'Resource_Manager')
+)
 def dt_upload_template():
-    grade = request.args.get('grade', '')
-    section = request.args.get('section', '')
+    grade = request.args.get(
+        'grade',
+        ''
+    )
+    section = request.args.get(
+        'section',
+        ''
+    )
     output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow(['username', 'marks', 'remarks'])
-    q = User.query.filter_by(role='student')
+    writer = csv.writer(
+        output
+    )
+    writer.writerow([
+        'username',
+        'marks',
+        'remarks'
+    ])
+    query = User.query.filter_by(
+        role='student'
+    )
     if grade:
-        q = q.filter_by(grade=grade)
+        query = query.filter_by(
+            grade=grade
+        )
     if section:
-        q = q.filter_by(section=section)
-    for s in q.order_by(User.name).all():
-        writer.writerow([s.username, '', ''])
+        query = query.filter_by(
+            section=section
+        )
+    for student in query.order_by(
+        User.name
+    ).all():
+        writer.writerow([
+            student.username,
+            '',
+            ''
+        ])
     output.seek(0)
-    return Response(output.getvalue(), mimetype='text/csv',
-        headers={'Content-Disposition': 'attachment; filename=DT_marks_template.csv'})
-
-
-@app.route('/teacher/dt/graph', endpoint='teacher_dt_graph')
-@app.route('/admin/dt/graph', endpoint='admin_dt_graph')
-@login_required(('teacher', 'Resource_Manager'))
+    return Response(
+        output.getvalue(),
+        mimetype='text/csv',
+        headers={
+            'Content-Disposition':
+                'attachment; filename=DT_marks_template.csv'
+        }
+    )
+# ── DT GRAPH ─────────────────────────────────────────────────────────────────
+@app.route(
+    '/teacher/dt/graph',
+    endpoint='teacher_dt_graph'
+)
+@app.route(
+    '/admin/dt/graph',
+    endpoint='admin_dt_graph'
+)
+@login_required(
+    ('teacher', 'Resource_Manager')
+)
 def dt_graph():
-    student_id = request.args.get('student_id', type=int)
-    grade   = request.args.get('grade', GRADES[0])
-    section = request.args.get('section', '')
-
-    q = User.query.filter_by(role='student', grade=grade)
+    student_id = request.args.get(
+        'student_id',
+        type=int
+    )
+    grade = request.args.get(
+        'grade',
+        GRADES[0]
+    )
+    section = request.args.get(
+        'section',
+        ''
+    )
+    query = User.query.filter_by(
+        role='student',
+        grade=grade
+    )
     if section:
-        q = q.filter_by(section=section)
-    students = q.order_by(User.name).all()
-    sections = sorted({s.section for s in User.query.filter_by(role='student', grade=grade).all()
-                        if s.section})
-
+        query = query.filter_by(
+            section=section
+        )
+    students = query.order_by(
+        User.name
+    ).all()
+    sections = sorted({
+        student.section
+        for student in User.query.filter_by(
+            role='student',
+            grade=grade
+        ).all()
+        if student.section
+    })
     series = None
     student = None
     if student_id:
-        student = db.session.get(User, student_id)
-        series = dt_student_series(student_id)
-
-    return render_template('dt/graph.html', students=students, grades=GRADES, sections=sections,
-        grade=grade, section=section, student=student, series=series, subjects=SUBJECTS,
-        dt_numbers=DT_NUMBERS, academic_year=ACADEMIC_YEAR, role_prefix=_dt_role_prefix())
-
-
-@app.route('/teacher/dt/pdf/<int:student_id>/<int:dt_number>', endpoint='teacher_dt_pdf_single')
-@app.route('/admin/dt/pdf/<int:student_id>/<int:dt_number>', endpoint='admin_dt_pdf_single')
-@login_required(('teacher', 'Resource_Manager'))
+        student = db.session.get(
+            User,
+            student_id
+        )
+        if student:
+            series = dt_student_series(
+                student_id
+            )
+    return render_template(
+        'dt/graph.html',
+        students=students,
+        grades=GRADES,
+        sections=sections,
+        grade=grade,
+        section=section,
+        student=student,
+        series=series,
+        subjects=DT_SUBJECTS,
+        dt_numbers=DT_NUMBERS,
+        academic_year=ACADEMIC_YEAR,
+        role_prefix=_dt_role_prefix()
+    )
+# ── SINGLE DT PDF ────────────────────────────────────────────────────────────
+@app.route(
+    '/teacher/dt/pdf/<int:student_id>/<int:dt_number>',
+    endpoint='teacher_dt_pdf_single'
+)
+@app.route(
+    '/admin/dt/pdf/<int:student_id>/<int:dt_number>',
+    endpoint='admin_dt_pdf_single'
+)
+@login_required(
+    ('teacher', 'Resource_Manager')
+)
 def dt_pdf_single(student_id, dt_number):
-    student = db.session.get(User, student_id)
+    student = db.session.get(
+        User,
+        student_id
+    )
     if not student:
-        flash('Student not found.', 'error')
-        return redirect(url_for(f'{_dt_role_prefix()}_dt'))
-
+        flash(
+            'Student not found.',
+            'error'
+        )
+        return redirect(
+            url_for(
+                f'{_dt_role_prefix()}_dt'
+            )
+        )
     rows = []
-    for sub in SUBJECTS:
+    for subject in DT_SUBJECTS:
         dt = DiagnosticTest.query.filter_by(
-            dt_number=dt_number, subject=sub, grade=student.grade, academic_year=ACADEMIC_YEAR
-        ).filter(db.or_(DiagnosticTest.section == None,
-                         DiagnosticTest.section == student.section)).first()
+            dt_number=dt_number,
+            subject=subject,
+            grade=student.grade,
+            academic_year=ACADEMIC_YEAR
+        ).filter(
+            db.or_(
+                DiagnosticTest.section == None,
+                DiagnosticTest.section == student.section
+            )
+        ).first()
         if not dt:
             continue
-        mark = DTMark.query.filter_by(dt_id=dt.id, student_id=student_id).first()
+        mark = DTMark.query.filter_by(
+            dt_id=dt.id,
+            student_id=student_id
+        ).first()
         if mark:
-            pct = round(mark.marks_obtained / dt.max_marks * 100, 1) if dt.max_marks else 0
-            rows.append((sub, mark.marks_obtained, dt.max_marks, pct, mark.remarks or ''))
-
-    buf = io.BytesIO()
-    c = pdfcanvas.Canvas(buf, pagesize=A4)
+            percentage = (
+                round(
+                    mark.marks_obtained
+                    / dt.max_marks
+                    * 100,
+                    1
+                )
+                if dt.max_marks
+                else 0
+            )
+            rows.append((
+                subject,
+                mark.marks_obtained,
+                dt.max_marks,
+                percentage,
+                mark.remarks or ''
+            ))
+    buffer = io.BytesIO()
+    pdf = pdfcanvas.Canvas(
+        buffer,
+        pagesize=A4
+    )
     width, height = A4
-    y = _pdf_header(c, f'Diagnostic Test {dt_number} — Result',
-        f"{student.grade}{(' ' + student.section) if student.section else ''} · {ACADEMIC_YEAR}")
-
-    c.setFont('Helvetica-Bold', 12)
-    c.drawString(40, y - 115, f'Student: {student.name}')
-    c.setFont('Helvetica', 10)
-    c.drawString(40, y - 132, f'Username: {student.username}')
-
-    ty = y - 165
-    c.setFillColorRGB(0.95, 0.96, 0.98)
-    c.rect(40, ty - 4, width - 80, 22, fill=1, stroke=0)
-    c.setFillColorRGB(0.2, 0.25, 0.35)
-    c.setFont('Helvetica-Bold', 9)
-    headers = ['Subject', 'Marks Obtained', 'Max Marks', 'Percentage', 'Remarks']
-    xpos = [50, 210, 310, 400, 480]
+    y = _pdf_header(
+        pdf,
+        f'Diagnostic Test {dt_number} — Result',
+        f'{student.grade}'
+        f'{(" " + student.section) if student.section else ""}'
+        f' · {ACADEMIC_YEAR}'
+    )
+    pdf.setFont(
+        'Helvetica-Bold',
+        12
+    )
+    pdf.drawString(
+        40,
+        y - 115,
+        f'Student: {student.name}'
+    )
+    pdf.setFont(
+        'Helvetica',
+        10
+    )
+    pdf.drawString(
+        40,
+        y - 132,
+        f'Username: {student.username}'
+    )
+    table_y = y - 165
+    pdf.setFillColorRGB(
+        0.95,
+        0.96,
+        0.98
+    )
+    pdf.rect(
+        40,
+        table_y - 4,
+        width - 80,
+        22,
+        fill=1,
+        stroke=0
+    )
+    pdf.setFillColorRGB(
+        0.2,
+        0.25,
+        0.35
+    )
+    pdf.setFont(
+        'Helvetica-Bold',
+        9
+    )
+    headers = [
+        'Subject',
+        'Marks Obtained',
+        'Max Marks',
+        'Percentage',
+        'Remarks'
+    ]
+    positions = [
+        50,
+        210,
+        310,
+        400,
+        480
+    ]
     for h, x in zip(headers, xpos):
         c.drawString(x, ty + 2, h)
     ty -= 26
