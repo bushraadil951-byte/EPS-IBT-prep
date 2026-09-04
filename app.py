@@ -2375,18 +2375,19 @@ def dt_upload():
                 dt_number=dt_number
             )
         )
-    return render_template(
-        'dt/upload.html',
-        grade=grade,
-        section=section,
-        subject=subject,
-        dt_number=dt_number,
-        max_marks=max_marks,
-        grades=GRADES,
-        subjects=DT_SUBJECTS,
-        dt_numbers=DT_NUMBERS,
-        role_prefix=_dt_role_prefix()
-    )
+ return render_template(
+    'dt/upload.html',
+    grade=grade,
+    section=section,
+    subject=subject,
+    dt_number=dt_number,
+    max_marks=max_marks,
+    grades=DT_GRADES,
+    subjects=DT_SUBJECTS,
+    dt_numbers=DT_NUMBERS,
+    sections=DT_SECTIONS,
+    role_prefix=_dt_role_prefix()
+)
 # ── DT CSV TEMPLATE ─────────────────────────────────────────────────────────
 @app.route(
     '/teacher/dt/upload-template',
