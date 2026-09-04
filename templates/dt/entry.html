@@ -1,7 +1,6 @@
 {% extends 'base.html' %}
 
 {% block title %}Diagnostic Marks{% endblock %}
-
 {% block page_title %}Diagnostic Marks{% endblock %}
 
 {% block content %}
@@ -25,6 +24,7 @@
   </a>
 </div>
 
+<!-- Filters -->
 <form
   method="GET"
   action="/{{ role_prefix }}/dt"
@@ -86,13 +86,18 @@
   </button>
 </form>
 
-<form method="POST" action="/{{ role_prefix }}/dt" class="card">
-
+<!-- Marks form -->
+<form
+  method="POST"
+  action="/{{ role_prefix }}/dt"
+  class="card"
+>
   <input type="hidden" name="grade" value="{{ grade }}">
   <input type="hidden" name="section" value="{{ section }}">
   <input type="hidden" name="subject" value="{{ subject }}">
   <input type="hidden" name="dt_number" value="{{ dt_number }}">
 
+  <!-- Test details -->
   <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px">
 
     <div>
@@ -130,7 +135,6 @@
     >
       ⬆ Upload CSV
     </a>
-
   </div>
 
   <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:.76rem;color:#166534">
@@ -160,7 +164,16 @@
         {% set saved = existing_marks.get(s.id, {}) %}
 
         <tr>
-          <td>{{ loop.index }}</td>
+          <td>
+            {{ loop.index }}
+
+            <!-- Required by the backend to save this student's marks -->
+            <input
+              type="hidden"
+              name="student_id"
+              value="{{ s.id }}"
+            >
+          </td>
 
           <td style="font-weight:600">
             {{ s.name }}
@@ -199,6 +212,13 @@
       </tbody>
 
     </table>
+  </div>
+
+  <!-- Bottom save button -->
+  <div style="display:flex;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:1px solid #e2e8f0">
+    <button class="btn btn-primary" type="submit">
+      💾 Update / Save Marks
+    </button>
   </div>
 
   {% else %}
