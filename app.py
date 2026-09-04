@@ -2089,12 +2089,14 @@ def dt_entry():
         section = request.form.get('section') or None
         subject = request.form['subject']
         dt_number = int(request.form['dt_number'])
+
         max_marks = float(
             request.form.get(
                 'max_marks',
                 25
             )
         )
+
         test_date = request.form.get(
             'test_date'
         ) or None
