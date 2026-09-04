@@ -2481,14 +2481,7 @@ def dt_graph():
     students = query.order_by(
         User.name
     ).all()
-    sections = sorted({
-        student.section
-        for student in User.query.filter_by(
-            role='student',
-            grade=grade
-        ).all()
-        if student.section
-    })
+   sections = DT_SECTIONS
     series = None
     student = None
     if student_id:
