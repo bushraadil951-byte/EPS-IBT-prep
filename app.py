@@ -106,7 +106,7 @@ ATL_DESCRIPTORS = {
     },
 }
 
-ACADEMIC_YEAR = '2025-26'
+ACADEMIC_YEAR = '2026-27'
 
 # ── DT (DIAGNOSTIC TEST) CONSTANTS ───────────────────────────────────────────
 DT_NUMBERS = [1, 2, 3, 4, 5, 6]
@@ -1570,7 +1570,7 @@ def dt_entry():
         flash(f'Marks saved for {saved} student(s) — {subject} DT{dt_number}, {grade}{(" " + section) if section else ""}', 'success')
         return redirect(url_for(f'{_dt_role_prefix()}_dt', grade=grade, section=section or '', subject=subject, dt_number=dt_number))
 
-    grade     = request.args.get('grade', GRADES[0])
+    grade     = request.args.get('grade', DT_GRADES[0])
     section   = request.args.get('section', '')
     subject   = request.args.get('subject', DT_SUBJECTS[0])
     dt_number = int(request.args.get('dt_number', 1))
@@ -1588,7 +1588,7 @@ def dt_entry():
             existing_marks[mark.student_id] = {'marks': mark.marks_obtained, 'remarks': mark.remarks or ''}
     sections = DT_SECTIONS
     return render_template('dt/entry.html',
-        students=students, grades=GRADES, subjects=DT_SUBJECTS, dt_numbers=DT_NUMBERS,
+        students=students, grades=DT_GRADES, subjects=DT_SUBJECTS, dt_numbers=DT_NUMBERS,
         sections=sections, grade=grade, section=section, subject=subject, dt_number=dt_number,
         dt=dt, existing_marks=existing_marks, academic_year=ACADEMIC_YEAR, role_prefix=_dt_role_prefix())
 
@@ -1599,7 +1599,7 @@ def dt_entry():
 @app.route('/admin/dt/upload', methods=['GET', 'POST'], endpoint='admin_dt_upload')
 @login_required(('teacher', 'Resource_Manager'))
 def dt_upload():
-    grade     = request.values.get('grade', GRADES[0])
+    grade     = request.values.get('grade', DT_GRADES[0])
     section   = request.values.get('section', '')
     subject   = request.values.get('subject', DT_SUBJECTS[0])
     dt_number = int(request.values.get('dt_number', 1))
@@ -1688,7 +1688,7 @@ def dt_upload_template():
 @login_required(('teacher', 'Resource_Manager'))
 def dt_graph():
     student_id = request.args.get('student_id', type=int)
-    grade      = request.args.get('grade', GRADES[0])
+    grade      = request.args.get('grade', DT_GRADES[0])
     section    = request.args.get('section', '')
     query = User.query.filter_by(role='student', grade=grade)
     if section:
@@ -1702,7 +1702,7 @@ def dt_graph():
         if student:
             series = dt_student_series(student_id)
     return render_template('dt/graph.html',
-        students=students, grades=GRADES, sections=sections, grade=grade, section=section,
+        students=students, grades=DT_GRADES, sections=sections, grade=grade, section=section,
         student=student, series=series, subjects=DT_SUBJECTS, dt_numbers=DT_NUMBERS,
         academic_year=ACADEMIC_YEAR, role_prefix=_dt_role_prefix())
 
