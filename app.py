@@ -1642,10 +1642,14 @@ def dt_entry():
     if section:
         query = query.filter_by(section=section)
     students = query.order_by(User.name).all()
+    # Match a DT that was saved for this exact section OR one saved for
+    # "All sections" (section=None), whichever exists — same rule used
+    # everywhere else marks are read back (graphs, reports).
     dt = DiagnosticTest.query.filter_by(
-        dt_number=dt_number, subject=subject, grade=grade,
-        section=section or None, academic_year=ACADEMIC_YEAR
-    ).first()
+        dt_number=dt_number, subject=subject, grade=grade, academic_year=ACADEMIC_YEAR
+    ).filter(
+        db.or_(DiagnosticTest.section == None, DiagnosticTest.section == (section or None))
+    ).order_by(DiagnosticTest.section.is_(None)).first()
     existing_marks = {}
     if dt:
         for mark in dt.marks:
@@ -2021,6 +2025,44 @@ def dt_report(student_id=None):
     fname = f"DT_Progress_Report_{student.name.replace(' ', '_')}.pdf"
     return Response(buf.read(), mimetype='application/pdf',
         headers={'Content-Disposition': f'attachment; filename={fname}'})
+
+
+# ── ONE-TIME FIX: relabel DT records saved under an old academic year ───────
+# Visit this once (logged in as Resource_Manager) after correcting
+# ACADEMIC_YEAR, e.g.:  /admin/dt/fix-academic-year?from=2025-26
+# It just relabels existing DiagnosticTest rows to the current ACADEMIC_YEAR —
+# no marks are touched or recreated. Safe to run more than once; it will
+# simply report "0 records updated" once nothing old is left.
+
+@app.route('/admin/dt/fix-academic-year')
+@login_required('Resource_Manager')
+def admin_dt_fix_academic_year():
+    old_year = request.args.get('from', '2025-26').strip()
+    if old_year == ACADEMIC_YEAR:
+        flash(f'"{old_year}" is already the current academic year — nothing to fix.', 'error')
+        return redirect(url_for('admin_dt'))
+    stale = DiagnosticTest.query.filter_by(academic_year=old_year).all()
+    updated = 0
+    for dt in stale:
+        clash = DiagnosticTest.query.filter_by(
+            dt_number=dt.dt_number, subject=dt.subject, grade=dt.grade,
+            section=dt.section, academic_year=ACADEMIC_YEAR
+        ).first()
+        if clash:
+            # A record already exists under the new year for this exact
+            # slot — move this old test's marks over instead of creating
+            # a duplicate, then drop the now-empty old record.
+            for mark in list(dt.marks):
+                existing_mark = DTMark.query.filter_by(dt_id=clash.id, student_id=mark.student_id).first()
+                if not existing_mark:
+                    mark.dt_id = clash.id
+            db.session.delete(dt)
+        else:
+            dt.academic_year = ACADEMIC_YEAR
+        updated += 1
+    db.session.commit()
+    flash(f'Relabelled {updated} diagnostic test record(s) from "{old_year}" to "{ACADEMIC_YEAR}".', 'success')
+    return redirect(url_for('admin_dt'))
 
 
 # ── STUDENT DIAGNOSTIC PROGRESS ────────────────────────────────────────────────
