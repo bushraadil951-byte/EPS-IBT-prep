@@ -9,6 +9,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors as rl_colors
 from reportlab.graphics.shapes import Drawing
 from reportlab.graphics.charts.linecharts import HorizontalLineChart
+from reportlab.graphics.charts.barcharts import VerticalBarChart
 from reportlab.graphics import renderPDF
 from psycopg2cffi import compat
 compat.register()
@@ -1501,6 +1502,69 @@ def dt_student_insights(series):
     return sorted(insights, key=lambda item: (item['average'] is None, item['average'] or 0))
 
 
+def dt_latest_available_number(series):
+    """Returns the highest DT number for which at least one subject has a
+    recorded mark. Falls back to the first DT number if nothing is recorded yet."""
+    latest = None
+    for idx, dt_number in enumerate(DT_NUMBERS):
+        has_data = any(
+            idx < len(series.get(sub, [])) and series[sub][idx].get('marks') is not None
+            for sub in DT_SUBJECTS
+        )
+        if has_data:
+            latest = dt_number
+    return latest if latest is not None else DT_NUMBERS[0]
+
+
+def _draw_subject_bar_chart(c, series, dt_number, top_y, chart_width=460):
+    """Draws a bar chart of each subject's percentage score for one specific
+    DT number, positioned so its top sits at `top_y`. Returns the y-coordinate
+    just below the chart (and its legend) so callers can keep laying content out."""
+    idx = DT_NUMBERS.index(dt_number) if dt_number in DT_NUMBERS else 0
+    bar_colors_hex = ['#10b981', '#f59e0b', '#ef4444']  # good / okay / needs focus
+    values = []
+    bar_fill = []
+    for sub in DT_SUBJECTS:
+        pts = series.get(sub, [])
+        pct = pts[idx]['pct'] if idx < len(pts) and pts[idx].get('pct') is not None else 0
+        values.append(pct)
+        if pct >= 80:
+            bar_fill.append(rl_colors.HexColor(bar_colors_hex[0]))
+        elif pct >= 60:
+            bar_fill.append(rl_colors.HexColor(bar_colors_hex[1]))
+        else:
+            bar_fill.append(rl_colors.HexColor(bar_colors_hex[2]))
+
+    chart_height = 150
+    d = Drawing(chart_width, chart_height + 40)
+    bc = VerticalBarChart()
+    bc.x = 35
+    bc.y = 30
+    bc.width = chart_width - 60
+    bc.height = chart_height
+    bc.data = [values]
+    bc.categoryAxis.categoryNames = DT_SUBJECTS
+    bc.categoryAxis.labels.fontSize = 7
+    bc.categoryAxis.labels.dy = -10
+    bc.valueAxis.valueMin = 0
+    bc.valueAxis.valueMax = 100
+    bc.valueAxis.valueStep = 20
+    bc.barWidth = 16
+    bc.groupSpacing = 10
+    bc.bars[0].fillColor = rl_colors.HexColor('#3b82f6')
+    for i, col in enumerate(bar_fill):
+        bc.bars[(0, i)].fillColor = col
+    d.add(bc)
+    renderPDF.draw(d, c, 40, top_y - chart_height - 30)
+
+    c.setFont('Helvetica-Oblique', 7)
+    c.setFillColorRGB(0.35, 0.35, 0.35)
+    c.drawString(40, top_y - chart_height - 42,
+        'Green: 80%+ (Strong)   Amber: 60-79% (Developing)   Red: below 60% (Needs focus)')
+    c.setFillColorRGB(0, 0, 0)
+    return top_y - chart_height - 55
+
+
 def _pdf_header(c, title, subtitle):
     width, height = A4
     c.setFillColorRGB(0.10, 0.24, 0.43)
@@ -1697,14 +1761,16 @@ def dt_graph():
     sections = DT_SECTIONS
     series = None
     student = None
+    latest_dt = None
     if student_id:
         student = db.session.get(User, student_id)
         if student:
             series = dt_student_series(student_id)
+            latest_dt = dt_latest_available_number(series)
     return render_template('dt/graph.html',
         students=students, grades=DT_GRADES, sections=sections, grade=grade, section=section,
         student=student, series=series, subjects=DT_SUBJECTS, dt_numbers=DT_NUMBERS,
-        academic_year=ACADEMIC_YEAR, role_prefix=_dt_role_prefix())
+        academic_year=ACADEMIC_YEAR, role_prefix=_dt_role_prefix(), latest_dt=latest_dt)
 
 
 # ── SINGLE DT PDF ────────────────────────────────────────────────────────────
@@ -1791,24 +1857,98 @@ def dt_pdf_single(student_id, dt_number):
 
 @app.route('/teacher/dt/report/<int:student_id>', endpoint='teacher_dt_report')
 @app.route('/admin/dt/report/<int:student_id>', endpoint='admin_dt_report')
-@login_required(('teacher', 'Resource_Manager'))
-def dt_report(student_id):
+@app.route('/student/dt/report', endpoint='student_dt_report')
+@login_required(('teacher', 'Resource_Manager', 'student'))
+def dt_report(student_id=None):
+    """Parent-shareable PDF report for one student.
+    Page 1: bar chart of subject-wise scores for one specific DT (e.g. DT-3),
+             selectable via ?dt_number=3 (defaults to the most recent DT that
+             has any marks recorded).
+    Page 2: line chart of progress across all DTs, for every subject.
+    Students can only download their own report; teachers/admins pass
+    student_id in the URL."""
+    if session.get('role') == 'student':
+        student_id = session['user_id']
+    elif student_id is None:
+        flash('Student not specified.', 'error')
+        return redirect(url_for('login'))
+
     student = db.session.get(User, student_id)
     if not student:
         flash('Student not found.', 'error')
+        if session.get('role') == 'student':
+            return redirect(url_for('student_diagnostics'))
         return redirect(url_for(f'{_dt_role_prefix()}_dt'))
+
+    if session.get('role') == 'student' and student.id != session['user_id']:
+        flash('Access denied.', 'error')
+        return redirect(url_for('student_diagnostics'))
+
     series = dt_student_series(student_id)
+    requested_dt = request.args.get('dt_number', type=int)
+    highlight_dt = requested_dt if requested_dt in DT_NUMBERS else dt_latest_available_number(series)
+    highlight_idx = DT_NUMBERS.index(highlight_dt)
+
+    chart_hex = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6']
+    chart_colors = [rl_colors.HexColor(h) for h in chart_hex]
 
     buf = io.BytesIO()
     c = pdfcanvas.Canvas(buf, pagesize=A4)
     width, height = A4
-    y = _pdf_header(c, 'Diagnostic Test — Progress Report',
+
+    # ── PAGE 1: subject-wise bar chart for the highlighted DT ───────────────
+    y = _pdf_header(c, f'Diagnostic Test {highlight_dt} — Subject Scores',
         f"{student.grade}{(' ' + student.section) if student.section else ''} · {ACADEMIC_YEAR}")
     c.setFont('Helvetica-Bold', 12)
     c.drawString(40, y - 115, f'Student: {student.name}  ({student.username})')
 
-    chart_hex = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6']
-    chart_colors = [rl_colors.HexColor(h) for h in chart_hex]
+    chart_bottom = _draw_subject_bar_chart(c, series, highlight_dt, top_y=y - 140, chart_width=width - 80)
+
+    ty = chart_bottom - 15
+    c.setFont('Helvetica-Bold', 10)
+    c.drawString(40, ty, f'DT{highlight_dt} — Marks Breakdown')
+    ty -= 20
+    c.setFillColorRGB(0.95, 0.96, 0.98)
+    c.rect(40, ty - 4, width - 80, 18, fill=1, stroke=0)
+    c.setFillColorRGB(0.2, 0.25, 0.35)
+    c.setFont('Helvetica-Bold', 8)
+    row_headers = ['Subject', 'Marks', 'Max', 'Percentage']
+    row_x = [50, 260, 340, 420]
+    for h, x in zip(row_headers, row_x):
+        c.drawString(x, ty, h)
+    ty -= 20
+    c.setFont('Helvetica', 8)
+    for sub in DT_SUBJECTS:
+        pts = series.get(sub, [])
+        point = pts[highlight_idx] if highlight_idx < len(pts) else None
+        c.setFillColorRGB(0, 0, 0)
+        c.drawString(50, ty, sub)
+        if point and point.get('marks') is not None:
+            c.drawString(260, ty, str(point['marks']))
+            c.drawString(340, ty, str(point['max']))
+            pct = point['pct']
+            color = (0.06, 0.4, 0.2) if pct >= 80 else (0.57, 0.25, 0.05) if pct >= 60 else (0.6, 0.12, 0.12)
+            c.setFillColorRGB(*color)
+            c.drawString(420, ty, f'{pct}%')
+            c.setFillColorRGB(0, 0, 0)
+        else:
+            c.setFillColorRGB(0.6, 0.6, 0.6)
+            c.drawString(260, ty, '—')
+            c.drawString(420, ty, 'Not recorded')
+            c.setFillColorRGB(0, 0, 0)
+        ty -= 16
+
+    c.setFont('Helvetica-Oblique', 8)
+    c.setFillColorRGB(0.5, 0.5, 0.5)
+    c.drawString(40, 40, f'Generated on {datetime.utcnow().strftime("%d %b %Y")} · Eastern Public School IBT Portal — for parent sharing')
+    c.showPage()
+
+    # ── PAGE 2: progress line chart across all DTs, every subject ──────────
+    c.setFillColorRGB(0, 0, 0)
+    y = _pdf_header(c, 'Diagnostic Test — Progress Across All DTs',
+        f"{student.grade}{(' ' + student.section) if student.section else ''} · {ACADEMIC_YEAR}")
+    c.setFont('Helvetica-Bold', 12)
+    c.drawString(40, y - 115, f'Student: {student.name}  ({student.username})')
 
     d = Drawing(width - 80, 190)
     lc = HorizontalLineChart()
@@ -1821,51 +1961,56 @@ def dt_report(student_id):
     lc.valueAxis.valueMin = 0
     lc.valueAxis.valueMax = 100
     lc.valueAxis.valueStep = 20
-    for i, sub in enumerate(SUBJECTS):
-        pts = [(p['pct'] if p['pct'] is not None else 0) for p in series[sub]]
-        while len(pts) < 6:
+    for i, sub in enumerate(DT_SUBJECTS):
+        pts = [(p['pct'] if p['pct'] is not None else 0) for p in series.get(sub, [])]
+        while len(pts) < len(DT_NUMBERS):
             pts.append(0)
-        lc.data.append(pts[:6])
+        lc.data.append(pts[:len(DT_NUMBERS)])
         lc.lines[i].strokeColor = chart_colors[i % len(chart_colors)]
         lc.lines[i].strokeWidth = 2
     d.add(lc)
     renderPDF.draw(d, c, 40, y - 320)
 
     lx = 40
+    ly = y - 335
     c.setFont('Helvetica', 8)
-    for i, sub in enumerate(SUBJECTS):
+    for i, sub in enumerate(DT_SUBJECTS):
+        if lx + 90 > width - 40:
+            lx = 40
+            ly -= 14
         c.setFillColor(chart_colors[i % len(chart_colors)])
-        c.rect(lx, y - 335, 8, 8, fill=1, stroke=0)
+        c.rect(lx, ly, 8, 8, fill=1, stroke=0)
         c.setFillColorRGB(0, 0, 0)
-        c.drawString(lx + 12, y - 335, sub)
-        lx += 115
+        c.drawString(lx + 12, ly, sub)
+        lx += 90
 
-    ty = y - 370
+    ty = ly - 30
     c.setFont('Helvetica-Bold', 10)
     c.drawString(40, ty, 'DT-wise Marks (% of max)')
     ty -= 18
     c.setFont('Helvetica-Bold', 8)
     headers = ['Subject'] + [f'DT{n}' for n in DT_NUMBERS] + ['Avg']
-    xpos = [45, 135, 180, 225, 270, 315, 360, 415]
+    xpos = [45, 130, 170, 210, 250, 290, 330, 375]
     for h, x in zip(headers, xpos):
         c.drawString(x, ty, h)
     ty -= 14
 
-    c.setFont('Helvetica', 8)
-    for sub in SUBJECTS:
+    c.setFont('Helvetica', 7)
+    for sub in DT_SUBJECTS:
         c.setFillColorRGB(0, 0, 0)
         c.drawString(45, ty, sub)
         vals = []
-        for i in range(6):
-            p = series[sub][i]['pct'] if i < len(series[sub]) else None
+        for i in range(len(DT_NUMBERS)):
+            pts = series.get(sub, [])
+            p = pts[i]['pct'] if i < len(pts) else None
             c.drawString(xpos[i + 1], ty, f'{p}%' if p is not None else '—')
             if p is not None:
                 vals.append(p)
         avg = round(sum(vals) / len(vals), 1) if vals else 0
-        c.setFont('Helvetica-Bold', 8)
+        c.setFont('Helvetica-Bold', 7)
         c.drawString(xpos[-1], ty, f'{avg}%')
-        c.setFont('Helvetica', 8)
-        ty -= 14
+        c.setFont('Helvetica', 7)
+        ty -= 13
 
     c.setFont('Helvetica-Oblique', 8)
     c.setFillColorRGB(0.5, 0.5, 0.5)
@@ -1892,11 +2037,13 @@ def student_diagnostics():
         MockTest.status == 'active',
         db.or_(MockTest.grade == student.grade, MockTest.grade == 'All Grades')
     ).order_by(MockTest.subject, MockTest.name).all()
+    latest_dt = dt_latest_available_number(series)
     return render_template('student/diagnostics.html',
         student=student, series=series, insights=insights,
-        subjects=SUBJECTS, dt_numbers=DT_NUMBERS,
+        subjects=DT_SUBJECTS, dt_numbers=DT_NUMBERS,
         weak_subjects=weak_subjects, practice_tests=practice_tests,
-        academic_year=ACADEMIC_YEAR)
+        academic_year=ACADEMIC_YEAR, latest_dt=latest_dt,
+        report_url=url_for('student_dt_report'))
 
 
 # ── MAIN ──────────────────────────────────────────────────────────────────────
