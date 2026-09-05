@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block title %}Diagnostic Test Dashboard{% endblock %}
+{% block page_title %}Diagnostic Test Dashboard{% endblock %}
+
+{% block content %}
+
+<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+
+  <div>
+    <div style="font-size:1.05rem;font-weight:800;color:#1e293b">
+      📘 Diagnostic Test (DT) Overview
+    </div>
+
+    <div style="font-size:.8rem;color:#64748b;margin-top:4px">
+      Academic year {{ academic_year }} · DT1 to DT{{ dt_numbers|length }}
+    </div>
+  </div>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <a href="/{{ role_prefix }}/dt" class="btn btn-primary btn-sm">
+      ✏️ Enter marks
+    </a>
+    <a href="/{{ role_prefix }}/dt/upload" class="btn btn-secondary btn-sm">
+      ⬆️ Upload CSV
+    </a>
+    <a href="/{{ role_prefix }}/dt/graph" class="btn btn-secondary btn-sm">
+      📈 Student graphs
+    </a>
+  </div>
+
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:20px">
+
+  <div class="card" style="text-align:center">
+    <div style="font-size:1.8rem;font-weight:800;color:#1a3c6e">
+      {{ total_dts }}
+    </div>
+    <div style="font-size:.78rem;color:#64748b;margin-top:4px">
+      Diagnostic tests configured
+    </div>
+  </div>
+
+  <div class="card" style="text-align:center">
+    <div style="font-size:1.8rem;font-weight:800;color:#10b981">
+      {{ total_marks }}
+    </div>
+    <div style="font-size:.78rem;color:#64748b;margin-top:4px">
+      Marks entries recorded
+    </div>
+  </div>
+
+  <div class="card" style="text-align:center">
+    <div style="font-size:1.8rem;font-weight:800;color:#6366f1">
+      {{ total_students }}
+    </div>
+    <div style="font-size:.78rem;color:#64748b;margin-top:4px">
+      Total students
+    </div>
+  </div>
+
+</div>
+
+<div class="card" style="margin-bottom:20px">
+
+  <div style="font-weight:700;color:#334155;margin-bottom:12px">
+    Grade-wise breakdown
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px">
+
+    {% for g in grades %}
+    <div
+      style="border:1px solid #e2e8f0;border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px"
+    >
+      <div style="font-weight:700;color:#1e293b">
+        {{ g }}
+      </div>
+
+      <div style="font-size:.78rem;color:#64748b">
+        {{ grade_counts.get(g, 0) }} student(s)
+      </div>
+
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+        <a
+          href="/{{ role_prefix }}/dt/grade-analytics?grade={{ g }}"
+          class="btn btn-secondary btn-sm"
+        >
+          Analytics →
+        </a>
+      </div>
+    </div>
+    {% endfor %}
+
+  </div>
+
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px">
+
+  <a
+    href="/{{ role_prefix }}/dt/grade-analytics"
+    class="card"
+    style="text-decoration:none;display:block"
+  >
+    <div style="font-size:1.4rem;margin-bottom:6px">📊</div>
+    <div style="font-weight:800;color:#1e293b">
+      Grade Analytics
+    </div>
+    <div style="font-size:.78rem;color:#64748b;margin-top:4px">
+      Subject-wise averages, DT-by-DT trends and a ranked student list for one grade/section.
+    </div>
+  </a>
+
+  <a
+    href="/{{ role_prefix }}/dt/cross-grade-analytics"
+    class="card"
+    style="text-decoration:none;display:block"
+  >
+    <div style="font-size:1.4rem;margin-bottom:6px">🏫</div>
+    <div style="font-weight:800;color:#1e293b">
+      Cross-Grade Analytics
+    </div>
+    <div style="font-size:.78rem;color:#64748b;margin-top:4px">
+      Compare overall and subject-wise performance across every grade.
+    </div>
+  </a>
+
+  <a
+    href="/{{ role_prefix }}/dt/graph"
+    class="card"
+    style="text-decoration:none;display:block"
+  >
+    <div style="font-size:1.4rem;margin-bottom:6px">📈</div>
+    <div style="font-weight:800;color:#1e293b">
+      Student Progress Graphs
+    </div>
+    <div style="font-size:.78rem;color:#64748b;margin-top:4px">
+      View one student's trend across all subjects, and download PDF reports.
+    </div>
+  </a>
+
+</div>
+
+{% endblock %}
