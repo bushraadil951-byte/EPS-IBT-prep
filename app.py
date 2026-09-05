@@ -2073,6 +2073,7 @@ def student_diagnostics():
     student = db.session.get(User, session['user_id'])
     series = dt_student_series(student.id)
     insights = dt_student_insights(series)
+    insights_by_subject = {item['subject']: item for item in insights}
     weak_subjects = [item['subject'] for item in insights
                      if item['average'] is not None and item['average'] < 80]
     practice_tests = MockTest.query.filter(
@@ -2080,11 +2081,14 @@ def student_diagnostics():
         db.or_(MockTest.grade == student.grade, MockTest.grade == 'All Grades')
     ).order_by(MockTest.subject, MockTest.name).all()
     latest_dt = dt_latest_available_number(series)
+    has_any_marks = any(item['completed'] > 0 for item in insights)
     return render_template('student/diagnostics.html',
         student=student, series=series, insights=insights,
+        insights_by_subject=insights_by_subject,
         subjects=DT_SUBJECTS, dt_numbers=DT_NUMBERS,
         weak_subjects=weak_subjects, practice_tests=practice_tests,
         academic_year=ACADEMIC_YEAR, latest_dt=latest_dt,
+        has_any_marks=has_any_marks,
         report_url=url_for('student_dt_report'))
 
 
