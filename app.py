@@ -1516,6 +1516,84 @@ def dt_latest_available_number(series):
     return latest if latest is not None else DT_NUMBERS[0]
 
 
+def dt_grade_analytics(grade, section=None, academic_year=ACADEMIC_YEAR):
+    """Aggregated diagnostic analytics for a single grade (optionally one
+    section): subject x DT-number class averages, subject overall averages,
+    and a ranked list of students with their own diagnostic average."""
+    query = User.query.filter_by(role='student', grade=grade)
+    if section:
+        query = query.filter_by(section=section)
+    students = query.order_by(User.name).all()
+
+    per_student_series = {s.id: dt_student_series(s.id, academic_year) for s in students}
+
+    subject_dt_avg = {}
+    subject_overall_avg = {}
+    for sub in DT_SUBJECTS:
+        per_dt_vals = []
+        for idx in range(len(DT_NUMBERS)):
+            vals = [per_student_series[s.id][sub][idx]['pct']
+                    for s in students
+                    if per_student_series[s.id][sub][idx]['pct'] is not None]
+            per_dt_vals.append(safe_avg(vals) if vals else None)
+        subject_dt_avg[sub] = per_dt_vals
+        flat_vals = [v for v in per_dt_vals if v is not None]
+        subject_overall_avg[sub] = safe_avg(flat_vals) if flat_vals else None
+
+    student_rows = []
+    for s in students:
+        insights = dt_student_insights(per_student_series[s.id])
+        overall_vals = [i['average'] for i in insights if i['average'] is not None]
+        overall_avg = safe_avg(overall_vals) if overall_vals else None
+        weak = [i['subject'] for i in insights if i['average'] is not None and i['average'] < 60]
+        student_rows.append({
+            'id': s.id, 'name': s.name, 'section': s.section,
+            'overall_avg': overall_avg, 'weak_subjects': weak,
+        })
+    student_rows.sort(key=lambda x: (x['overall_avg'] is None, -(x['overall_avg'] or 0)))
+
+    class_overall_vals = [r['overall_avg'] for r in student_rows if r['overall_avg'] is not None]
+    class_overall_avg = safe_avg(class_overall_vals) if class_overall_vals else None
+
+    return {
+        'students': students,
+        'subject_dt_avg': subject_dt_avg,
+        'subject_overall_avg': subject_overall_avg,
+        'student_rows': student_rows,
+        'class_overall_avg': class_overall_avg,
+    }
+
+
+def dt_cross_grade_analytics(academic_year=ACADEMIC_YEAR):
+    """Aggregated diagnostic analytics across every grade, for comparing
+    grades against each other: per-grade overall average and per-subject
+    average, plus student/data counts."""
+    grade_data = {}
+    for grade in DT_GRADES:
+        students = User.query.filter_by(role='student', grade=grade).all()
+        if not students:
+            grade_data[grade] = {
+                'students': 0, 'overall_avg': None,
+                'subject_avg': {sub: None for sub in DT_SUBJECTS},
+            }
+            continue
+        per_student_series = {s.id: dt_student_series(s.id, academic_year) for s in students}
+        subject_avg = {}
+        all_vals = []
+        for sub in DT_SUBJECTS:
+            vals = []
+            for s in students:
+                vals.extend(p['pct'] for p in per_student_series[s.id][sub] if p['pct'] is not None)
+            subject_avg[sub] = safe_avg(vals) if vals else None
+            all_vals.extend(vals)
+        grade_data[grade] = {
+            'students': len(students),
+            'overall_avg': safe_avg(all_vals) if all_vals else None,
+            'subject_avg': subject_avg,
+        }
+    return grade_data
+
+
 def _draw_subject_bar_chart(c, series, dt_number, top_y, chart_width=460):
     """Draws a bar chart of each subject's percentage score for one specific
     DT number, positioned so its top sits at `top_y`. Returns the y-coordinate
@@ -1775,6 +1853,61 @@ def dt_graph():
         students=students, grades=DT_GRADES, sections=sections, grade=grade, section=section,
         student=student, series=series, subjects=DT_SUBJECTS, dt_numbers=DT_NUMBERS,
         academic_year=ACADEMIC_YEAR, role_prefix=_dt_role_prefix(), latest_dt=latest_dt)
+
+
+# ── DT DASHBOARD (standalone hub, fully separate from the IBT dashboard) ────
+
+@app.route('/dt')
+@login_required(('teacher', 'Resource_Manager'))
+def dt_home():
+    """Single, role-agnostic entry point — one click gets a teacher or admin
+    into the DT dashboard, regardless of which role they're logged in as."""
+    return redirect(url_for(f'{_dt_role_prefix()}_dt_dashboard'))
+
+
+@app.route('/teacher/dt-dashboard', endpoint='teacher_dt_dashboard')
+@app.route('/admin/dt-dashboard', endpoint='admin_dt_dashboard')
+@login_required(('teacher', 'Resource_Manager'))
+def dt_dashboard_hub():
+    total_dts = DiagnosticTest.query.filter_by(academic_year=ACADEMIC_YEAR).count()
+    total_marks = (
+        db.session.query(DTMark)
+        .join(DiagnosticTest, DTMark.dt_id == DiagnosticTest.id)
+        .filter(DiagnosticTest.academic_year == ACADEMIC_YEAR)
+        .count()
+    )
+    total_students = User.query.filter_by(role='student').count()
+    grade_counts = {
+        grade: User.query.filter_by(role='student', grade=grade).count()
+        for grade in DT_GRADES
+    }
+    return render_template('dt/dashboard.html',
+        role_prefix=_dt_role_prefix(), academic_year=ACADEMIC_YEAR,
+        total_dts=total_dts, total_marks=total_marks, total_students=total_students,
+        grades=DT_GRADES, grade_counts=grade_counts, dt_numbers=DT_NUMBERS)
+
+
+@app.route('/teacher/dt/grade-analytics', endpoint='teacher_dt_grade_analytics')
+@app.route('/admin/dt/grade-analytics', endpoint='admin_dt_grade_analytics')
+@login_required(('teacher', 'Resource_Manager'))
+def dt_grade_analytics_view():
+    grade   = request.args.get('grade', DT_GRADES[0])
+    section = request.args.get('section', '')
+    data = dt_grade_analytics(grade, section or None)
+    return render_template('dt/grade_analytics.html',
+        role_prefix=_dt_role_prefix(), academic_year=ACADEMIC_YEAR,
+        grades=DT_GRADES, sections=DT_SECTIONS, subjects=DT_SUBJECTS, dt_numbers=DT_NUMBERS,
+        selected_grade=grade, selected_section=section, **data)
+
+
+@app.route('/teacher/dt/cross-grade-analytics', endpoint='teacher_dt_cross_grade_analytics')
+@app.route('/admin/dt/cross-grade-analytics', endpoint='admin_dt_cross_grade_analytics')
+@login_required(('teacher', 'Resource_Manager'))
+def dt_cross_grade_analytics_view():
+    grade_data = dt_cross_grade_analytics()
+    return render_template('dt/cross_grade_analytics.html',
+        role_prefix=_dt_role_prefix(), academic_year=ACADEMIC_YEAR,
+        grades=DT_GRADES, subjects=DT_SUBJECTS, grade_data=grade_data)
 
 
 # ── SINGLE DT PDF ────────────────────────────────────────────────────────────
