@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+
+{% block title %}Grade Diagnostic Analytics{% endblock %}
+{% block page_title %}Grade Diagnostic Analytics{% endblock %}
+
+{% block content %}
+
+{% set section_options = sections or ['A', 'B', 'C', 'D'] %}
+
+<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+
+  <div>
+    <div style="font-size:1.05rem;font-weight:800;color:#1e293b">
+      📊 Grade-wise diagnostic performance
+    </div>
+
+    <div style="font-size:.8rem;color:#64748b;margin-top:4px">
+      Subject averages, DT-by-DT trend and a ranked student list.
+    </div>
+  </div>
+
+  <a href="/{{ role_prefix }}/dt-dashboard" class="btn btn-secondary btn-sm">
+    ← Back to dashboard
+  </a>
+
+</div>
+
+<form
+  method="GET"
+  action="/{{ role_prefix }}/dt/grade-analytics"
+  class="card"
+  style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px"
+>
+
+  <div>
+    <label class="field-label">Grade</label>
+    <select class="field-input" name="grade" required>
+      {% for g in grades %}
+      <option value="{{ g }}" {{ 'selected' if g == selected_grade }}>{{ g }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div>
+    <label class="field-label">Section</label>
+    <select class="field-input" name="section">
+      <option value="">All sections</option>
+      {% for s in section_options %}
+      <option value="{{ s }}" {{ 'selected' if s == selected_section }}>Section {{ s }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <button class="btn btn-primary" type="submit">
+    Show analytics
+  </button>
+
+</form>
+
+<div
+  style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:20px"
+>
+
+  <div class="card" style="text-align:center">
+    <div style="font-size:1.8rem;font-weight:800;color:#1a3c6e">
+      {{ selected_grade }}{% if selected_section %} · {{ selected_section }}{% endif %}
+    </div>
+    <div style="font-size:.78rem;color:#64748b;margin-top:4px">
+      Selected class
+    </div>
+  </div>
+
+  <div class="card" style="text-align:center">
+    <div style="font-size:1.8rem;font-weight:800;color:#6366f1">
+      {{ students|length }}
+    </div>
+    <div style="font-size:.78rem;color:#64748b;margin-top:4px">
+      Students in this class
+    </div>
+  </div>
+
+  <div class="card" style="text-align:center">
+    {% if class_overall_avg is not none %}
+    <div
+      style="font-size:1.8rem;font-weight:800;color:{{ '#10b981' if class_overall_avg >= 80 else ('#f59e0b' if class_overall_avg >= 60 else '#ef4444') }}"
+    >
+      {{ class_overall_avg }}%
+    </div>
+    {% else %}
+    <div style="font-size:1.8rem;font-weight:800;color:#94a3b8">—</div>
+    {% endif %}
+    <div style="font-size:.78rem;color:#64748b;margin-top:4px">
+      Class overall average
+    </div>
+  </div>
+
+</div>
+
+<div class="card" style="margin-bottom:20px">
+
+  <div style="font-weight:700;color:#334155;margin-bottom:12px">
+    Subject-wise averages
+  </div>
+
+  <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:.82rem">
+      <thead>
+        <tr style="background:#f1f5f9">
+          <th style="text-align:left;padding:8px;color:#334155">Subject</th>
+          {% for n in dt_numbers %}
+          <th style="text-align:center;padding:8px;color:#334155">DT{{ n }}</th>
+          {% endfor %}
+          <th style="text-align:center;padding:8px;color:#334155">Overall</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sub in subjects %}
+        <tr style="border-top:1px solid #e2e8f0">
+          <td style="padding:8px;font-weight:600;color:#1e293b">{{ sub }}</td>
+          {% for val in subject_dt_avg[sub] %}
+          <td style="text-align:center;padding:8px">
+            {% if val is not none %}
+            <span
+              style="color:{{ '#10b981' if val >= 80 else ('#f59e0b' if val >= 60 else '#ef4444') }};font-weight:600"
+            >
+              {{ val }}%
+            </span>
+            {% else %}
+            <span style="color:#cbd5e1">—</span>
+            {% endif %}
+          </td>
+          {% endfor %}
+          <td style="text-align:center;padding:8px;font-weight:700">
+            {% if subject_overall_avg[sub] is not none %}
+            {{ subject_overall_avg[sub] }}%
+            {% else %}
+            <span style="color:#cbd5e1">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<div class="card">
+
+  <div style="font-weight:700;color:#334155;margin-bottom:12px">
+    Students ranked by diagnostic average
+  </div>
+
+  {% if student_rows %}
+  <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:.82rem">
+      <thead>
+        <tr style="background:#f1f5f9">
+          <th style="text-align:left;padding:8px;color:#334155">#</th>
+          <th style="text-align:left;padding:8px;color:#334155">Name</th>
+          <th style="text-align:left;padding:8px;color:#334155">Section</th>
+          <th style="text-align:center;padding:8px;color:#334155">Overall avg</th>
+          <th style="text-align:left;padding:8px;color:#334155">Weak subjects</th>
+          <th style="text-align:right;padding:8px;color:#334155">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in student_rows %}
+        <tr style="border-top:1px solid #e2e8f0">
+          <td style="padding:8px;color:#64748b">{{ loop.index }}</td>
+          <td style="padding:8px;font-weight:600;color:#1e293b">{{ row.name }}</td>
+          <td style="padding:8px;color:#64748b">{{ row.section or '-' }}</td>
+          <td style="text-align:center;padding:8px">
+            {% if row.overall_avg is not none %}
+            <span
+              style="color:{{ '#10b981' if row.overall_avg >= 80 else ('#f59e0b' if row.overall_avg >= 60 else '#ef4444') }};font-weight:700"
+            >
+              {{ row.overall_avg }}%
+            </span>
+            {% else %}
+            <span style="color:#cbd5e1">Not started</span>
+            {% endif %}
+          </td>
+          <td style="padding:8px;color:#64748b">
+            {% if row.weak_subjects %}
+            {{ row.weak_subjects|join(', ') }}
+            {% else %}
+            <span style="color:#10b981">None</span>
+            {% endif %}
+          </td>
+          <td style="text-align:right;padding:8px;white-space:nowrap">
+            <a
+              href="/{{ role_prefix }}/dt/graph?student_id={{ row.id }}&grade={{ selected_grade }}&section={{ selected_section }}"
+              class="btn btn-secondary btn-sm"
+            >
+              Graph
+            </a>
+            <a
+              href="/{{ role_prefix }}/dt/report/{{ row.id }}"
+              class="btn btn-primary btn-sm"
+            >
+              Report
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="text-align:center;padding:30px;color:#64748b">
+    No students found for this grade/section.
+  </div>
+  {% endif %}
+
+</div>
+
+{% endblock %}
