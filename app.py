@@ -2206,9 +2206,9 @@ def dt_report(student_id=None):
     lc.valueAxis.valueMax = 100
     lc.valueAxis.valueStep = 20
     for i, sub in enumerate(DT_SUBJECTS):
-        pts = [(p['pct'] if p['pct'] is not None else 0) for p in series.get(sub, [])]
+        pts = [p['pct'] for p in series.get(sub, [])]
         while len(pts) < len(DT_NUMBERS):
-            pts.append(0)
+            pts.append(None)
         lc.data.append(pts[:len(DT_NUMBERS)])
         lc.lines[i].strokeColor = chart_colors[i % len(chart_colors)]
         lc.lines[i].strokeWidth = 2
