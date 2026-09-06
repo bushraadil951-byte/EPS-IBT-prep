@@ -650,7 +650,6 @@ def download_credentials():
     return Response(output.getvalue(), mimetype='text/csv',
         headers={'Content-Disposition': 'attachment; filename=student_credentials.csv'})
 
-
 @app.route('/admin/teachers', methods=['GET', 'POST'])
 @login_required('Resource_Manager')
 def admin_teachers():
@@ -662,9 +661,18 @@ def admin_teachers():
             else:
                 db.session.add(User(name=request.form['name'], username=request.form['username'],
                     password=generate_password_hash(request.form['password'], method='pbkdf2:sha256:10000'),
-                    role='teacher'))
+                    role='teacher', grade=request.form.get('grade') or None))
                 db.session.commit()
                 flash('Teacher added.', 'success')
+        elif action == 'edit':
+            user = db.session.get(User, int(request.form['user_id']))
+            if user:
+                user.name = request.form.get('name', user.name)
+                user.grade = request.form.get('grade') or None
+                if request.form.get('password'):
+                    user.password = generate_password_hash(request.form['password'], method='pbkdf2:sha256:10000')
+                db.session.commit()
+                flash('Teacher updated.', 'success')
         elif action == 'delete':
             user = db.session.get(User, int(request.form['user_id']))
             if user:
@@ -672,7 +680,7 @@ def admin_teachers():
                 db.session.commit()
             flash('Teacher removed.', 'success')
     teachers = User.query.filter_by(role='teacher').all()
-    return render_template('admin/teachers.html', teachers=teachers)
+    return render_template('admin/teachers.html', teachers=teachers, grades=DT_GRADES)
 
 
 @app.route('/admin/tests', methods=['GET', 'POST'])
