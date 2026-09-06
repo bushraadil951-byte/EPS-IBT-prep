@@ -492,15 +492,11 @@ def login():
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '').strip()
         user = User.query.filter_by(username=username).first()
-        if user and check_password_hash(user.password, password):
+                if user and check_password_hash(user.password, password):
             session['user_id'] = user.id
             session['role']    = user.role
             session['name']    = user.name
-            role = user.role
-            if role == 'Resource_Manager':
-                return redirect(url_for('admin_dashboard'))
-            else:
-                return redirect(url_for(f"{role}_dashboard"))
+            return redirect(url_for('portal_home'))
         flash('Invalid username or password.', 'error')
     return render_template('login.html')
 
