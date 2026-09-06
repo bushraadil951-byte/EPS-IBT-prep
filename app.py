@@ -559,7 +559,7 @@ def admin_students():
                     user.password = generate_password_hash(request.form['password'], method='pbkdf2:sha256:10000')
                 db.session.commit()
                 flash('Student updated.', 'success')
-        students = User.query.filter_by(role='student').order_by(User.grade, User.name).all()
+    students = User.query.filter_by(role='student').order_by(User.grade, User.name).all()
     return render_template('admin/students.html', students=students, grades=DT_GRADES)
 
 
