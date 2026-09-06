@@ -588,7 +588,7 @@ def upload_students():
                     grade = f"Grade {grade.strip()}"
                 preview.append({'name': name, 'grade': grade, 'section': section,
                                  'username': username, 'password': password})
-            return render_template('admin/upload_students.html', preview=preview, grades=GRADES)
+                return render_template('admin/upload_students.html', preview=preview, grades=DT_GRADES)
         elif action == 'confirm':
             names     = request.form.getlist('name')
             usernames = request.form.getlist('username')
