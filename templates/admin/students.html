@@ -136,7 +136,9 @@
           <div>
             <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:3px">Grade</label>
             <select name="grade" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:.85rem">
-              <option>Grade 3</option><option>Grade 4</option><option>Grade 5</option>
+              {% for g in grades %}
+              <option>{{ g }}</option>
+              {% endfor %}
             </select>
           </div>
           <div>
