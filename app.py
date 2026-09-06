@@ -285,7 +285,14 @@ def login_required(role=None):
         return decorated
     return decorator
 
-
+def current_teacher_grade():
+    """Returns the grade a logged-in teacher is locked to, or None for
+    admin/other roles (no restriction)."""
+    if session.get('role') != 'teacher':
+        return None
+    teacher = db.session.get(User, session.get('user_id'))
+    return teacher.grade if teacher else None
+    
 def safe_avg(lst):
     lst = [x for x in lst if x is not None]
     return round(sum(lst) / len(lst), 1) if lst else 0
