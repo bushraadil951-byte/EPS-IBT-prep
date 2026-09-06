@@ -1826,14 +1826,12 @@ def dt_upload():
     grade     = teacher_grade or request.values.get('grade', DT_GRADES[0])
     section   = request.values.get('section', '')
     dt_number = int(request.values.get('dt_number', 1))
-    max_marks = float(request.values.get('max_marks', 25))
 
     if request.method == 'POST':
         file = request.files.get('csv_file')
         if not file or not file.filename.lower().endswith('.csv'):
             flash('Please upload a valid .csv file.', 'error')
-            return redirect(url_for(f'{_dt_role_prefix()}_dt_upload', grade=grade, section=section,
-                                     dt_number=dt_number, max_marks=max_marks))
+            return redirect(url_for(f'{_dt_role_prefix()}_dt_upload', grade=grade, section=section, dt_number=dt_number))
 
         stream = io.StringIO(file.stream.read().decode('utf-8-sig'))
         reader = csv.DictReader(stream)
@@ -1849,18 +1847,30 @@ def dt_upload():
 
         if not present_subjects:
             flash('No subject columns recognised. Expected headers like: username,english,maths,science,hindi,urdu,ict', 'error')
-            return redirect(url_for(f'{_dt_role_prefix()}_dt_upload', grade=grade, section=section,
-                                     dt_number=dt_number, max_marks=max_marks))
+            return redirect(url_for(f'{_dt_role_prefix()}_dt_upload', grade=grade, section=section, dt_number=dt_number))
 
-        # One DiagnosticTest slot per subject found in the CSV, all sharing
-        # this DT's max_marks
+        # Each subject can have its own maximum marks, taken from the form
+        # (one number field per subject, defaulting to 25 if left blank)
+        subject_max_marks = {}
+        for sub in present_subjects:
+            try:
+                subject_max_marks[sub] = float(request.form.get(f'max_marks_{sub}') or 25)
+            except ValueError:
+                subject_max_marks[sub] = 25
+
+        # One DiagnosticTest slot per subject found in the CSV
         dt_by_subject = {
             sub: dt_get_or_create(
                 dt_number=dt_number, subject=sub, grade=grade, section=section or None,
-                academic_year=ACADEMIC_YEAR, max_marks=max_marks, created_by=session['user_id']
+                academic_year=ACADEMIC_YEAR, max_marks=subject_max_marks[sub], created_by=session['user_id']
             )
             for sub in present_subjects
         }
+        # If the slot already existed from a previous upload, make sure its
+        # max_marks reflects whatever was entered this time
+        for sub, dt in dt_by_subject.items():
+            dt.max_marks = subject_max_marks[sub]
+        db.session.commit()
 
         added = 0
         skipped = 0
@@ -1886,7 +1896,7 @@ def dt_upload():
                     continue
                 try:
                     marks_value = float(raw_val)
-                    if marks_value < 0 or marks_value > max_marks:
+                    if marks_value < 0 or marks_value > subject_max_marks[sub]:
                         skipped += 1
                         continue
                 except ValueError:
@@ -1910,10 +1920,11 @@ def dt_upload():
         return redirect(url_for(f'{_dt_role_prefix()}_dt', grade=grade, section=section, dt_number=dt_number))
 
     return render_template('dt/upload.html',
-        grade=grade, section=section, dt_number=dt_number, max_marks=max_marks,
+        grade=grade, section=section, dt_number=dt_number,
         grades=[teacher_grade] if teacher_grade else DT_GRADES,
         subjects=DT_SUBJECTS, dt_numbers=DT_NUMBERS, sections=DT_SECTIONS,
         role_prefix=_dt_role_prefix(), grade_locked=bool(teacher_grade))
+    
 # ── DT CSV TEMPLATE ─────────────────────────────────────────────────────────
 
 @app.route('/teacher/dt/upload-template', endpoint='teacher_dt_upload_template')
