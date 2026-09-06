@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}Choose a module{% endblock %}
+{% block page_title %}Welcome{% endblock %}
+
+{% block content %}
+
+<div style="text-align:center;margin-bottom:28px">
+  <div style="font-size:1.3rem;font-weight:800;color:#1e293b">
+    Hi {{ session.get('name', role_label) }} 👋
+  </div>
+  <div style="font-size:.85rem;color:#64748b;margin-top:6px">
+    {{ role_label }} portal · choose what you'd like to work on
+  </div>
+</div>
+
+<div
+  style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;max-width:900px;margin:0 auto"
+>
+
+  {% for m in modules %}
+  <a
+    href="{{ m.url }}"
+    class="card"
+    style="text-decoration:none;display:block;padding:26px;transition:transform .15s,box-shadow .15s"
+    onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 20px rgba(15,23,42,.08)'"
+    onmouseout="this.style.transform='none';this.style.boxShadow='none'"
+  >
+    <div style="font-size:2.2rem;margin-bottom:12px">
+      {{ m.icon }}
+    </div>
+
+    <div style="font-size:1.05rem;font-weight:800;color:#1e293b;margin-bottom:8px">
+      {{ m.name }}
+    </div>
+
+    <div style="font-size:.82rem;color:#64748b;line-height:1.5">
+      {{ m.desc }}
+    </div>
+
+    <div
+      style="margin-top:16px;font-size:.82rem;font-weight:700;color:#1a3c6e"
+    >
+      Open →
+    </div>
+  </a>
+  {% endfor %}
+
+  {% if not modules %}
+  <div class="card" style="text-align:center;padding:40px;color:#64748b">
+    No modules are available for your role yet.
+  </div>
+  {% endif %}
+
+</div>
+
+{% endblock %}
