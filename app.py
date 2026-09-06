@@ -1224,14 +1224,15 @@ def teacher_dashboard():
 @app.route('/teacher/students')
 @login_required('teacher')
 def teacher_students():
-    students = User.query.filter_by(role='student').order_by(User.grade, User.name).all()
+    grade = current_teacher_grade()
+    query = User.query.filter_by(role='student')
+    if grade:
+        query = query.filter_by(grade=grade)
+    students = query.order_by(User.grade, User.name).all()
     student_data = []
     for s in students:
         rs = list(s.results)
-        student_data.append({
-            'student': s, 'tests_taken': len(rs),
-            'avg': safe_avg([r.percent for r in rs]),
-        })
+        student_data.append({'student': s, 'tests_taken': len(rs), 'avg': safe_avg([r.percent for r in rs])})
     return render_template('teacher/students.html', student_data=student_data)
 
 
