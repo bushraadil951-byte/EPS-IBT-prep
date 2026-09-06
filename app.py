@@ -1206,14 +1206,19 @@ def student_ib():
 @app.route('/teacher')
 @login_required('teacher')
 def teacher_dashboard():
-    students  = User.query.filter_by(role='student').all()
-    results   = TestResult.query.all()
-    tests     = MockTest.query.filter_by(status='active').all()
+    grade = current_teacher_grade()
+    students  = User.query.filter_by(role='student', grade=grade).all() if grade else []
+    student_ids = [s.id for s in students]
+    results   = TestResult.query.filter(TestResult.student_id.in_(student_ids)).all() if student_ids else []
+    tests     = MockTest.query.filter(
+        MockTest.status == 'active',
+        db.or_(MockTest.grade == grade, MockTest.grade == 'All Grades')
+    ).all() if grade else []
     avg_score = safe_avg([r.percent for r in results])
     recent    = sorted(results, key=lambda r: r.taken_at, reverse=True)[:6]
     return render_template('teacher/dashboard.html',
         students=students, results=results, tests=tests,
-        avg_score=avg_score, recent=recent)
+        avg_score=avg_score, recent=recent, teacher_grade=grade)
 
 
 @app.route('/teacher/students')
