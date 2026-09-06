@@ -600,14 +600,16 @@ def upload_students():
                     'password': password
                 })
 
-            return render_template(
-                'admin/upload_students.html',
-                preview=preview,
-                grades=DT_GRADES
-            )        elif action == 'confirm':
-            names     = request.form.getlist('name')
-            usernames = request.form.getlist('username')
-            passwords = request.form.getlist('password')
+           return render_template(
+    'admin/upload_students.html',
+    preview=preview,
+    grades=DT_GRADES
+)
+
+elif action == 'confirm':
+    names = request.form.getlist('name')
+    usernames = request.form.getlist('username')
+    passwords = request.form.getlist('password')
             grades    = request.form.getlist('grade')
             sections  = request.form.getlist('section')
             added = 0
