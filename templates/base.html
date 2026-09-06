@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>{% block title %}Eastern Public School — IBT Portal{% endblock %}</title>
+<title>{% block title %}Eastern Public School — Academic Hub{% endblock %}</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/static/style.css"/>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
@@ -62,8 +62,9 @@
 <div class="app">
   <aside class="sidebar">
     <div class="sidebar-logo">
-      <div class="logo-mark">🎓 EPS</div>
-      <div class="sidebar-meta">Eastern Public School<br/>IBT Preparation Portal</div>
+    <div class="sidebar-logo">
+      <div class="logo-mark">🎓 EPS Academic Hub</div>
+      <div class="sidebar-meta">Eastern Public School<br/><em>Developing Minds. Discovering Potential. Shaping Futures.</em></div>
     </div>
 
     {% if session.role == 'admin' or session.role == 'Resource_Manager' %}
