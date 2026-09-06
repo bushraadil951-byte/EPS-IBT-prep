@@ -65,6 +65,7 @@
     </select>
     {% endif %}
   </div>
+
   <div>
     <label class="field-label">
       Section
@@ -274,3 +275,38 @@
             ],
 
             borderColor: '#94a3b8',
+            backgroundColor: 'rgba(148,163,184,.08)',
+            borderDash: [5, 4],
+            tension: 0.3,
+            spanGaps: true,
+            fill: false
+          }
+        ]
+      },
+
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'bottom',
+            labels: { boxWidth: 12, font: { size: 10 } }
+          }
+        },
+        scales: {
+          y: {
+            min: 0,
+            max: 100,
+            ticks: { stepSize: 20 }
+          }
+        }
+      }
+    }
+  );
+
+  {% endfor %}
+</script>
+
+{% endif %}
+
+{% endblock %}
