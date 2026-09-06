@@ -1730,8 +1730,9 @@ def _dt_role_prefix():
 @app.route('/admin/dt', methods=['GET', 'POST'], endpoint='admin_dt')
 @login_required(('teacher', 'Resource_Manager'))
 def dt_entry():
+    teacher_grade = current_teacher_grade()
     if request.method == 'POST':
-        grade     = request.form['grade']
+        grade     = teacher_grade or request.form['grade']
         section   = request.form.get('section') or None
         subject   = request.form['subject']
         dt_number = int(request.form['dt_number'])
@@ -1772,7 +1773,7 @@ def dt_entry():
         flash(f'Marks saved for {saved} student(s) — {subject} DT{dt_number}, {grade}{(" " + section) if section else ""}', 'success')
         return redirect(url_for(f'{_dt_role_prefix()}_dt', grade=grade, section=section or '', subject=subject, dt_number=dt_number))
 
-    grade     = request.args.get('grade', DT_GRADES[0])
+    grade     = teacher_grade or request.args.get('grade', DT_GRADES[0])
     section   = request.args.get('section', '')
     subject   = request.args.get('subject', DT_SUBJECTS[0])
     dt_number = int(request.args.get('dt_number', 1))
@@ -1780,9 +1781,6 @@ def dt_entry():
     if section:
         query = query.filter_by(section=section)
     students = query.order_by(User.name).all()
-    # Match a DT that was saved for this exact section OR one saved for
-    # "All sections" (section=None), whichever exists — same rule used
-    # everywhere else marks are read back (graphs, reports).
     dt = DiagnosticTest.query.filter_by(
         dt_number=dt_number, subject=subject, grade=grade, academic_year=ACADEMIC_YEAR
     ).filter(
@@ -1794,10 +1792,11 @@ def dt_entry():
             existing_marks[mark.student_id] = {'marks': mark.marks_obtained, 'remarks': mark.remarks or ''}
     sections = DT_SECTIONS
     return render_template('dt/entry.html',
-        students=students, grades=DT_GRADES, subjects=DT_SUBJECTS, dt_numbers=DT_NUMBERS,
+        students=students, grades=[teacher_grade] if teacher_grade else DT_GRADES,
+        subjects=DT_SUBJECTS, dt_numbers=DT_NUMBERS,
         sections=sections, grade=grade, section=section, subject=subject, dt_number=dt_number,
-        dt=dt, existing_marks=existing_marks, academic_year=ACADEMIC_YEAR, role_prefix=_dt_role_prefix())
-
+        dt=dt, existing_marks=existing_marks, academic_year=ACADEMIC_YEAR, role_prefix=_dt_role_prefix(),
+        grade_locked=bool(teacher_grade))
 
 # ── DT CSV UPLOAD ────────────────────────────────────────────────────────────
 
@@ -1805,7 +1804,8 @@ def dt_entry():
 @app.route('/admin/dt/upload', methods=['GET', 'POST'], endpoint='admin_dt_upload')
 @login_required(('teacher', 'Resource_Manager'))
 def dt_upload():
-    grade     = request.values.get('grade', DT_GRADES[0])
+    teacher_grade = current_teacher_grade()
+    grade     = teacher_grade or request.values.get('grade', DT_GRADES[0])
     section   = request.values.get('section', '')
     subject   = request.values.get('subject', DT_SUBJECTS[0])
     dt_number = int(request.values.get('dt_number', 1))
@@ -1833,6 +1833,9 @@ def dt_upload():
             if not student:
                 skipped += 1
                 continue
+            if teacher_grade and student.grade != teacher_grade:
+                skipped += 1
+                continue
             try:
                 marks_value = float(marks_raw)
                 if marks_value < 0 or marks_value > max_marks:
@@ -1855,14 +1858,14 @@ def dt_upload():
                 ))
             added += 1
         db.session.commit()
-        flash(f'{added} marks uploaded ({skipped} skipped — check usernames/marks)', 'success')
+        flash(f'{added} marks uploaded ({skipped} skipped — check usernames/marks/grade)', 'success')
         return redirect(url_for(f'{_dt_role_prefix()}_dt', grade=grade, section=section, subject=subject, dt_number=dt_number))
 
     return render_template('dt/upload.html',
         grade=grade, section=section, subject=subject, dt_number=dt_number, max_marks=max_marks,
-        grades=DT_GRADES, subjects=DT_SUBJECTS, dt_numbers=DT_NUMBERS, sections=DT_SECTIONS,
-        role_prefix=_dt_role_prefix())
-
+        grades=[teacher_grade] if teacher_grade else DT_GRADES,
+        subjects=DT_SUBJECTS, dt_numbers=DT_NUMBERS, sections=DT_SECTIONS,
+        role_prefix=_dt_role_prefix(), grade_locked=bool(teacher_grade))
 
 # ── DT CSV TEMPLATE ─────────────────────────────────────────────────────────
 
@@ -1870,7 +1873,8 @@ def dt_upload():
 @app.route('/admin/dt/upload-template', endpoint='admin_dt_upload_template')
 @login_required(('teacher', 'Resource_Manager'))
 def dt_upload_template():
-    grade   = request.args.get('grade', '')
+    teacher_grade = current_teacher_grade()
+    grade   = teacher_grade or request.args.get('grade', '')
     section = request.args.get('section', '')
     output = io.StringIO()
     writer = csv.writer(output)
@@ -1886,15 +1890,15 @@ def dt_upload_template():
     return Response(output.getvalue(), mimetype='text/csv',
         headers={'Content-Disposition': 'attachment; filename=DT_marks_template.csv'})
 
-
 # ── DT GRAPH ─────────────────────────────────────────────────────────────────
 
 @app.route('/teacher/dt/graph', endpoint='teacher_dt_graph')
 @app.route('/admin/dt/graph', endpoint='admin_dt_graph')
 @login_required(('teacher', 'Resource_Manager'))
 def dt_graph():
+    teacher_grade = current_teacher_grade()
     student_id = request.args.get('student_id', type=int)
-    grade      = request.args.get('grade', DT_GRADES[0])
+    grade      = teacher_grade or request.args.get('grade', DT_GRADES[0])
     section    = request.args.get('section', '')
     query = User.query.filter_by(role='student', grade=grade)
     if section:
@@ -1905,71 +1909,86 @@ def dt_graph():
     student = None
     latest_dt = None
     if student_id:
-        student = db.session.get(User, student_id)
-        if student:
+        candidate = db.session.get(User, student_id)
+        if candidate and (not teacher_grade or candidate.grade == teacher_grade):
+            student = candidate
             series = dt_student_series(student_id)
             latest_dt = dt_latest_available_number(series)
+        else:
+            flash('Access denied — that student is outside your grade.', 'error')
     return render_template('dt/graph.html',
-        students=students, grades=DT_GRADES, sections=sections, grade=grade, section=section,
+        students=students, grades=[teacher_grade] if teacher_grade else DT_GRADES,
+        sections=sections, grade=grade, section=section,
         student=student, series=series, subjects=DT_SUBJECTS, dt_numbers=DT_NUMBERS,
-        academic_year=ACADEMIC_YEAR, role_prefix=_dt_role_prefix(), latest_dt=latest_dt)
-
+        academic_year=ACADEMIC_YEAR, role_prefix=_dt_role_prefix(), latest_dt=latest_dt,
+        grade_locked=bool(teacher_grade))
+ 
 
 # ── DT DASHBOARD (standalone hub, fully separate from the IBT dashboard) ────
-
-@app.route('/dt')
-@login_required(('teacher', 'Resource_Manager'))
-def dt_home():
-    """Single, role-agnostic entry point — one click gets a teacher or admin
-    into the DT dashboard, regardless of which role they're logged in as."""
-    return redirect(url_for(f'{_dt_role_prefix()}_dt_dashboard'))
-
 
 @app.route('/teacher/dt-dashboard', endpoint='teacher_dt_dashboard')
 @app.route('/admin/dt-dashboard', endpoint='admin_dt_dashboard')
 @login_required(('teacher', 'Resource_Manager'))
 def dt_dashboard_hub():
-    total_dts = DiagnosticTest.query.filter_by(academic_year=ACADEMIC_YEAR).count()
-    total_marks = (
+    teacher_grade = current_teacher_grade()
+    dt_query = DiagnosticTest.query.filter_by(academic_year=ACADEMIC_YEAR)
+    marks_query = (
         db.session.query(DTMark)
         .join(DiagnosticTest, DTMark.dt_id == DiagnosticTest.id)
         .filter(DiagnosticTest.academic_year == ACADEMIC_YEAR)
-        .count()
     )
-    total_students = User.query.filter_by(role='student').count()
+    students_query = User.query.filter_by(role='student')
+    grades_shown = DT_GRADES
+    if teacher_grade:
+        dt_query = dt_query.filter_by(grade=teacher_grade)
+        marks_query = marks_query.filter(DiagnosticTest.grade == teacher_grade)
+        students_query = students_query.filter_by(grade=teacher_grade)
+        grades_shown = [teacher_grade]
+    total_dts = dt_query.count()
+    total_marks = marks_query.count()
+    total_students = students_query.count()
     grade_counts = {
         grade: User.query.filter_by(role='student', grade=grade).count()
-        for grade in DT_GRADES
+        for grade in grades_shown
     }
     return render_template('dt/dashboard.html',
         role_prefix=_dt_role_prefix(), academic_year=ACADEMIC_YEAR,
         total_dts=total_dts, total_marks=total_marks, total_students=total_students,
-        grades=DT_GRADES, grade_counts=grade_counts, dt_numbers=DT_NUMBERS)
+        grades=grades_shown, grade_counts=grade_counts, dt_numbers=DT_NUMBERS,
+        grade_locked=bool(teacher_grade))
 
+# ── dt_grade_analytics_view() — replace whole function ──────────────────────
 
 @app.route('/teacher/dt/grade-analytics', endpoint='teacher_dt_grade_analytics')
 @app.route('/admin/dt/grade-analytics', endpoint='admin_dt_grade_analytics')
 @login_required(('teacher', 'Resource_Manager'))
 def dt_grade_analytics_view():
-    grade   = request.args.get('grade', DT_GRADES[0])
+    teacher_grade = current_teacher_grade()
+    grade   = teacher_grade or request.args.get('grade', DT_GRADES[0])
     section = request.args.get('section', '')
     data = dt_grade_analytics(grade, section or None)
     return render_template('dt/grade_analytics.html',
         role_prefix=_dt_role_prefix(), academic_year=ACADEMIC_YEAR,
-        grades=DT_GRADES, sections=DT_SECTIONS, subjects=DT_SUBJECTS, dt_numbers=DT_NUMBERS,
-        selected_grade=grade, selected_section=section, **data)
-
-
+        grades=[teacher_grade] if teacher_grade else DT_GRADES,
+        sections=DT_SECTIONS, subjects=DT_SUBJECTS, dt_numbers=DT_NUMBERS,
+        selected_grade=grade, selected_section=section, grade_locked=bool(teacher_grade), **data)
+ 
+# ── dt_cross_grade_analytics_view() — replace whole function ────────────────
+# Teachers are locked to one grade, so cross-grade comparison doesn't apply
+# to them — bounce them to their own grade analytics instead.
+ 
 @app.route('/teacher/dt/cross-grade-analytics', endpoint='teacher_dt_cross_grade_analytics')
 @app.route('/admin/dt/cross-grade-analytics', endpoint='admin_dt_cross_grade_analytics')
 @login_required(('teacher', 'Resource_Manager'))
 def dt_cross_grade_analytics_view():
+    if current_teacher_grade():
+        flash('Cross-grade comparison is available to admins only — showing your grade instead.', 'error')
+        return redirect(url_for('teacher_dt_grade_analytics'))
     grade_data = dt_cross_grade_analytics()
     return render_template('dt/cross_grade_analytics.html',
         role_prefix=_dt_role_prefix(), academic_year=ACADEMIC_YEAR,
         grades=DT_GRADES, subjects=DT_SUBJECTS, grade_data=grade_data)
-
-
+ 
 # ── SINGLE DT PDF ────────────────────────────────────────────────────────────
 
 @app.route('/teacher/dt/pdf/<int:student_id>/<int:dt_number>', endpoint='teacher_dt_pdf_single')
@@ -1977,9 +1996,10 @@ def dt_cross_grade_analytics_view():
 @login_required(('teacher', 'Resource_Manager'))
 def dt_pdf_single(student_id, dt_number):
     student = db.session.get(User, student_id)
-    if not student:
-        flash('Student not found.', 'error')
-        return redirect(url_for(f'{_dt_role_prefix()}_dt'))
+   teacher_grade = current_teacher_grade()
+ if teacher_grade and student.grade != teacher_grade:
+       flash('Access denied — that student is outside your grade.', 'error')
+       return redirect(url_for(f'{_dt_role_prefix()}_dt'))
     rows = []
     for subject in DT_SUBJECTS:
         dt = DiagnosticTest.query.filter_by(
@@ -2080,6 +2100,12 @@ def dt_report(student_id=None):
     if session.get('role') == 'student' and student.id != session['user_id']:
         flash('Access denied.', 'error')
         return redirect(url_for('student_diagnostics'))
+
+    if session.get('role') == 'teacher':
+     teacher_grade = current_teacher_grade()
+       if teacher_grade and student.grade != teacher_grade:
+           flash('Access denied — that student is outside your grade.', 'error')
+           return redirect(url_for('teacher_dt'))
 
     series = dt_student_series(student_id)
     requested_dt = request.args.get('dt_number', type=int)
