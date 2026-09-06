@@ -69,4 +69,43 @@
     </form>
   </div>
 </div>
+<div class="modal-backdrop" id="editModal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal">
+    <div class="modal-title">Edit Teacher <button class="modal-close" onclick="document.getElementById('editModal').style.display='none'">✕</button></div>
+    <form method="POST" autocomplete="off">
+      <input type="hidden" name="action" value="edit"/>
+      <input type="hidden" name="user_id" id="edit_user_id"/>
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input class="form-input" name="name" id="edit_name" required autocomplete="off"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Assigned Grade</label>
+        <select class="form-input" name="grade" id="edit_grade">
+          <option value="">No grade (unrestricted — admin-level access)</option>
+          {% for g in grades %}
+          <option value="{{ g }}">{{ g }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">New Password (leave blank to keep current)</label>
+        <input class="form-input" type="password" name="password" autocomplete="new-password"/>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('editModal').style.display='none'">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openEditModal(id, name, grade) {
+  document.getElementById('edit_user_id').value = id;
+  document.getElementById('edit_name').value = name;
+  document.getElementById('edit_grade').value = grade;
+  document.getElementById('editModal').style.display = 'flex';
+}
+</script>
 {% endblock %}
