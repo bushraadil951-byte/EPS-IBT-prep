@@ -639,7 +639,7 @@ def upload_students():
                 db.session.rollback()
                 flash(f'Error: {str(e)}', 'error')
             return redirect(url_for('admin_students'))
-  return render_template('admin/upload_students.html', preview=preview, grades=DT_GRADES)
+return render_template('admin/upload_students.html', preview=preview, grades=DT_GRADES)
 
 
 @app.route('/admin/students/download-template')
