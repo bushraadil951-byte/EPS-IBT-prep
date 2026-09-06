@@ -9,14 +9,27 @@
 </div>
 <div class="table-wrap">
 <table>
-  <thead><tr><th>Name</th><th>Username</th><th>Joined</th><th>Action</th></tr></thead>
+    <thead><tr><th>Name</th><th>Username</th><th>Grade</th><th>Joined</th><th>Action</th></tr></thead>
   <tbody>
     {% for t in teachers %}
     <tr>
       <td style="font-weight:600">{{ t.name }}</td>
       <td style="font-family:monospace;color:var(--ink3)">{{ t.username }}</td>
-      <td style="color:var(--ink4)">{{ t.created.strftime('%d %b %Y') }}</td>
       <td>
+        {% if t.grade %}
+        <span class="badge badge-blue">{{ t.grade }}</span>
+        {% else %}
+        <span style="color:var(--ink4);font-size:.78rem">All grades</span>
+        {% endif %}
+      </td>
+      <td style="color:var(--ink4)">{{ t.created.strftime('%d %b %Y') }}</td>
+      <td style="white-space:nowrap">
+        <button
+          class="btn btn-secondary btn-xs"
+          onclick="openEditModal({{ t.id }}, {{ t.name|tojson }}, {{ (t.grade or '')|tojson }})"
+        >
+          Edit
+        </button>
         <form method="POST" style="display:inline" onsubmit="return confirm('Remove {{ t.name }}?')">
           <input type="hidden" name="action" value="delete"/>
           <input type="hidden" name="user_id" value="{{ t.id }}"/>
@@ -25,7 +38,7 @@
       </td>
     </tr>
     {% else %}
-    <tr><td colspan="4" style="text-align:center;color:var(--ink4);padding:20px">No teachers yet.</td></tr>
+    <tr><td colspan="5" style="text-align:center;color:var(--ink4);padding:20px">No teachers yet.</td></tr>
     {% endfor %}
   </tbody>
 </table>
@@ -35,10 +48,19 @@
     <div class="modal-title">Add Teacher <button class="modal-close" onclick="document.getElementById('addModal').style.display='none'">✕</button></div>
     <form method="POST" autocomplete="off">
       <input type="hidden" name="action" value="add"/>
-      <div class="form-group"><label class="form-label">Full Name</label><input class="form-input" name="name" placeholder="e.g. Mrs. Gupta" required autocomplete="off"/></div>
+            <div class="form-group"><label class="form-label">Full Name</label><input class="form-input" name="name" placeholder="e.g. Mrs. Gupta" required autocomplete="off"/></div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Username</label><input class="form-input" name="username" placeholder="teacher3" required autocomplete="off"/></div>
         <div class="form-group"><label class="form-label">Password</label><input class="form-input" type="password" name="password" required autocomplete="new-password"/></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Assigned Grade</label>
+        <select class="form-input" name="grade">
+          <option value="">No grade (unrestricted — admin-level access)</option>
+          {% for g in grades %}
+          <option value="{{ g }}">{{ g }}</option>
+          {% endfor %}
+        </select>
       </div>
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
         <button type="button" class="btn btn-secondary" onclick="document.getElementById('addModal').style.display='none'">Cancel</button>
