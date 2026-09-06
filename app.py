@@ -1239,9 +1239,8 @@ def teacher_students():
 @app.route('/teacher/analytics')
 @login_required('teacher')
 def teacher_analytics():
-    data = build_analytics()
+    data = build_analytics(filter_grade=current_teacher_grade())
     return render_template('teacher/analytics.html', **data)
-
 
 # ── STUDENT ───────────────────────────────────────────────────────────────────
 
