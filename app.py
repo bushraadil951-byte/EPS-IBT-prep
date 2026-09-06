@@ -574,22 +574,37 @@ def upload_students():
             if not file or not file.filename.lower().endswith('.csv'):
                 flash('Please upload a valid .csv file.', 'error')
                 return redirect(url_for('upload_students'))
+
             stream = io.StringIO(file.stream.read().decode('utf-8-sig'))
             reader = csv.DictReader(stream)
+
             for row in reader:
                 name    = row.get('name', '').strip()
                 grade   = row.get('grade', '').strip()
                 section = row.get('section', 'A').strip()
+
                 if not name or not grade:
                     continue
+
                 username = row.get('username', '').strip() or generate_username(name, grade)
                 password = row.get('password', '').strip() or generate_password(name, grade)
+
                 if grade.strip().isdigit():
                     grade = f"Grade {grade.strip()}"
-                preview.append({'name': name, 'grade': grade, 'section': section,
-                                 'username': username, 'password': password})
-                return render_template('admin/upload_students.html', preview=preview, grades=DT_GRADES)
-        elif action == 'confirm':
+
+                preview.append({
+                    'name': name,
+                    'grade': grade,
+                    'section': section,
+                    'username': username,
+                    'password': password
+                })
+
+            return render_template(
+                'admin/upload_students.html',
+                preview=preview,
+                grades=DT_GRADES
+            )        elif action == 'confirm':
             names     = request.form.getlist('name')
             usernames = request.form.getlist('username')
             passwords = request.form.getlist('password')
