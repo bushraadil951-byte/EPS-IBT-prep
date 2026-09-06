@@ -2,6 +2,9 @@
 {% block title %}Teacher Dashboard — EPS IBT Portal{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
 {% block content %}
+<div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+  <a href="/home" class="btn btn-secondary btn-sm">🏠 Portal Home</a>
+</div>
 <div class="stat-grid">
   <div class="stat-card"><div class="stat-icon" style="background:#eef2ff">👨‍🎓</div><div class="stat-value">{{ students|length }}</div><div class="stat-label">Students</div></div>
   <div class="stat-card"><div class="stat-icon" style="background:#ecfdf5">📝</div><div class="stat-value">{{ tests|length }}</div><div class="stat-label">Active Tests</div></div>
