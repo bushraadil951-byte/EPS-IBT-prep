@@ -34,11 +34,21 @@
 
   <div>
     <label class="field-label">Grade</label>
+    {% if grade_locked %}
+    <div
+      class="field-input"
+      style="background:#f1f5f9;color:#334155;font-weight:600;display:flex;align-items:center;cursor:not-allowed"
+    >
+      {{ selected_grade }}
+    </div>
+    <input type="hidden" name="grade" value="{{ selected_grade }}">
+    {% else %}
     <select class="field-input" name="grade" required>
       {% for g in grades %}
       <option value="{{ g }}" {{ 'selected' if g == selected_grade }}>{{ g }}</option>
       {% endfor %}
     </select>
+    {% endif %}
   </div>
 
   <div>
