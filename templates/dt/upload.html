@@ -35,7 +35,7 @@
     </p>
 
     <p style="font-size:.76rem;color:#94a3b8;margin-top:8px">
-      All subjects in this upload share the same <strong>maximum marks</strong> value set below.
+      Set each subject's <strong>maximum marks</strong> below — they don't need to match.
     </p>
 
     <div
@@ -134,22 +134,36 @@
         </select>
       </div>
 
-      <div>
-        <label class="field-label">
-          Maximum marks (all subjects)
-        </label>
+    </div>
 
-        <input
-          class="field-input"
-          type="number"
-          name="max_marks"
-          min="1"
-          step="0.5"
-          value="{{ max_marks }}"
-          required
-        >
+    <div style="margin-top:18px">
+      <label class="field-label" style="margin-bottom:8px;display:block">
+        Maximum marks per subject
+      </label>
+
+      <div
+        style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px"
+      >
+        {% for sub in subjects %}
+        <div>
+          <label style="font-size:.72rem;color:#64748b;display:block;margin-bottom:3px">
+            {{ sub }}
+          </label>
+          <input
+            class="field-input"
+            type="number"
+            name="max_marks_{{ sub }}"
+            min="1"
+            step="0.5"
+            value="25"
+          >
+        </div>
+        {% endfor %}
       </div>
 
+      <div style="font-size:.72rem;color:#94a3b8;margin-top:6px">
+        Only subjects present as columns in your CSV will actually be uploaded — the rest are ignored.
+      </div>
     </div>
 
     <div style="margin-top:18px">
