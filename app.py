@@ -108,6 +108,39 @@ ATL_DESCRIPTORS = {
 }
 
 ACADEMIC_YEAR = '2026-27'
+# ── PORTAL MODULES (add more here as new test types are built) ──────────────
+PORTAL_MODULES = {
+    'Resource_Manager': [
+        {'key': 'ibt', 'name': 'IBT — Mock Tests', 'icon': '📝',
+         'desc': 'Create tests, manage question banks, and review scores and section-wise performance.',
+         'endpoint': 'admin_dashboard'},
+        {'key': 'dt', 'name': 'DT — Diagnostic Tests', 'icon': '📊',
+         'desc': 'Enter diagnostic marks, view grade analytics and per-student progress across all DTs.',
+         'endpoint': 'admin_dt_dashboard'},
+    ],
+    'teacher': [
+        {'key': 'ibt', 'name': 'IBT — Mock Tests', 'icon': '📝',
+         'desc': 'View student scores and section-wise analytics for mock tests.',
+         'endpoint': 'teacher_dashboard'},
+        {'key': 'dt', 'name': 'DT — Diagnostic Tests', 'icon': '📊',
+         'desc': 'Enter diagnostic marks, view grade analytics and per-student progress across all DTs.',
+         'endpoint': 'teacher_dt_dashboard'},
+    ],
+    'student': [
+        {'key': 'ibt', 'name': 'IBT — Mock Tests', 'icon': '📝',
+         'desc': 'Take active mock tests and review your past scores.',
+         'endpoint': 'student_dashboard'},
+        {'key': 'dt', 'name': 'DT — Diagnostic Tests', 'icon': '📊',
+         'desc': 'Track your diagnostic test progress across every subject.',
+         'endpoint': 'student_diagnostics'},
+    ],
+}
+
+PORTAL_ROLE_LABELS = {
+    'Resource_Manager': 'Administrator',
+    'teacher': 'Teacher',
+    'student': 'Student',
+}
 
 # ── DT (DIAGNOSTIC TEST) CONSTANTS ───────────────────────────────────────────
 DT_NUMBERS = [1, 2, 3, 4, 5, 6]
