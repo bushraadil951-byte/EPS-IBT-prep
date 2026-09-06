@@ -53,6 +53,7 @@
       class="field-input"
       name="grade"
       required
+      onchange="this.form.submit()"
     >
       {% for g in grades %}
       <option
@@ -74,6 +75,7 @@
     <select
       class="field-input"
       name="section"
+      onchange="this.form.submit()"
     >
       <option value="">
         All sections
@@ -98,7 +100,6 @@
     <select
       class="field-input"
       name="student_id"
-      required
     >
       <option value="">
         Choose a student
