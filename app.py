@@ -499,14 +499,13 @@ def login():
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '').strip()
         user = User.query.filter_by(username=username).first()
-                if user and check_password_hash(user.password, password):
+        if user and check_password_hash(user.password, password):
             session['user_id'] = user.id
             session['role']    = user.role
             session['name']    = user.name
             return redirect(url_for('portal_home'))
         flash('Invalid username or password.', 'error')
     return render_template('login.html')
-
 
 @app.route('/logout')
 def logout():
@@ -1996,10 +1995,13 @@ def dt_cross_grade_analytics_view():
 @login_required(('teacher', 'Resource_Manager'))
 def dt_pdf_single(student_id, dt_number):
     student = db.session.get(User, student_id)
-   teacher_grade = current_teacher_grade()
- if teacher_grade and student.grade != teacher_grade:
-       flash('Access denied — that student is outside your grade.', 'error')
-       return redirect(url_for(f'{_dt_role_prefix()}_dt'))
+    if not student:
+        flash('Student not found.', 'error')
+        return redirect(url_for(f'{_dt_role_prefix()}_dt'))
+    teacher_grade = current_teacher_grade()
+    if teacher_grade and student.grade != teacher_grade:
+        flash('Access denied — that student is outside your grade.', 'error')
+        return redirect(url_for(f'{_dt_role_prefix()}_dt'))
     rows = []
     for subject in DT_SUBJECTS:
         dt = DiagnosticTest.query.filter_by(
@@ -2102,10 +2104,10 @@ def dt_report(student_id=None):
         return redirect(url_for('student_diagnostics'))
 
     if session.get('role') == 'teacher':
-     teacher_grade = current_teacher_grade()
-       if teacher_grade and student.grade != teacher_grade:
-           flash('Access denied — that student is outside your grade.', 'error')
-           return redirect(url_for('teacher_dt'))
+        teacher_grade = current_teacher_grade()
+        if teacher_grade and student.grade != teacher_grade:
+            flash('Access denied — that student is outside your grade.', 'error')
+            return redirect(url_for('teacher_dt'))
 
     series = dt_student_series(student_id)
     requested_dt = request.args.get('dt_number', type=int)
