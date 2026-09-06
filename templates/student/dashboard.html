@@ -4,9 +4,15 @@
 
 {% block content %}
 <!-- Welcome -->
-<div style="margin-bottom:20px">
-  <div style="font-size:1.1rem;font-weight:700;color:#1e293b">Welcome, {{ student.name }}! 👋</div>
-  <div style="font-size:.82rem;color:var(--ink3)">{{ student.grade }} · Section {{ student.section }}</div>
+<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:20px">
+  <div>
+    <div style="font-size:1.1rem;font-weight:700;color:#1e293b">Welcome, {{ student.name }}! 👋</div>
+    <div style="font-size:.82rem;color:var(--ink3)">{{ student.grade }} · Section {{ student.section }}</div>
+  </div>
+  <a href="/home"
+     style="display:inline-block;background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;padding:7px 14px;border-radius:6px;text-decoration:none;font-size:.8rem;font-weight:600;white-space:nowrap">
+    🏠 Portal Home
+  </a>
 </div>
 
 <!-- Stats -->
