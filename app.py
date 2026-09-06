@@ -569,8 +569,10 @@ def upload_students():
     preview = []
     if request.method == 'POST':
         action = request.form.get('action')
+
         if action == 'preview':
             file = request.files.get('csv_file')
+
             if not file or not file.filename.lower().endswith('.csv'):
                 flash('Please upload a valid .csv file.', 'error')
                 return redirect(url_for('upload_students'))
@@ -579,8 +581,8 @@ def upload_students():
             reader = csv.DictReader(stream)
 
             for row in reader:
-                name    = row.get('name', '').strip()
-                grade   = row.get('grade', '').strip()
+                name = row.get('name', '').strip()
+                grade = row.get('grade', '').strip()
                 section = row.get('section', 'A').strip()
 
                 if not name or not grade:
@@ -600,16 +602,16 @@ def upload_students():
                     'password': password
                 })
 
-           return render_template(
-    'admin/upload_students.html',
-    preview=preview,
-    grades=DT_GRADES
-)
+            return render_template(
+                'admin/upload_students.html',
+                preview=preview,
+                grades=DT_GRADES
+            )
 
-elif action == 'confirm':
-    names = request.form.getlist('name')
-    usernames = request.form.getlist('username')
-    passwords = request.form.getlist('password')
+        elif action == 'confirm':
+            names = request.form.getlist('name')
+            usernames = request.form.getlist('username')
+            passwords = request.form.getlist('password')
             grades    = request.form.getlist('grade')
             sections  = request.form.getlist('section')
             added = 0
