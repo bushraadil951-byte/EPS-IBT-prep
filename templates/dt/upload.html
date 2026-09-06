@@ -5,7 +5,7 @@
 
 {% block back_button %}
 <a
-  href="/{{ role_prefix }}/dt?grade={{ grade }}&section={{ section }}&subject={{ subject }}&dt_number={{ dt_number }}"
+  href="/{{ role_prefix }}/dt?grade={{ grade }}&section={{ section }}&dt_number={{ dt_number }}"
   class="btn btn-secondary btn-sm"
 >
   ← Back
@@ -23,21 +23,27 @@
     style="margin-bottom:16px;border-left:4px solid #8b5cf6"
   >
     <h3 style="font-size:1rem;color:#1e293b;margin-bottom:8px">
-      Upload a class mark sheet
+      Upload marks for every subject at once
     </h3>
 
     <p style="font-size:.82rem;line-height:1.6;color:#64748b">
-      Upload a CSV with
-      <strong>username, marks, remarks</strong>.
-      Existing marks for the same student and diagnostic test will be updated.
+      Upload one CSV per diagnostic test, covering
+      <strong>all subjects for every student in one file</strong>.
+      The first column must be <strong>username</strong>, followed by one column per subject.
+      Leave a cell blank to skip that subject for that student.
+      Existing marks for the same student, subject and diagnostic test will be updated.
+    </p>
+
+    <p style="font-size:.76rem;color:#94a3b8;margin-top:8px">
+      All subjects in this upload share the same <strong>maximum marks</strong> value set below.
     </p>
 
     <div
-      style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-top:14px;font-family:monospace;font-size:.78rem;color:#475569"
+      style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-top:14px;font-family:monospace;font-size:.76rem;color:#475569;overflow-x:auto"
     >
-      username,marks,remarks<br>
-      aarav,18,Good progress<br>
-      priya,21,Strong vocabulary
+      username,english,hindi,maths,science,urdu,ict<br>
+      aarav,18,20,22,19,,21<br>
+      priya,21,,24,,18,20
     </div>
   </div>
 
@@ -51,27 +57,6 @@
     <div
       style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px"
     >
-
-      <div>
-        <label class="field-label">
-          Grade
-        </label>
-
-        <select
-          class="field-input"
-          name="grade"
-          required
-        >
-          {% for g in grades %}
-          <option
-            value="{{ g }}"
-            {{ 'selected' if g == grade }}
-          >
-            {{ g }}
-          </option>
-          {% endfor %}
-        </select>
-      </div>
 
       <div>
         <label class="field-label">
@@ -106,20 +91,23 @@
 
       <div>
         <label class="field-label">
-          Subject
+          Section
         </label>
 
         <select
           class="field-input"
-          name="subject"
-          required
+          name="section"
         >
-          {% for s in subjects %}
+          <option value="">
+            All sections
+          </option>
+
+          {% for s in section_options %}
           <option
             value="{{ s }}"
-            {{ 'selected' if s == subject }}
+            {{ 'selected' if s == section }}
           >
-            {{ s }}
+            Section {{ s }}
           </option>
           {% endfor %}
         </select>
@@ -148,7 +136,7 @@
 
       <div>
         <label class="field-label">
-          Maximum marks
+          Maximum marks (all subjects)
         </label>
 
         <input
