@@ -40,6 +40,15 @@
       Grade
     </label>
 
+    {% if grade_locked %}
+    <div
+      class="field-input"
+      style="background:#f1f5f9;color:#334155;font-weight:600;display:flex;align-items:center;cursor:not-allowed"
+    >
+      {{ grade }}
+    </div>
+    <input type="hidden" name="grade" value="{{ grade }}">
+    {% else %}
     <select
       class="field-input"
       name="grade"
@@ -54,8 +63,8 @@
       </option>
       {% endfor %}
     </select>
+    {% endif %}
   </div>
-
   <div>
     <label class="field-label">
       Section
