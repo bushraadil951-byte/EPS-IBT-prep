@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}Assessments{% endblock %}
+{% block page_title %}Assessments{% endblock %}
+
+{% block content %}
+
+<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+
+  <div>
+    <div style="font-size:1.05rem;font-weight:800;color:#1e293b">
+      📋 Formative & Summative Assessments
+    </div>
+
+    <div style="font-size:.8rem;color:#64748b;margin-top:4px">
+      Academic year {{ academic_year }} · Enter marks, review analytics, or compare a student's progress across both.
+    </div>
+  </div>
+
+  <a href="/home" class="btn btn-secondary btn-sm">
+    🏠 Portal home
+  </a>
+
+</div>
+
+<div
+  style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-bottom:20px"
+>
+
+  {% for atype, s in summary.items() %}
+  <a
+    href="/assessment/{{ atype }}/dashboard"
+    class="card"
+    style="text-decoration:none;display:block"
+  >
+    <div style="font-size:1.4rem;margin-bottom:6px">
+      {{ '📋' if atype == 'FA' else '📈' }}
+    </div>
+    <div style="font-weight:800;color:#1e293b">
+      {{ s.label }}
+    </div>
+    <div style="font-size:.78rem;color:#64748b;margin-top:6px">
+      {{ s.total_assessments }} configured · {{ s.total_marks }} marks recorded
+    </div>
+    <div style="margin-top:10px;font-size:.82rem;font-weight:700;color:#1a3c6e">
+      Open →
+    </div>
+  </a>
+  {% endfor %}
+
+</div>
+
+<a
+  href="/assessment/progress"
+  class="card"
+  style="text-decoration:none;display:block;border-left:4px solid #8b5cf6"
+>
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+    <div>
+      <div style="font-weight:800;color:#1e293b">
+        📊 Compare FA vs SA progress
+      </div>
+      <div style="font-size:.78rem;color:#64748b;margin-top:4px">
+        See one student's Formative and Summative marks together, subject by subject.
+      </div>
+    </div>
+    <div style="font-size:.82rem;font-weight:700;color:#1a3c6e;white-space:nowrap">
+      Open →
+    </div>
+  </div>
+</a>
+
+{% endblock %}
