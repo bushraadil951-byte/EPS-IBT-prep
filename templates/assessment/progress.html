@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+
+{% block title %}FA vs SA Progress{% endblock %}
+{% block page_title %}FA vs SA Progress{% endblock %}
+
+{% block content %}
+
+{% set section_options = sections or ['A', 'B', 'C', 'D'] %}
+
+<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+
+  <div>
+    <div style="font-size:1.05rem;font-weight:800;color:#1e293b">
+      📊 Formative vs Summative progress
+    </div>
+
+    <div style="font-size:.8rem;color:#64748b;margin-top:4px">
+      Click "Formative" or "Summative" in a chart's legend to show just one — or leave both visible to compare.
+    </div>
+  </div>
+
+  <a href="/assessment/hub" class="btn btn-secondary">
+    ← Assessments
+  </a>
+
+</div>
+
+<form
+  method="GET"
+  action="/assessment/progress"
+  class="card"
+  style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px"
+>
+
+  <div>
+    <label class="field-label">Grade</label>
+
+    {% if grade_locked %}
+    <div
+      class="field-input"
+      style="background:#f1f5f9;color:#334155;font-weight:600;display:flex;align-items:center;cursor:not-allowed"
+    >
+      {{ grade }}
+    </div>
+    <input type="hidden" name="grade" value="{{ grade }}">
+    {% else %}
+    <select class="field-input" name="grade" required>
+      {% for g in grades %}
+      <option value="{{ g }}" {{ 'selected' if g == grade }}>{{ g }}</option>
+      {% endfor %}
+    </select>
+    {% endif %}
+  </div>
+
+  <div>
+    <label class="field-label">Section</label>
+
+    <select class="field-input" name="section">
+      <option value="">All sections</option>
+      {% for s in section_options %}
+      <option value="{{ s }}" {{ 'selected' if s == section }}>Section {{ s }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div>
+    <label class="field-label">Student</label>
+
+    <select class="field-input" name="student_id" required>
+      <option value="">Choose a student</option>
+      {% for s in students %}
+      <option value="{{ s.id }}" {{ 'selected' if student and s.id == student.id }}>
+        {{ s.name }} — {{ s.username }}
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <button class="btn btn-primary" type="submit">
+    Show progress
+  </button>
+
+</form>
+
+{% if student and fa_series and sa_series %}
+
+<div class="card" style="margin-bottom:16px">
+  <div style="font-size:1rem;font-weight:800;color:#1e293b">
+    {{ student.name }}
+  </div>
+  <div style="font-size:.76rem;font-weight:500;color:#64748b;margin-top:4px">
+    {{ student.grade }}
+    {% if student.section %} · Section {{ student.section }}{% endif %}
+    · {{ student.username }}
+  </div>
+  <div style="font-size:.78rem;color:#64748b;margin-top:4px">
+    Academic year {{ academic_year }}
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:14px">
+
+  {% for subject in subjects %}
+  <div class="card">
+    <div style="font-weight:700;color:#334155;margin-bottom:10px">
+      {{ subject }}
+    </div>
+    <canvas id="chart-{{ loop.index }}" height="200"></canvas>
+  </div>
+  {% endfor %}
+
+</div>
+
+{% else %}
+
+<div class="card" style="text-align:center;padding:50px;color:#64748b">
+  <div style="font-size:2rem;margin-bottom:8px">📈</div>
+  <div style="font-weight:700;color:#334155">
+    Choose a student to compare their FA and SA progress
+  </div>
+  <div style="font-size:.8rem;margin-top:4px">
+    Upload marks first if the student list is empty.
+  </div>
+</div>
+
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+
+{% if student and fa_series and sa_series %}
+
+<script>
+  // Combined x-axis: FA slots first, then SA slots
+  const labels = [
+    {% for n in fa_numbers %}'FA{{ n }}',{% endfor %}
+    {% for n in sa_numbers %}'SA{{ n }}',{% endfor %}
+  ];
+  const faCount = {{ fa_numbers|length }};
+  const saCount = {{ sa_numbers|length }};
+
+  {% for subject in subjects %}
+
+  {
+    // FA values occupy the first faCount slots, nulls for the SA slots after
+    const faData = [
+      {% for point in fa_series[subject] %}
+        {{ point.pct if point.pct is not none else 'null' }},
+      {% endfor %}
+    ];
+    while (faData.length < faCount + saCount) faData.push(null);
+
+    // SA values occupy the last saCount slots, nulls for the FA slots before
+    const saData = new Array(faCount).fill(null).concat([
+      {% for point in sa_series[subject] %}
+        {{ point.pct if point.pct is not none else 'null' }},
+      {% endfor %}
+    ]);
+
+    new Chart(
+      document.getElementById('chart-{{ loop.index }}'),
+      {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Formative',
+              data: faData,
+              borderColor: '#6366f1',
+              backgroundColor: 'rgba(99,102,241,.12)',
+              tension: 0.3,
+              spanGaps: false,
+              fill: true
+            },
+            {
+              label: 'Summative',
+              data: saData,
+              borderColor: '#f59e0b',
+              backgroundColor: 'rgba(245,158,11,.12)',
+              borderDash: [5, 4],
+              tension: 0.3,
+              spanGaps: false,
+              fill: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'bottom',
+              labels: { boxWidth: 12, font: { size: 10 } }
+            }
+          },
+          scales: {
+            y: { min: 0, max: 100, ticks: { stepSize: 20 } }
+          }
+        }
+      }
+    );
+  }
+
+  {% endfor %}
+</script>
+
+{% endif %}
+
+{% endblock %}
