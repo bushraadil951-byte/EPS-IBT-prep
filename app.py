@@ -694,7 +694,7 @@ def health():
 def portal_home():
     role = session.get('role')
     modules_def = PORTAL_MODULES.get(role, [])
-    modules = [dict(m, url=url_for(m['endpoint'])) for m in modules_def]
+    modules = [dict(m, url=url_for(m['endpoint'], **m.get('endpoint_args', {}))) for m in modules_def]
     return render_template('portal_home.html',
         modules=modules,
         role_label=PORTAL_ROLE_LABELS.get(role, role))
