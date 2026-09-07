@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+
+{% block title %}Upload {{ atype_label }} Marks{% endblock %}
+{% block page_title %}Upload {{ atype_label }} Marks{% endblock %}
+
+{% block back_button %}
+<a
+  href="/assessment/{{ atype }}/entry?grade={{ grade }}&section={{ section }}&number={{ number }}"
+  class="btn btn-secondary btn-sm"
+>
+  ← Back
+</a>
+{% endblock %}
+
+{% block content %}
+
+{% set section_options = sections or ['A', 'B', 'C', 'D'] %}
+
+<div style="max-width:760px">
+
+  <div
+    class="card"
+    style="margin-bottom:16px;border-left:4px solid #8b5cf6"
+  >
+    <h3 style="font-size:1rem;color:#1e293b;margin-bottom:8px">
+      Upload marks for every subject at once
+    </h3>
+
+    <p style="font-size:.82rem;line-height:1.6;color:#64748b">
+      Upload one CSV per {{ atype_label|lower }}, covering
+      <strong>all subjects for every student in one file</strong>.
+      The first column must be <strong>username</strong>, followed by one column per subject.
+      Leave a cell blank to skip that subject for that student.
+      Existing marks for the same student, subject and {{ atype_label|lower }} will be updated.
+    </p>
+
+    <p style="font-size:.76rem;color:#94a3b8;margin-top:8px">
+      Set each subject's <strong>maximum marks</strong> below — they don't need to match.
+    </p>
+
+    <div
+      style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-top:14px;font-family:monospace;font-size:.76rem;color:#475569;overflow-x:auto"
+    >
+      username,english,hindi,maths,science,urdu<br>
+      aarav,18,20,22,19,<br>
+      priya,21,,24,,18
+    </div>
+  </div>
+
+  <form
+    method="POST"
+    enctype="multipart/form-data"
+    action="/assessment/{{ atype }}/upload"
+    class="card"
+  >
+
+    <div
+      style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px"
+    >
+
+      <div>
+        <label class="field-label">Grade</label>
+
+        {% if grade_locked %}
+        <div
+          class="field-input"
+          style="background:#f1f5f9;color:#334155;font-weight:600;display:flex;align-items:center;cursor:not-allowed"
+        >
+          {{ grade }}
+        </div>
+        <input type="hidden" name="grade" value="{{ grade }}">
+        {% else %}
+        <select class="field-input" name="grade" required>
+          {% for g in grades %}
+          <option value="{{ g }}" {{ 'selected' if g == grade }}>
+            {{ g }}
+          </option>
+          {% endfor %}
+        </select>
+        {% endif %}
+      </div>
+
+      <div>
+        <label class="field-label">Section</label>
+
+        <select class="field-input" name="section">
+          <option value="">All sections</option>
+
+          {% for s in section_options %}
+          <option value="{{ s }}" {{ 'selected' if s == section }}>
+            Section {{ s }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="field-label">{{ atype_label }}</label>
+
+        <select class="field-input" name="number" required>
+          {% for n in numbers %}
+          <option value="{{ n }}" {{ 'selected' if n == number }}>
+            {{ atype }}{{ n }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+    </div>
+
+    <div style="margin-top:18px">
+      <label class="field-label" style="margin-bottom:8px;display:block">
+        Maximum marks per subject
+      </label>
+
+      <div
+        style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px"
+      >
+        {% for sub in subjects %}
+        <div>
+          <label style="font-size:.72rem;color:#64748b;display:block;margin-bottom:3px">
+            {{ sub }}
+          </label>
+          <input
+            class="field-input"
+            type="number"
+            name="max_marks_{{ sub }}"
+            min="1"
+            step="0.5"
+            value="25"
+          >
+        </div>
+        {% endfor %}
+      </div>
+
+      <div style="font-size:.72rem;color:#94a3b8;margin-top:6px">
+        Only subjects present as columns in your CSV will actually be uploaded — the rest are ignored.
+      </div>
+    </div>
+
+    <div style="margin-top:18px">
+      <label class="field-label">CSV file</label>
+
+      <input
+        class="field-input"
+        type="file"
+        name="csv_file"
+        accept=".csv"
+        required
+      >
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap">
+      <button class="btn btn-primary" type="submit">
+        ⬆ Upload marks
+      </button>
+
+      <a
+        class="btn btn-secondary"
+        href="/assessment/{{ atype }}/upload-template?grade={{ grade }}&section={{ section }}"
+      >
+        ⬇ Download student template
+      </a>
+    </div>
+
+  </form>
+
+</div>
+
+{% endblock %}
