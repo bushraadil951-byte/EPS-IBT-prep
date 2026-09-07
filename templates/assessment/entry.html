@@ -1,0 +1,227 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ atype_label }} Marks{% endblock %}
+{% block page_title %}{{ atype_label }} Marks{% endblock %}
+
+{% block content %}
+
+{% set section_options = sections or ['A', 'B', 'C', 'D'] %}
+
+<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:18px">
+  <div>
+    <div style="font-size:1.05rem;font-weight:800;color:#1e293b">
+      📈 {{ atype_label }} marks entry
+    </div>
+
+    <div style="font-size:.8rem;color:#64748b;margin-top:4px">
+      Enter one subject at a time, or upload a CSV for the whole class.
+    </div>
+  </div>
+
+  <a href="/assessment/{{ atype }}/dashboard" class="btn btn-secondary">
+    ← {{ atype_label }} dashboard
+  </a>
+</div>
+
+<form
+  method="GET"
+  action="/assessment/{{ atype }}/entry"
+  class="card"
+  style="margin-bottom:16px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap"
+>
+  <div>
+    <label class="field-label">Grade</label>
+
+    {% if grade_locked %}
+    <div
+      class="field-input"
+      style="background:#f1f5f9;color:#334155;font-weight:600;display:flex;align-items:center;cursor:not-allowed"
+    >
+      {{ grade }}
+    </div>
+    <input type="hidden" name="grade" value="{{ grade }}">
+    {% else %}
+    <select name="grade" class="field-input">
+      {% for g in grades %}
+      <option value="{{ g }}" {{ 'selected' if g == grade }}>
+        {{ g }}
+      </option>
+      {% endfor %}
+    </select>
+    {% endif %}
+  </div>
+
+  <div>
+    <label class="field-label">Section</label>
+
+    <select name="section" class="field-input">
+      <option value="">All sections</option>
+
+      {% for s in section_options %}
+      <option value="{{ s }}" {{ 'selected' if s == section }}>
+        Section {{ s }}
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div>
+    <label class="field-label">Subject</label>
+
+    <select name="subject" class="field-input">
+      {% for s in subjects %}
+      <option value="{{ s }}" {{ 'selected' if s == subject }}>
+        {{ s }}
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div>
+    <label class="field-label">{{ atype_label }}</label>
+
+    <select name="number" class="field-input">
+      {% for n in numbers %}
+      <option value="{{ n }}" {{ 'selected' if n == number }}>
+        {{ atype }}{{ n }}
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <button class="btn btn-primary" type="submit">
+    Load students
+  </button>
+</form>
+
+<form
+  method="POST"
+  action="/assessment/{{ atype }}/entry"
+  class="card"
+>
+  <input type="hidden" name="grade" value="{{ grade }}">
+  <input type="hidden" name="section" value="{{ section }}">
+  <input type="hidden" name="subject" value="{{ subject }}">
+  <input type="hidden" name="number" value="{{ number }}">
+
+  <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px">
+
+    <div>
+      <label class="field-label">Maximum marks</label>
+
+      <input
+        class="field-input"
+        type="number"
+        name="max_marks"
+        min="1"
+        step="0.5"
+        value="{{ assessment.max_marks if assessment else 25 }}"
+        required
+      >
+    </div>
+
+    <div>
+      <label class="field-label">Test date</label>
+
+      <input
+        class="field-input"
+        type="date"
+        name="test_date"
+        value="{{ assessment.test_date.strftime('%Y-%m-%d') if assessment and assessment.test_date else '' }}"
+      >
+    </div>
+
+    <button class="btn btn-primary" type="submit">
+      💾 Save marks
+    </button>
+
+    <a
+      href="/assessment/{{ atype }}/upload?grade={{ grade }}&section={{ section }}&number={{ number }}"
+      class="btn btn-secondary"
+    >
+      ⬆ Upload CSV
+    </a>
+  </div>
+
+  {% if students %}
+
+  <div style="overflow-x:auto">
+    <table class="data-table">
+
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Student</th>
+          <th>Username</th>
+          <th>Marks / {{ assessment.max_marks if assessment else 25 }}</th>
+          <th>Remarks</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for s in students %}
+
+        {% set saved = existing_marks.get(s.id, {}) %}
+
+        <tr>
+          <td>
+            {{ loop.index }}
+            <input type="hidden" name="student_id" value="{{ s.id }}">
+          </td>
+
+          <td style="font-weight:600">
+            {{ s.name }}
+          </td>
+
+          <td>
+            <code>{{ s.username }}</code>
+          </td>
+
+          <td>
+            <input
+              class="field-input"
+              style="width:110px"
+              type="number"
+              name="marks_{{ s.id }}"
+              min="0"
+              max="{{ assessment.max_marks if assessment else 25 }}"
+              step="0.5"
+              value="{{ saved.get('marks', '') }}"
+            >
+          </td>
+
+          <td>
+            <input
+              class="field-input"
+              style="min-width:220px"
+              type="text"
+              name="remark_{{ s.id }}"
+              value="{{ saved.get('remarks', '') }}"
+              placeholder="Optional note"
+            >
+          </td>
+        </tr>
+
+        {% endfor %}
+      </tbody>
+
+    </table>
+  </div>
+
+  <div style="display:flex;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:1px solid #e2e8f0">
+    <button class="btn btn-primary" type="submit">
+      💾 Update / Save Marks
+    </button>
+  </div>
+
+  {% else %}
+
+  <div style="text-align:center;padding:40px;color:#64748b">
+    No students match this grade and section.
+  </div>
+
+  {% endif %}
+
+</form>
+
+{% endblock %}
