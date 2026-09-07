@@ -108,6 +108,19 @@ ATL_DESCRIPTORS = {
 }
 
 ACADEMIC_YEAR = '2026-27'
+# fa and sa update-1
+ASSESSMENT_TYPES = {
+    'FA': {
+        'label': 'Formative Assessment',
+        'numbers': [1, 2, 3, 4],   # <-- change this once FA count is confirmed
+        'subjects': ['English', 'Hindi', 'Maths', 'Science', 'Urdu'],
+    },
+    'SA': {
+        'label': 'Summative Assessment',
+        'numbers': [1, 2],
+        'subjects': ['English', 'Hindi', 'Maths', 'Science', 'Urdu'],
+    },
+}
 # ── PORTAL MODULES (add more here as new test types are built) ──────────────
 PORTAL_MODULES = {
     'Resource_Manager': [
@@ -264,7 +277,39 @@ class DTMark(db.Model):
         db.UniqueConstraint('dt_id', 'student_id', name='uq_dt_student'),
     )
 
-
+class Assessment(db.Model):
+    __tablename__ = 'assessment'
+    id            = db.Column(db.Integer, primary_key=True)
+    atype         = db.Column(db.String(10), nullable=False)   # 'FA', 'SA', ...
+    number        = db.Column(db.Integer, nullable=False)      # FA1, FA2... / SA1, SA2...
+    subject       = db.Column(db.String(50), nullable=False)
+    grade         = db.Column(db.String(20), nullable=False)
+    section       = db.Column(db.String(10), nullable=True)
+    max_marks     = db.Column(db.Float, default=25)
+    academic_year = db.Column(db.String(20), default=ACADEMIC_YEAR)
+    test_date     = db.Column(db.Date, nullable=True)
+    created_by    = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    created       = db.Column(db.DateTime, default=datetime.utcnow)
+    marks         = db.relationship('AssessmentMark', backref='assessment', lazy=True, cascade='all,delete-orphan')
+    __table_args__ = (
+        db.UniqueConstraint('atype', 'number', 'subject', 'grade', 'section', 'academic_year', name='uq_assessment_slot'),
+    )
+ 
+ 
+class AssessmentMark(db.Model):
+    __tablename__ = 'assessment_mark'
+    id             = db.Column(db.Integer, primary_key=True)
+    assessment_id  = db.Column(db.Integer, db.ForeignKey('assessment.id'), nullable=False)
+    student_id     = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    marks_obtained = db.Column(db.Float, nullable=False)
+    remarks        = db.Column(db.Text, nullable=True)
+    entered_by     = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    entered_at     = db.Column(db.DateTime, default=datetime.utcnow)
+    student        = db.relationship('User', foreign_keys=[student_id])
+    __table_args__ = (
+        db.UniqueConstraint('assessment_id', 'student_id', name='uq_assessment_student'),
+    )
+ 
 # ── HELPERS ──────────────────────────────────────────────────────────────────
 
 def login_required(role=None):
@@ -472,7 +517,162 @@ def seed_db():
     db.session.commit()
     print("Database seeded — Organizer / bk*123")
 
-
+ 
+def _assessment_config(atype):
+    """Validates atype against ASSESSMENT_TYPES. Returns the config dict,
+    or None (with a flash message) if the type doesn't exist."""
+    cfg = ASSESSMENT_TYPES.get(atype)
+    if not cfg:
+        flash('Unknown assessment type.', 'error')
+        return None
+    return cfg
+ 
+ 
+def assessment_get_or_create(atype, number, subject, grade, section, academic_year=ACADEMIC_YEAR, max_marks=25, created_by=None):
+    a = Assessment.query.filter_by(
+        atype=atype, number=number, subject=subject, grade=grade,
+        section=section, academic_year=academic_year
+    ).first()
+    if not a:
+        a = Assessment(
+            atype=atype, number=number, subject=subject, grade=grade,
+            section=section, academic_year=academic_year,
+            max_marks=max_marks, created_by=created_by
+        )
+        db.session.add(a)
+        db.session.commit()
+    return a
+ 
+ 
+def assessment_student_series(atype, student_id, academic_year=ACADEMIC_YEAR):
+    """Same shape as dt_student_series, generic to any ASSESSMENT_TYPES entry."""
+    cfg = ASSESSMENT_TYPES[atype]
+    subjects = cfg['subjects']
+    numbers  = cfg['numbers']
+    student = db.session.get(User, student_id)
+    if not student:
+        return {s: [] for s in subjects}
+    series = {s: [] for s in subjects}
+    for subject in subjects:
+        for number in numbers:
+            a = Assessment.query.filter_by(
+                atype=atype, number=number, subject=subject, grade=student.grade,
+                academic_year=academic_year
+            ).filter(
+                db.or_(Assessment.section == None, Assessment.section == student.section)
+            ).first()
+            if not a:
+                series[subject].append({'num': number, 'marks': None, 'max': None, 'pct': None,
+                                         'class_avg_pct': None, 'date': None})
+                continue
+            mark = AssessmentMark.query.filter_by(assessment_id=a.id, student_id=student_id).first()
+            class_marks = [m.marks_obtained for m in a.marks]
+            class_avg_pct = round(sum(class_marks) / len(class_marks) / a.max_marks * 100, 1) if class_marks and a.max_marks else None
+            if mark:
+                pct = round(mark.marks_obtained / a.max_marks * 100, 1) if a.max_marks else 0
+                series[subject].append({'num': number, 'marks': mark.marks_obtained, 'max': a.max_marks,
+                                         'pct': pct, 'class_avg_pct': class_avg_pct, 'date': a.test_date})
+            else:
+                series[subject].append({'num': number, 'marks': None, 'max': a.max_marks, 'pct': None,
+                                         'class_avg_pct': class_avg_pct, 'date': a.test_date})
+    return series
+ 
+ 
+def assessment_insights(series, subjects):
+    """Same logic as dt_student_insights, generalised to any subject list."""
+    insights = []
+    for subject in subjects:
+        points = [p for p in series.get(subject, []) if p.get('pct') is not None]
+        values = [p['pct'] for p in points]
+        average = round(sum(values) / len(values), 1) if values else None
+        trend = round(values[-1] - values[0], 1) if len(values) > 1 else None
+        if average is not None and average >= 80:
+            status = 'Strong'
+        elif average is not None and average >= 60:
+            status = 'Developing'
+        elif average is not None:
+            status = 'Needs focus'
+        else:
+            status = 'Not started'
+        insights.append({
+            'subject': subject, 'average': average, 'trend': trend,
+            'completed': len(points), 'latest': values[-1] if values else None, 'status': status
+        })
+    return sorted(insights, key=lambda item: (item['average'] is None, item['average'] or 0))
+ 
+ 
+def assessment_grade_analytics(atype, grade, section=None, academic_year=ACADEMIC_YEAR):
+    cfg = ASSESSMENT_TYPES[atype]
+    subjects = cfg['subjects']
+    numbers  = cfg['numbers']
+    query = User.query.filter_by(role='student', grade=grade)
+    if section:
+        query = query.filter_by(section=section)
+    students = query.order_by(User.name).all()
+ 
+    per_student_series = {s.id: assessment_student_series(atype, s.id, academic_year) for s in students}
+ 
+    subject_num_avg = {}
+    subject_overall_avg = {}
+    for sub in subjects:
+        per_num_vals = []
+        for idx in range(len(numbers)):
+            vals = [per_student_series[s.id][sub][idx]['pct']
+                    for s in students
+                    if per_student_series[s.id][sub][idx]['pct'] is not None]
+            per_num_vals.append(safe_avg(vals) if vals else None)
+        subject_num_avg[sub] = per_num_vals
+        flat_vals = [v for v in per_num_vals if v is not None]
+        subject_overall_avg[sub] = safe_avg(flat_vals) if flat_vals else None
+ 
+    student_rows = []
+    for s in students:
+        insights = assessment_insights(per_student_series[s.id], subjects)
+        overall_vals = [i['average'] for i in insights if i['average'] is not None]
+        overall_avg = safe_avg(overall_vals) if overall_vals else None
+        weak = [i['subject'] for i in insights if i['average'] is not None and i['average'] < 60]
+        student_rows.append({
+            'id': s.id, 'name': s.name, 'section': s.section,
+            'overall_avg': overall_avg, 'weak_subjects': weak,
+        })
+    student_rows.sort(key=lambda x: (x['overall_avg'] is None, -(x['overall_avg'] or 0)))
+ 
+    class_overall_vals = [r['overall_avg'] for r in student_rows if r['overall_avg'] is not None]
+    class_overall_avg = safe_avg(class_overall_vals) if class_overall_vals else None
+ 
+    return {
+        'students': students,
+        'subject_num_avg': subject_num_avg,
+        'subject_overall_avg': subject_overall_avg,
+        'student_rows': student_rows,
+        'class_overall_avg': class_overall_avg,
+    }
+ 
+ 
+def assessment_cross_grade_analytics(atype, academic_year=ACADEMIC_YEAR):
+    cfg = ASSESSMENT_TYPES[atype]
+    subjects = cfg['subjects']
+    grade_data = {}
+    for grade in DT_GRADES:
+        students = User.query.filter_by(role='student', grade=grade).all()
+        if not students:
+            grade_data[grade] = {'students': 0, 'overall_avg': None, 'subject_avg': {sub: None for sub in subjects}}
+            continue
+        per_student_series = {s.id: assessment_student_series(atype, s.id, academic_year) for s in students}
+        subject_avg = {}
+        all_vals = []
+        for sub in subjects:
+            vals = []
+            for s in students:
+                vals.extend(p['pct'] for p in per_student_series[s.id][sub] if p['pct'] is not None)
+            subject_avg[sub] = safe_avg(vals) if vals else None
+            all_vals.extend(vals)
+        grade_data[grade] = {
+            'students': len(students),
+            'overall_avg': safe_avg(all_vals) if all_vals else None,
+            'subject_avg': subject_avg,
+        }
+    return grade_data
 # ── HEALTH CHECK ──────────────────────────────────────────────────────────────
 
 @app.route('/health')
@@ -2045,6 +2245,343 @@ def dt_cross_grade_analytics_view():
     return render_template('dt/cross_grade_analytics.html',
         role_prefix=_dt_role_prefix(), academic_year=ACADEMIC_YEAR,
         grades=DT_GRADES, subjects=DT_SUBJECTS, grade_data=grade_data)
+
+@app.route('/assessment/hub')
+@login_required(('teacher', 'Resource_Manager'))
+def assessment_hub():
+    teacher_grade = current_teacher_grade()
+    summary = {}
+    for atype, cfg in ASSESSMENT_TYPES.items():
+        a_query = Assessment.query.filter_by(atype=atype, academic_year=ACADEMIC_YEAR)
+        marks_query = (
+            db.session.query(AssessmentMark)
+            .join(Assessment, AssessmentMark.assessment_id == Assessment.id)
+            .filter(Assessment.atype == atype, Assessment.academic_year == ACADEMIC_YEAR)
+        )
+        if teacher_grade:
+            a_query = a_query.filter_by(grade=teacher_grade)
+            marks_query = marks_query.filter(Assessment.grade == teacher_grade)
+        summary[atype] = {
+            'label': cfg['label'],
+            'total_assessments': a_query.count(),
+            'total_marks': marks_query.count(),
+        }
+    return render_template('assessment/hub.html',
+        summary=summary, academic_year=ACADEMIC_YEAR, grade_locked=bool(teacher_grade))
+ 
+ 
+@app.route('/assessment/<atype>/entry', methods=['GET', 'POST'])
+@login_required(('teacher', 'Resource_Manager'))
+def assessment_entry(atype):
+    cfg = _assessment_config(atype)
+    if not cfg:
+        return redirect(url_for('assessment_hub'))
+    subjects = cfg['subjects']
+    numbers  = cfg['numbers']
+    teacher_grade = current_teacher_grade()
+ 
+    if request.method == 'POST':
+        grade     = teacher_grade or request.form['grade']
+        section   = request.form.get('section') or None
+        subject   = request.form['subject']
+        number    = int(request.form['number'])
+        max_marks = float(request.form.get('max_marks', 25))
+        test_date = request.form.get('test_date') or None
+        a = assessment_get_or_create(
+            atype=atype, number=number, subject=subject, grade=grade, section=section,
+            academic_year=ACADEMIC_YEAR, max_marks=max_marks, created_by=session['user_id']
+        )
+        a.max_marks = max_marks
+        if test_date:
+            a.test_date = datetime.strptime(test_date, '%Y-%m-%d').date()
+        db.session.commit()
+        student_ids = request.form.getlist('student_id')
+        saved = 0
+        for student_id in student_ids:
+            value = request.form.get(f'marks_{student_id}', '').strip()
+            if value == '':
+                continue
+            try:
+                marks_value = float(value)
+            except ValueError:
+                continue
+            remark = request.form.get(f'remark_{student_id}', '').strip()
+            existing = AssessmentMark.query.filter_by(assessment_id=a.id, student_id=int(student_id)).first()
+            if existing:
+                existing.marks_obtained = marks_value
+                existing.remarks = remark
+                existing.entered_by = session['user_id']
+                existing.entered_at = datetime.utcnow()
+            else:
+                db.session.add(AssessmentMark(
+                    assessment_id=a.id, student_id=int(student_id), marks_obtained=marks_value,
+                    remarks=remark, entered_by=session['user_id']
+                ))
+            saved += 1
+        db.session.commit()
+        flash(f'Marks saved for {saved} student(s) — {subject} {atype}{number}, {grade}{(" " + section) if section else ""}', 'success')
+        return redirect(url_for('assessment_entry', atype=atype, grade=grade, section=section or '', subject=subject, number=number))
+ 
+    grade   = teacher_grade or request.args.get('grade', DT_GRADES[0])
+    section = request.args.get('section', '')
+    subject = request.args.get('subject', subjects[0])
+    number  = int(request.args.get('number', numbers[0]))
+    query = User.query.filter_by(role='student', grade=grade)
+    if section:
+        query = query.filter_by(section=section)
+    students = query.order_by(User.name).all()
+    a = Assessment.query.filter_by(
+        atype=atype, number=number, subject=subject, grade=grade, academic_year=ACADEMIC_YEAR
+    ).filter(
+        db.or_(Assessment.section == None, Assessment.section == (section or None))
+    ).order_by(Assessment.section.is_(None)).first()
+    existing_marks = {}
+    if a:
+        for mark in a.marks:
+            existing_marks[mark.student_id] = {'marks': mark.marks_obtained, 'remarks': mark.remarks or ''}
+    return render_template('assessment/entry.html',
+        atype=atype, atype_label=cfg['label'],
+        students=students, grades=[teacher_grade] if teacher_grade else DT_GRADES,
+        subjects=subjects, numbers=numbers, sections=DT_SECTIONS,
+        grade=grade, section=section, subject=subject, number=number,
+        assessment=a, existing_marks=existing_marks, academic_year=ACADEMIC_YEAR,
+        grade_locked=bool(teacher_grade))
+ 
+ 
+@app.route('/assessment/<atype>/upload', methods=['GET', 'POST'])
+@login_required(('teacher', 'Resource_Manager'))
+def assessment_upload(atype):
+    cfg = _assessment_config(atype)
+    if not cfg:
+        return redirect(url_for('assessment_hub'))
+    subjects = cfg['subjects']
+    numbers  = cfg['numbers']
+    teacher_grade = current_teacher_grade()
+    grade   = teacher_grade or request.values.get('grade', DT_GRADES[0])
+    section = request.values.get('section', '')
+    number  = int(request.values.get('number', numbers[0]))
+ 
+    if request.method == 'POST':
+        file = request.files.get('csv_file')
+        if not file or not file.filename.lower().endswith('.csv'):
+            flash('Please upload a valid .csv file.', 'error')
+            return redirect(url_for('assessment_upload', atype=atype, grade=grade, section=section, number=number))
+ 
+        stream = io.StringIO(file.stream.read().decode('utf-8-sig'))
+        reader = csv.DictReader(stream)
+ 
+        subject_lookup = {s.lower(): s for s in subjects}
+        present_subjects = []
+        if reader.fieldnames:
+            for col in reader.fieldnames:
+                key = (col or '').strip().lower()
+                if key in subject_lookup and subject_lookup[key] not in present_subjects:
+                    present_subjects.append(subject_lookup[key])
+ 
+        if not present_subjects:
+            expected = ','.join(s.lower() for s in subjects)
+            flash(f'No subject columns recognised. Expected headers like: username,{expected}', 'error')
+            return redirect(url_for('assessment_upload', atype=atype, grade=grade, section=section, number=number))
+ 
+        subject_max_marks = {}
+        for sub in present_subjects:
+            try:
+                subject_max_marks[sub] = float(request.form.get(f'max_marks_{sub}') or 25)
+            except ValueError:
+                subject_max_marks[sub] = 25
+ 
+        assess_by_subject = {
+            sub: assessment_get_or_create(
+                atype=atype, number=number, subject=sub, grade=grade, section=section or None,
+                academic_year=ACADEMIC_YEAR, max_marks=subject_max_marks[sub], created_by=session['user_id']
+            )
+            for sub in present_subjects
+        }
+        for sub, a in assess_by_subject.items():
+            a.max_marks = subject_max_marks[sub]
+        db.session.commit()
+ 
+        added = 0
+        skipped = 0
+        for row in reader:
+            username = (row.get('username') or '').strip()
+            if not username:
+                continue
+            student = User.query.filter_by(username=username, role='student').first()
+            if not student:
+                skipped += 1
+                continue
+            if teacher_grade and student.grade != teacher_grade:
+                skipped += 1
+                continue
+            row_lower = {(k or '').strip().lower(): v for k, v in row.items()}
+            for sub in present_subjects:
+                raw_val = (row_lower.get(sub.lower()) or '').strip()
+                if raw_val == '':
+                    continue
+                try:
+                    marks_value = float(raw_val)
+                    if marks_value < 0 or marks_value > subject_max_marks[sub]:
+                        skipped += 1
+                        continue
+                except ValueError:
+                    skipped += 1
+                    continue
+                a = assess_by_subject[sub]
+                existing = AssessmentMark.query.filter_by(assessment_id=a.id, student_id=student.id).first()
+                if existing:
+                    existing.marks_obtained = marks_value
+                    existing.entered_by = session['user_id']
+                    existing.entered_at = datetime.utcnow()
+                else:
+                    db.session.add(AssessmentMark(
+                        assessment_id=a.id, student_id=student.id, marks_obtained=marks_value,
+                        entered_by=session['user_id']
+                    ))
+                added += 1
+        db.session.commit()
+        flash(f'{added} marks uploaded across {len(present_subjects)} subject(s) ({skipped} skipped — check usernames/marks/grade)', 'success')
+        return redirect(url_for('assessment_entry', atype=atype, grade=grade, section=section, number=number))
+ 
+    return render_template('assessment/upload.html',
+        atype=atype, atype_label=cfg['label'],
+        grade=grade, section=section, number=number,
+        grades=[teacher_grade] if teacher_grade else DT_GRADES,
+        subjects=subjects, numbers=numbers, sections=DT_SECTIONS,
+        grade_locked=bool(teacher_grade))
+ 
+ 
+@app.route('/assessment/<atype>/upload-template')
+@login_required(('teacher', 'Resource_Manager'))
+def assessment_upload_template(atype):
+    cfg = _assessment_config(atype)
+    if not cfg:
+        return redirect(url_for('assessment_hub'))
+    subjects = cfg['subjects']
+    teacher_grade = current_teacher_grade()
+    grade   = teacher_grade or request.args.get('grade', '')
+    section = request.args.get('section', '')
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['username'] + [s.lower() for s in subjects])
+    query = User.query.filter_by(role='student')
+    if grade:
+        query = query.filter_by(grade=grade)
+    if section:
+        query = query.filter_by(section=section)
+    for student in query.order_by(User.name).all():
+        writer.writerow([student.username] + ['' for _ in subjects])
+    output.seek(0)
+    return Response(output.getvalue(), mimetype='text/csv',
+        headers={'Content-Disposition': f'attachment; filename={atype}_marks_template.csv'})
+ 
+ 
+@app.route('/assessment/<atype>/dashboard')
+@login_required(('teacher', 'Resource_Manager'))
+def assessment_dashboard(atype):
+    cfg = _assessment_config(atype)
+    if not cfg:
+        return redirect(url_for('assessment_hub'))
+    teacher_grade = current_teacher_grade()
+    a_query = Assessment.query.filter_by(atype=atype, academic_year=ACADEMIC_YEAR)
+    marks_query = (
+        db.session.query(AssessmentMark)
+        .join(Assessment, AssessmentMark.assessment_id == Assessment.id)
+        .filter(Assessment.atype == atype, Assessment.academic_year == ACADEMIC_YEAR)
+    )
+    students_query = User.query.filter_by(role='student')
+    grades_shown = DT_GRADES
+    if teacher_grade:
+        a_query = a_query.filter_by(grade=teacher_grade)
+        marks_query = marks_query.filter(Assessment.grade == teacher_grade)
+        students_query = students_query.filter_by(grade=teacher_grade)
+        grades_shown = [teacher_grade]
+    total_assessments = a_query.count()
+    total_marks = marks_query.count()
+    total_students = students_query.count()
+    grade_counts = {
+        grade: User.query.filter_by(role='student', grade=grade).count()
+        for grade in grades_shown
+    }
+    return render_template('assessment/dashboard.html',
+        atype=atype, atype_label=cfg['label'], academic_year=ACADEMIC_YEAR,
+        total_assessments=total_assessments, total_marks=total_marks, total_students=total_students,
+        grades=grades_shown, grade_counts=grade_counts, numbers=cfg['numbers'],
+        grade_locked=bool(teacher_grade))
+ 
+ 
+@app.route('/assessment/<atype>/grade-analytics')
+@login_required(('teacher', 'Resource_Manager'))
+def assessment_grade_analytics_view(atype):
+    cfg = _assessment_config(atype)
+    if not cfg:
+        return redirect(url_for('assessment_hub'))
+    teacher_grade = current_teacher_grade()
+    grade   = teacher_grade or request.args.get('grade', DT_GRADES[0])
+    section = request.args.get('section', '')
+    data = assessment_grade_analytics(atype, grade, section or None)
+    return render_template('assessment/grade_analytics.html',
+        atype=atype, atype_label=cfg['label'], academic_year=ACADEMIC_YEAR,
+        grades=[teacher_grade] if teacher_grade else DT_GRADES,
+        sections=DT_SECTIONS, subjects=cfg['subjects'], numbers=cfg['numbers'],
+        selected_grade=grade, selected_section=section, grade_locked=bool(teacher_grade), **data)
+ 
+ 
+@app.route('/assessment/<atype>/cross-grade-analytics')
+@login_required(('teacher', 'Resource_Manager'))
+def assessment_cross_grade_analytics_view(atype):
+    cfg = _assessment_config(atype)
+    if not cfg:
+        return redirect(url_for('assessment_hub'))
+    if current_teacher_grade():
+        flash('Cross-grade comparison is available to admins only — showing your grade instead.', 'error')
+        return redirect(url_for('assessment_grade_analytics_view', atype=atype))
+    grade_data = assessment_cross_grade_analytics(atype)
+    return render_template('assessment/cross_grade_analytics.html',
+        atype=atype, atype_label=cfg['label'], academic_year=ACADEMIC_YEAR,
+        grades=DT_GRADES, subjects=cfg['subjects'], grade_data=grade_data)
+ 
+ 
+@app.route('/assessment/progress')
+@login_required(('teacher', 'Resource_Manager'))
+def assessment_progress():
+    """Shows one student's Formative and Summative marks together, per
+    subject. Both datasets are always sent to the template — the chart's
+    legend (default Chart.js behaviour) lets the user click 'Formative' or
+    'Summative' to show only one, or leave both visible together."""
+    teacher_grade = current_teacher_grade()
+    student_id = request.args.get('student_id', type=int)
+    grade      = teacher_grade or request.args.get('grade', DT_GRADES[0])
+    section    = request.args.get('section', '')
+    query = User.query.filter_by(role='student', grade=grade)
+    if section:
+        query = query.filter_by(section=section)
+    students = query.order_by(User.name).all()
+ 
+    fa_cfg = ASSESSMENT_TYPES['FA']
+    sa_cfg = ASSESSMENT_TYPES['SA']
+    # FA and SA share the same subject list, so one subject list covers both
+    subjects = fa_cfg['subjects']
+ 
+    fa_series = None
+    sa_series = None
+    student = None
+    if student_id:
+        candidate = db.session.get(User, student_id)
+        if candidate and (not teacher_grade or candidate.grade == teacher_grade):
+            student = candidate
+            fa_series = assessment_student_series('FA', student_id)
+            sa_series = assessment_student_series('SA', student_id)
+        else:
+            flash('Access denied — that student is outside your grade.', 'error')
+ 
+    return render_template('assessment/progress.html',
+        students=students, grades=[teacher_grade] if teacher_grade else DT_GRADES,
+        sections=DT_SECTIONS, grade=grade, section=section,
+        student=student, fa_series=fa_series, sa_series=sa_series,
+        subjects=subjects, fa_numbers=fa_cfg['numbers'], sa_numbers=sa_cfg['numbers'],
+        academic_year=ACADEMIC_YEAR, grade_locked=bool(teacher_grade))
+ 
  
 # ── SINGLE DT PDF ────────────────────────────────────────────────────────────
 
