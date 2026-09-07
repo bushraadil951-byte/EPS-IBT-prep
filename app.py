@@ -122,6 +122,8 @@ ASSESSMENT_TYPES = {
     },
 }
 # ── PORTAL MODULES (add more here as new test types are built) ──────────────
+# ── REPLACE your existing PORTAL_MODULES dict entirely with this ───────────
+ 
 PORTAL_MODULES = {
     'Resource_Manager': [
         {'key': 'ibt', 'name': 'IBT — Mock Tests', 'icon': '📝',
@@ -130,6 +132,9 @@ PORTAL_MODULES = {
         {'key': 'dt', 'name': 'DT — Diagnostic Tests', 'icon': '📊',
          'desc': 'Enter diagnostic marks, view grade analytics and per-student progress across all DTs.',
          'endpoint': 'admin_dt_dashboard'},
+        {'key': 'assessments', 'name': 'FA & SA — Formative & Summative Assessments', 'icon': '📋',
+         'desc': 'Enter formative and summative marks, and compare a student\'s progress across both.',
+         'endpoint': 'assessment_hub'},
     ],
     'teacher': [
         {'key': 'ibt', 'name': 'IBT — Mock Tests', 'icon': '📝',
@@ -138,6 +143,9 @@ PORTAL_MODULES = {
         {'key': 'dt', 'name': 'DT — Diagnostic Tests', 'icon': '📊',
          'desc': 'Enter diagnostic marks, view grade analytics and per-student progress across all DTs.',
          'endpoint': 'teacher_dt_dashboard'},
+        {'key': 'assessments', 'name': 'FA & SA — Formative & Summative Assessments', 'icon': '📋',
+         'desc': 'Enter formative and summative marks, and compare a student\'s progress across both.',
+         'endpoint': 'assessment_hub'},
     ],
     'student': [
         {'key': 'ibt', 'name': 'IBT — Mock Tests', 'icon': '📝',
@@ -148,7 +156,7 @@ PORTAL_MODULES = {
          'endpoint': 'student_diagnostics'},
     ],
 }
-
+ 
 PORTAL_ROLE_LABELS = {
     'Resource_Manager': 'Administrator',
     'teacher': 'Teacher',
