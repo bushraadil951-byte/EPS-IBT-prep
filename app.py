@@ -1804,48 +1804,6 @@ def dt_student_insights(series):
             'completed': len(points), 'latest': values[-1] if values else None, 'status': status
         })
     return sorted(insights, key=lambda item: (item['average'] is None, item['average'] or 0))
-
-# ── DT ANALYTICS HELPER ───────────────────────────────────────────────────────
-# Add this helper function right after dt_student_insights() 
- 
-def build_dt_analytics(grade=None, section=None, academic_year=None):
-    """
-    Returns a rich dict used by both grade-analytics and cross-grade analytics.
-    
-    Keys returned:
-      grades_summary   list of {grade, student_count, dt_avgs{subj:pct}, overall_avg}
-      subject_dt_avgs  {subject: [avg_pct for DT1..DT6]}  — class trend per subject
-      ranked_students  list of {name, username, grade, section, avg_pct, subject_avgs}
-      subjects         DT_SUBJECTS list
-      dt_numbers       DT_NUMBERS list
-    """
-    if academic_year is None:
-        academic_year = ACADEMIC_YEAR
- 
-    # Filter students
-    q = User.query.filter_by(role='student')
-    if grade:
-        q = q.filter_by(grade=grade)
-    if section:
-        q = q.filter_by(section=section)
-    students = q.order_by(User.name).all()
-    ng dt routes · PY
-"""
-══════════════════════════════════════════════════════════════════════════
-  MISSING ROUTES — paste these into app.py
-  
-  Add them AFTER the existing dt_student_insights() function and
-  BEFORE the dt_entry() route (around line 1194 in your app.py).
- 
-  Routes added:
-    /teacher/dt-dashboard              teacher_dt_dashboard
-    /admin/dt-dashboard                admin_dt_dashboard
-    /teacher/dt/analytics              teacher_dt_analytics
-    /admin/dt/analytics                admin_dt_analytics
-    /teacher/dt/cross-grade            teacher_dt_cross_grade
-    /admin/dt/cross-grade              admin_dt_cross_grade
-══════════════════════════════════════════════════════════════════════════
-"""
  
 # ── DT ANALYTICS HELPER ───────────────────────────────────────────────────────
 # Add this helper function right after dt_student_insights() 
