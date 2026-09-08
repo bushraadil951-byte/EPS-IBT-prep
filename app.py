@@ -164,7 +164,7 @@ PORTAL_ROLE_LABELS = {
 }
 
 # ── DT (DIAGNOSTIC TEST) CONSTANTS ───────────────────────────────────────────
-DT_NUMBERS = [1, 2, 3, 4, 5, 6]
+DT_NUMBERS = [1, 2, 3, 4, 5]
 DT_GRADES = ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5']
 DT_SECTIONS = ['A', 'B', 'C', 'D']
 
