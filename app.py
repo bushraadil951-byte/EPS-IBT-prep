@@ -1876,6 +1876,7 @@ def dt_analytics():
             academic_year=ACADEMIC_YEAR,
         )
     except Exception as e:
+        data=None
 
 def dt_latest_available_number(series):
     """Returns the highest DT number for which at least one subject has a
