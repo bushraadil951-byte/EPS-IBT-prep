@@ -1836,7 +1836,124 @@ def dt_student_insights(series):
         role_prefix=role_prefix,
         allowed_grades=allowed_grades,
     )
+
+# ── DT ANALYTICS HELPER ───────────────────────────────────────────────────────
+# Add this helper function right after dt_student_insights() 
  
+def build_dt_analytics(grade=None, section=None, academic_year=None):
+    """
+    Returns a rich dict used by both grade-analytics and cross-grade analytics.
+    
+    Keys returned:
+      grades_summary   list of {grade, student_count, dt_avgs{subj:pct}, overall_avg}
+      subject_dt_avgs  {subject: [avg_pct for DT1..DT6]}  — class trend per subject
+      ranked_students  list of {name, username, grade, section, avg_pct, subject_avgs}
+      subjects         DT_SUBJECTS list
+      dt_numbers       DT_NUMBERS list
+    """
+    if academic_year is None:
+        academic_year = ACADEMIC_YEAR
+ 
+    # Filter students
+    q = User.query.filter_by(role='student')
+    if grade:
+        q = q.filter_by(grade=grade)
+    if section:
+        q = q.filter_by(section=section)
+    students = q.order_by(User.name).all()
+ 
+    # ── Per-student subject averages ──────────────────────────────────────────
+    ranked = []
+    for s in students:
+        sub_avgs = {}
+        all_pcts = []
+        for subject in DT_SUBJECTS:
+            pcts = []
+            for dt_number in DT_NUMBERS:
+                dt = DiagnosticTest.query.filter_by(
+                    dt_number=dt_number, subject=subject,
+                    grade=s.grade, academic_year=academic_year
+                ).filter(
+                    db.or_(DiagnosticTest.section == None,
+                           DiagnosticTest.section == s.section)
+                ).first()
+                if not dt:
+                    continue
+                mark = DTMark.query.filter_by(dt_id=dt.id, student_id=s.id).first()
+                if mark and dt.max_marks:
+                    pcts.append(round(mark.marks_obtained / dt.max_marks * 100, 1))
+            sub_avgs[subject] = safe_avg(pcts) if pcts else None
+            if pcts:
+                all_pcts.extend(pcts)
+        ranked.append({
+            'id': s.id,
+            'name': s.name,
+            'username': s.username,
+            'grade': s.grade,
+            'section': s.section or '',
+            'avg_pct': safe_avg(all_pcts) if all_pcts else 0,
+            'subject_avgs': sub_avgs,
+        })
+    ranked.sort(key=lambda x: -x['avg_pct'])
+ 
+    # ── Subject × DT class averages (for trend chart) ─────────────────────────
+    subject_dt_avgs = {}
+    for subject in DT_SUBJECTS:
+        dt_avgs = []
+        for dt_number in DT_NUMBERS:
+            # find all DTs matching this slot (may span sections)
+            dts_q = DiagnosticTest.query.filter_by(
+                dt_number=dt_number, subject=subject, academic_year=academic_year
+            )
+            if grade:
+                dts_q = dts_q.filter_by(grade=grade)
+            dts = dts_q.all()
+            pcts = []
+            for dt in dts:
+                for mark in dt.marks:
+                    if grade and mark.student.grade != grade:
+                        continue
+                    if section and mark.student.section != section:
+                        continue
+                    if dt.max_marks:
+                        pcts.append(round(mark.marks_obtained / dt.max_marks * 100, 1))
+            dt_avgs.append(safe_avg(pcts) if pcts else 0)
+        subject_dt_avgs[subject] = dt_avgs
+ 
+    # ── Grade summary (for cross-grade view) ──────────────────────────────────
+    target_grades = [grade] if grade else DT_GRADES
+    grades_summary = []
+    for g in target_grades:
+        g_students = User.query.filter_by(role='student', grade=g).all()
+        g_ids      = {s.id for s in g_students}
+        sub_avgs_g = {}
+        all_pcts_g = []
+        for subject in DT_SUBJECTS:
+            dts = DiagnosticTest.query.filter_by(
+                subject=subject, grade=g, academic_year=academic_year
+            ).all()
+            pcts = []
+            for dt in dts:
+                for mark in dt.marks:
+                    if mark.student_id in g_ids and dt.max_marks:
+                        pcts.append(round(mark.marks_obtained / dt.max_marks * 100, 1))
+            sub_avgs_g[subject] = safe_avg(pcts) if pcts else 0
+            all_pcts_g.extend(pcts)
+        grades_summary.append({
+            'grade': g,
+            'student_count': len(g_students),
+            'subject_avgs': sub_avgs_g,
+            'overall_avg': safe_avg(all_pcts_g) if all_pcts_g else 0,
+        })
+ 
+    return {
+        'grades_summary':  grades_summary,
+        'subject_dt_avgs': subject_dt_avgs,
+        'ranked_students': ranked,
+        'subjects':        DT_SUBJECTS,
+        'dt_numbers':      DT_NUMBERS,
+        'student_count':   len(students),
+    }
  
 # ── DT GRADE ANALYTICS ────────────────────────────────────────────────────────
  
