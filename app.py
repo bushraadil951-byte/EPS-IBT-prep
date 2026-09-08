@@ -1829,7 +1829,294 @@ def build_dt_analytics(grade=None, section=None, academic_year=None):
     if section:
         q = q.filter_by(section=section)
     students = q.order_by(User.name).all()
-
+    ng dt routes · PY
+"""
+══════════════════════════════════════════════════════════════════════════
+  MISSING ROUTES — paste these into app.py
+  
+  Add them AFTER the existing dt_student_insights() function and
+  BEFORE the dt_entry() route (around line 1194 in your app.py).
+ 
+  Routes added:
+    /teacher/dt-dashboard              teacher_dt_dashboard
+    /admin/dt-dashboard                admin_dt_dashboard
+    /teacher/dt/analytics              teacher_dt_analytics
+    /admin/dt/analytics                admin_dt_analytics
+    /teacher/dt/cross-grade            teacher_dt_cross_grade
+    /admin/dt/cross-grade              admin_dt_cross_grade
+══════════════════════════════════════════════════════════════════════════
+"""
+ 
+# ── DT ANALYTICS HELPER ───────────────────────────────────────────────────────
+# Add this helper function right after dt_student_insights() 
+ 
+def build_dt_analytics(grade=None, section=None, academic_year=None):
+    """
+    Returns a rich dict used by both grade-analytics and cross-grade analytics.
+    
+    Keys returned:
+      grades_summary   list of {grade, student_count, dt_avgs{subj:pct}, overall_avg}
+      subject_dt_avgs  {subject: [avg_pct for DT1..DT6]}  — class trend per subject
+      ranked_students  list of {name, username, grade, section, avg_pct, subject_avgs}
+      subjects         DT_SUBJECTS list
+      dt_numbers       DT_NUMBERS list
+    """
+    if academic_year is None:
+        academic_year = ACADEMIC_YEAR
+ 
+    # Filter students
+    q = User.query.filter_by(role='student')
+    if grade:
+        q = q.filter_by(grade=grade)
+    if section:
+        q = q.filter_by(section=section)
+    students = q.order_by(User.name).all()
+ 
+    # ── Per-student subject averages ──────────────────────────────────────────
+    ranked = []
+    for s in students:
+        sub_avgs = {}
+        all_pcts = []
+        for subject in DT_SUBJECTS:
+            pcts = []
+            for dt_number in DT_NUMBERS:
+                dt = DiagnosticTest.query.filter_by(
+                    dt_number=dt_number, subject=subject,
+                    grade=s.grade, academic_year=academic_year
+                ).filter(
+                    db.or_(DiagnosticTest.section == None,
+                           DiagnosticTest.section == s.section)
+                ).first()
+                if not dt:
+                    continue
+                mark = DTMark.query.filter_by(dt_id=dt.id, student_id=s.id).first()
+                if mark and dt.max_marks:
+                    pcts.append(round(mark.marks_obtained / dt.max_marks * 100, 1))
+            sub_avgs[subject] = safe_avg(pcts) if pcts else None
+            if pcts:
+                all_pcts.extend(pcts)
+        ranked.append({
+            'id': s.id,
+            'name': s.name,
+            'username': s.username,
+            'grade': s.grade,
+            'section': s.section or '',
+            'avg_pct': safe_avg(all_pcts) if all_pcts else 0,
+            'subject_avgs': sub_avgs,
+        })
+    ranked.sort(key=lambda x: -x['avg_pct'])
+ 
+    # ── Subject × DT class averages (for trend chart) ─────────────────────────
+    subject_dt_avgs = {}
+    for subject in DT_SUBJECTS:
+        dt_avgs = []
+        for dt_number in DT_NUMBERS:
+            # find all DTs matching this slot (may span sections)
+            dts_q = DiagnosticTest.query.filter_by(
+                dt_number=dt_number, subject=subject, academic_year=academic_year
+            )
+            if grade:
+                dts_q = dts_q.filter_by(grade=grade)
+            dts = dts_q.all()
+            pcts = []
+            for dt in dts:
+                for mark in dt.marks:
+                    if grade and mark.student.grade != grade:
+                        continue
+                    if section and mark.student.section != section:
+                        continue
+                    if dt.max_marks:
+                        pcts.append(round(mark.marks_obtained / dt.max_marks * 100, 1))
+            dt_avgs.append(safe_avg(pcts) if pcts else 0)
+        subject_dt_avgs[subject] = dt_avgs
+ 
+    # ── Grade summary (for cross-grade view) ──────────────────────────────────
+    target_grades = [grade] if grade else DT_GRADES
+    grades_summary = []
+    for g in target_grades:
+        g_students = User.query.filter_by(role='student', grade=g).all()
+        g_ids      = {s.id for s in g_students}
+        sub_avgs_g = {}
+        all_pcts_g = []
+        for subject in DT_SUBJECTS:
+            dts = DiagnosticTest.query.filter_by(
+                subject=subject, grade=g, academic_year=academic_year
+            ).all()
+            pcts = []
+            for dt in dts:
+                for mark in dt.marks:
+                    if mark.student_id in g_ids and dt.max_marks:
+                        pcts.append(round(mark.marks_obtained / dt.max_marks * 100, 1))
+            sub_avgs_g[subject] = safe_avg(pcts) if pcts else 0
+            all_pcts_g.extend(pcts)
+        grades_summary.append({
+            'grade': g,
+            'student_count': len(g_students),
+            'subject_avgs': sub_avgs_g,
+            'overall_avg': safe_avg(all_pcts_g) if all_pcts_g else 0,
+        })
+ 
+    return {
+        'grades_summary':  grades_summary,
+        'subject_dt_avgs': subject_dt_avgs,
+        'ranked_students': ranked,
+        'subjects':        DT_SUBJECTS,
+        'dt_numbers':      DT_NUMBERS,
+        'student_count':   len(students),
+    }
+ 
+ 
+# ── DT DASHBOARD ──────────────────────────────────────────────────────────────
+ 
+@app.route('/teacher/dt-dashboard', endpoint='teacher_dt_dashboard')
+@app.route('/admin/dt-dashboard',   endpoint='admin_dt_dashboard')
+@login_required(('teacher', 'Resource_Manager'))
+def dt_dashboard():
+    """
+    Landing page shown in screenshot 1:
+    - 3 stat cards (DTs configured, marks entries, total students)
+    - Grade-wise breakdown cards
+    - Quick-link cards to Grade Analytics, Cross-Grade Analytics,
+      Student Progress Graphs
+    """
+    role_prefix = _dt_role_prefix()
+ 
+    # Stats
+    dt_count    = DiagnosticTest.query.filter_by(academic_year=ACADEMIC_YEAR).count()
+    marks_count = DTMark.query.join(
+        DiagnosticTest, DTMark.dt_id == DiagnosticTest.id
+    ).filter(DiagnosticTest.academic_year == ACADEMIC_YEAR).count()
+ 
+    # Grade breakdown — restrict to teacher's own grade if applicable
+    current_user_obj = db.session.get(User, session['user_id'])
+    if current_user_obj.role == 'teacher' and current_user_obj.grade:
+        allowed_grades = [current_user_obj.grade]
+    else:
+        allowed_grades = DT_GRADES
+ 
+    grade_breakdown = []
+    total_students  = 0
+    for g in allowed_grades:
+        count = User.query.filter_by(role='student', grade=g).count()
+        total_students += count
+        # count marks entries for this grade
+        g_marks = DTMark.query.join(
+            DiagnosticTest, DTMark.dt_id == DiagnosticTest.id
+        ).join(
+            User, DTMark.student_id == User.id
+        ).filter(
+            DiagnosticTest.academic_year == ACADEMIC_YEAR,
+            User.grade == g
+        ).count()
+        grade_breakdown.append({
+            'grade': g,
+            'student_count': count,
+            'marks_count': g_marks,
+        })
+ 
+    return render_template(
+        'dt/dashboard.html',
+        dt_count=dt_count,
+        marks_count=marks_count,
+        total_students=total_students,
+        grade_breakdown=grade_breakdown,
+        academic_year=ACADEMIC_YEAR,
+        role_prefix=role_prefix,
+        allowed_grades=allowed_grades,
+    )
+ 
+ 
+# ── DT GRADE ANALYTICS ────────────────────────────────────────────────────────
+ 
+@app.route('/teacher/dt/analytics', endpoint='teacher_dt_analytics')
+@app.route('/admin/dt/analytics',   endpoint='admin_dt_analytics')
+@login_required(('teacher', 'Resource_Manager'))
+def dt_analytics():
+    """
+    Grade Analytics card destination:
+    - Filter: grade, section
+    - Subject-wise averages table
+    - DT-by-DT trend per subject (chart data)
+    - Ranked student list
+    """
+    role_prefix = _dt_role_prefix()
+ 
+    # Restrict teacher to their own grade
+    current_user_obj = db.session.get(User, session['user_id'])
+    if current_user_obj.role == 'teacher' and current_user_obj.grade:
+        default_grade = current_user_obj.grade
+        grade_choices = [current_user_obj.grade]
+    else:
+        default_grade = DT_GRADES[0]
+        grade_choices = DT_GRADES
+ 
+    grade   = request.args.get('grade',   default_grade)
+    section = request.args.get('section', '')
+ 
+    # Guard: teacher can't access other grades
+    if current_user_obj.role == 'teacher' and current_user_obj.grade:
+        grade = current_user_obj.grade
+ 
+    try:
+        data = build_dt_analytics(
+            grade=grade,
+            section=section or None,
+            academic_year=ACADEMIC_YEAR,
+        )
+    except Exception as e:
+        flash(f'Analytics error: {str(e)}', 'error')
+        data = {
+            'grades_summary': [], 'subject_dt_avgs': {},
+            'ranked_students': [], 'subjects': DT_SUBJECTS,
+            'dt_numbers': DT_NUMBERS, 'student_count': 0,
+        }
+ 
+    return render_template(
+        'dt/analytics.html',
+        grade=grade,
+        section=section,
+        grade_choices=grade_choices,
+        sections=DT_SECTIONS,
+        academic_year=ACADEMIC_YEAR,
+        role_prefix=role_prefix,
+        **data,
+    )
+ 
+ 
+# ── DT CROSS-GRADE ANALYTICS ──────────────────────────────────────────────────
+ 
+@app.route('/teacher/dt/cross-grade', endpoint='teacher_dt_cross_grade')
+@app.route('/admin/dt/cross-grade',   endpoint='admin_dt_cross_grade')
+@login_required(('teacher', 'Resource_Manager'))
+def dt_cross_grade():
+    """
+    Cross-Grade Analytics card destination (admin dashboard, screenshot 2):
+    Compare overall and subject-wise performance across every grade.
+    """
+    role_prefix = _dt_role_prefix()
+ 
+    # Teachers only see their own grade here too
+    current_user_obj = db.session.get(User, session['user_id'])
+    if current_user_obj.role == 'teacher' and current_user_obj.grade:
+        # Redirect teacher to single-grade analytics instead
+        return redirect(url_for('teacher_dt_analytics'))
+ 
+    try:
+        data = build_dt_analytics(academic_year=ACADEMIC_YEAR)  # all grades
+    except Exception as e:
+        flash(f'Analytics error: {str(e)}', 'error')
+        data = {
+            'grades_summary': [], 'subject_dt_avgs': {},
+            'ranked_students': [], 'subjects': DT_SUBJECTS,
+            'dt_numbers': DT_NUMBERS, 'student_count': 0,
+        }
+ 
+    return render_template(
+        'dt/cross_grade.html',
+        academic_year=ACADEMIC_YEAR,
+        role_prefix=role_prefix,
+        **data,
+    )
 
 def dt_latest_available_number(series):
     """Returns the highest DT number for which at least one subject has a
