@@ -1805,6 +1805,31 @@ def dt_student_insights(series):
         })
     return sorted(insights, key=lambda item: (item['average'] is None, item['average'] or 0))
 
+# ── DT ANALYTICS HELPER ───────────────────────────────────────────────────────
+# Add this helper function right after dt_student_insights() 
+ 
+def build_dt_analytics(grade=None, section=None, academic_year=None):
+    """
+    Returns a rich dict used by both grade-analytics and cross-grade analytics.
+    
+    Keys returned:
+      grades_summary   list of {grade, student_count, dt_avgs{subj:pct}, overall_avg}
+      subject_dt_avgs  {subject: [avg_pct for DT1..DT6]}  — class trend per subject
+      ranked_students  list of {name, username, grade, section, avg_pct, subject_avgs}
+      subjects         DT_SUBJECTS list
+      dt_numbers       DT_NUMBERS list
+    """
+    if academic_year is None:
+        academic_year = ACADEMIC_YEAR
+ 
+    # Filter students
+    q = User.query.filter_by(role='student')
+    if grade:
+        q = q.filter_by(grade=grade)
+    if section:
+        q = q.filter_by(section=section)
+    students = q.order_by(User.name).all()
+
 
 def dt_latest_available_number(series):
     """Returns the highest DT number for which at least one subject has a
