@@ -51,9 +51,30 @@
     <div class="card-title">Score by Subject</div>
     <canvas id="subjectChart" height="180"></canvas>
   </div>
-
+  
 </div>
-
+<script>
+new Chart(document.getElementById('subjectChart'), {
+  type: 'bar',
+  data: {
+    labels: {{ subjects|tojson }},
+    datasets: [{
+      data: {{ subjects|tojson }}.map(s => {{ subject_data|tojson }}[s]?.avg || 0),
+      backgroundColor: ['#6366f1','#10b981','#f59e0b','#ef4444'],
+      borderRadius: 8,
+      borderSkipped: false
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { min: 0, max: 100, ticks: { callback: v => v+'%', font: { size: 10 } } },
+      x: { ticks: { font: { size: 10 } }, grid: { display: false } }
+    }
+  }
+});
+</script>
 <div class="card">
 
   <div class="sec-header">
