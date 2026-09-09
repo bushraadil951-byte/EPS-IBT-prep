@@ -1144,11 +1144,19 @@ def admin_analytics():
     filter_grade   = request.args.get('grade', '')
     filter_section = request.args.get('section', '')
     filter_subject = request.args.get('subject', '')
-    data = build_analytics(
-        filter_grade=filter_grade or None,
-        filter_section=filter_section or None,
-        filter_subject=filter_subject or None,
-    )
+ 
+    cache_key = f"analytics:{filter_grade}:{filter_section}:{filter_subject}"
+ 
+    data = cache_get(cache_key)        # ← returns None if cache is empty/stale
+    if data is None:
+        data = build_analytics(
+            filter_grade=filter_grade or None,
+            filter_section=filter_section or None,
+            filter_subject=filter_subject or None,
+        )
+        cache_set(cache_key, data)     # ← store for 2 minutes
+ 
+    data = dict(data)                  # shallow copy so we can add request keys
     data['filter_grade']   = filter_grade
     data['filter_section'] = filter_section
     data['filter_subject'] = filter_subject
