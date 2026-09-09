@@ -12,6 +12,7 @@ from reportlab.graphics.charts.linecharts import HorizontalLineChart
 from reportlab.graphics.charts.barcharts import VerticalBarChart
 from reportlab.graphics import renderPDF
 from psycopg2cffi import compat
+from sqlalchemy import func
 compat.register()
 
 app = Flask(__name__)
@@ -410,84 +411,103 @@ def parse_pdf_questions(file_stream):
         })
     return questions
 
-
 def build_analytics(filter_grade=None, filter_section=None, filter_subject=None):
-    students    = User.query.filter_by(role='student').all()
-    all_results = TestResult.query.all()
-
-    if filter_grade:
-        all_results = [r for r in all_results if r.student.grade == filter_grade]
-        students    = [s for s in students if s.grade == filter_grade]
-    if filter_section:
-        all_results = [r for r in all_results if r.student.section == filter_section]
-        students    = [s for s in students if s.section == filter_section]
-    if filter_subject:
-        all_results = [r for r in all_results if r.test.subject == filter_subject]
-
+    """
+    Optimized: loads all results in 3 bulk queries instead of N×M individual ones.
+    """
+    # ── 1. Single bulk load of all results with student + test joined ─────────
+    q = (db.session.query(TestResult, User, MockTest)
+         .join(User,     TestResult.student_id == User.id)
+         .join(MockTest, TestResult.test_id    == MockTest.id)
+         .filter(User.role == 'student'))
+ 
+    if filter_grade:   q = q.filter(User.grade   == filter_grade)
+    if filter_section: q = q.filter(User.section == filter_section)
+    if filter_subject: q = q.filter(MockTest.subject == filter_subject)
+ 
+    rows        = q.all()
+    all_results = [r for r, u, t in rows]
+    # Build lookup dicts from the single query
+    result_student = {r.id: u for r, u, t in rows}
+    result_test    = {r.id: t for r, u, t in rows}
+ 
+    # ── 2. Student list (bulk) ────────────────────────────────────────────────
+    sq = User.query.filter_by(role='student')
+    if filter_grade:   sq = sq.filter_by(grade=filter_grade)
+    if filter_section: sq = sq.filter_by(section=filter_section)
+    students = sq.all()
+ 
+    # ── 3. Compute stats in Python (no extra DB hits) ─────────────────────────
     overall_avg = safe_avg([r.percent for r in all_results])
     above80     = sum(1 for r in all_results if r.percent >= 80)
     below60     = sum(1 for r in all_results if r.percent < 60)
-
+ 
     grade_data = {}
     for g in GRADES:
-        rs = [r for r in all_results if r.student.grade == g]
+        rs = [r for r in all_results if result_student[r.id].grade == g]
         grade_data[g] = {
-            'avg': safe_avg([r.percent for r in rs]),
-            'count': len(rs),
-            'students': len([s for s in students if s.grade == g]),
+            'avg':      safe_avg([r.percent for r in rs]),
+            'count':    len(rs),
+            'students': sum(1 for s in students if s.grade == g),
         }
-
+ 
     subject_data = {}
     for sub in SUBJECTS:
-        rs = [r for r in all_results if r.test.subject == sub]
-        subject_data[sub] = {'avg': safe_avg([r.percent for r in rs]), 'count': len(rs)}
-
+        rs = [r for r in all_results if result_test[r.id].subject == sub]
+        subject_data[sub] = {
+            'avg':   safe_avg([r.percent for r in rs]),
+            'count': len(rs),
+        }
+ 
     grade_subject = {}
     for g in GRADES:
         grade_subject[g] = {}
         for sub in SUBJECTS:
-            rs = [r for r in all_results if r.student.grade == g and r.test.subject == sub]
+            rs = [r for r in all_results
+                  if result_student[r.id].grade == g
+                  and result_test[r.id].subject == sub]
             grade_subject[g][sub] = safe_avg([r.percent for r in rs])
-
-    subject_strands = {}
-    for sub in SUBJECTS:
-        sub_results = [r for r in all_results if r.test.subject == sub]
-        strand_data = {}
-        for r in sub_results:
-            try:
-                secs = json.loads(r.section_scores or '{}')
-                for sec, v in secs.items():
-                    if v['total'] > 0:
-                        pct = round(v['correct'] / v['total'] * 100, 1)
-                        strand_data.setdefault(sec, []).append(pct)
-            except Exception:
-                pass
-        subject_strands[sub] = {sec: safe_avg(vals) for sec, vals in strand_data.items()}
-
+ 
+    # Section scores — parse JSON once per result
     section_data = {}
+    subject_strands = {sub: {} for sub in SUBJECTS}
     for r in all_results:
+        sub = result_test[r.id].subject
         try:
             secs = json.loads(r.section_scores or '{}')
             for sec, v in secs.items():
                 if v['total'] > 0:
                     pct = round(v['correct'] / v['total'] * 100, 1)
                     section_data.setdefault(sec, []).append(pct)
+                    subject_strands[sub].setdefault(sec, []).append(pct)
         except Exception:
             pass
-    section_avgs = {sec: safe_avg(vals) for sec, vals in section_data.items()}
-
+ 
+    section_avgs    = {sec: safe_avg(vals) for sec, vals in section_data.items()}
+    subject_strands = {sub: {sec: safe_avg(vals) for sec, vals in sd.items()}
+                       for sub, sd in subject_strands.items()}
+ 
+    # Per-student summary (no extra queries)
+    student_result_map = {}
+    for r in all_results:
+        sid = result_student[r.id].id
+        student_result_map.setdefault(sid, []).append(r)
+ 
     student_rows = []
     for s in students:
-        rs = [r for r in all_results if r.student_id == s.id]
-        sub_avgs = {sub: safe_avg([r.percent for r in rs if r.test.subject == sub]) for sub in SUBJECTS}
+        rs       = student_result_map.get(s.id, [])
+        sub_avgs = {}
+        for sub in SUBJECTS:
+            sub_rs = [r for r in rs if result_test[r.id].subject == sub]
+            sub_avgs[sub] = safe_avg([r.percent for r in sub_rs])
         student_rows.append({
             'id': s.id, 'name': s.name, 'grade': s.grade, 'section': s.section,
             'tests_taken': len(rs),
             'overall_avg': safe_avg([r.percent for r in rs]),
-            'sub_avgs': sub_avgs,
+            'sub_avgs':    sub_avgs,
         })
     student_rows.sort(key=lambda x: -x['overall_avg'])
-
+ 
     return dict(
         overall_avg=overall_avg, above80=above80, below60=below60,
         total_results=len(all_results), total_students=len(students),
@@ -1842,108 +1862,119 @@ def dt_student_insights(series):
  
 def build_dt_analytics(grade=None, section=None, academic_year=None):
     """
-    Returns a rich dict used by both grade-analytics and cross-grade analytics.
-    
-    Keys returned:
-      grades_summary   list of {grade, student_count, dt_avgs{subj:pct}, overall_avg}
-      subject_dt_avgs  {subject: [avg_pct for DT1..DT6]}  — class trend per subject
-      ranked_students  list of {name, username, grade, section, avg_pct, subject_avgs}
-      subjects         DT_SUBJECTS list
-      dt_numbers       DT_NUMBERS list
+    Optimized: loads all DT marks in 2 bulk queries instead of
+    (n_students × n_subjects × n_dts) individual ones.
     """
     if academic_year is None:
         academic_year = ACADEMIC_YEAR
  
-    # Filter students
-    q = User.query.filter_by(role='student')
+    # ── 1. Load ALL relevant DiagnosticTests in one query ────────────────────
+    dt_q = DiagnosticTest.query.filter_by(academic_year=academic_year)
     if grade:
-        q = q.filter_by(grade=grade)
-    if section:
-        q = q.filter_by(section=section)
-    students = q.order_by(User.name).all()
+        dt_q = dt_q.filter_by(grade=grade)
+    all_dts = dt_q.all()
+    dt_map  = {dt.id: dt for dt in all_dts}   # id → DiagnosticTest
  
-    # ── Per-student subject averages ──────────────────────────────────────────
+    # ── 2. Load ALL DTMarks for those tests in one query ─────────────────────
+    dt_ids = [dt.id for dt in all_dts]
+    if not dt_ids:
+        # No DTs configured yet — return empty structure
+        return {
+            'grades_summary':  [],
+            'subject_dt_avgs': {s: [0]*len(DT_NUMBERS) for s in DT_SUBJECTS},
+            'ranked_students': [],
+            'subjects':        DT_SUBJECTS,
+            'dt_numbers':      DT_NUMBERS,
+            'student_count':   0,
+        }
+ 
+    all_marks = (DTMark.query
+                 .filter(DTMark.dt_id.in_(dt_ids))
+                 .join(User, DTMark.student_id == User.id)
+                 .all())
+ 
+    # ── 3. Load students ──────────────────────────────────────────────────────
+    sq = User.query.filter_by(role='student')
+    if grade:   sq = sq.filter_by(grade=grade)
+    if section: sq = sq.filter_by(section=section)
+    students    = sq.order_by(User.name).all()
+    student_map = {s.id: s for s in students}
+    student_ids = {s.id for s in students}
+ 
+    # Filter marks to the requested students
+    marks = [m for m in all_marks if m.student_id in student_ids]
+    # Also respect section filter
+    if section:
+        marks = [m for m in marks if student_map.get(m.student_id) and
+                 student_map[m.student_id].section == section]
+ 
+    # ── 4. Build lookup: (student_id, subject, dt_number) → pct ──────────────
+    mark_lookup = {}   # (student_id, subject, dt_number) → pct
+    class_lookup = {}  # (subject, dt_number, grade) → [pcts]  for class avg
+ 
+    for m in marks:
+        dt  = dt_map.get(m.dt_id)
+        if not dt or not dt.max_marks:
+            continue
+        pct = round(m.marks_obtained / dt.max_marks * 100, 1)
+        mark_lookup[(m.student_id, dt.subject, dt.dt_number)] = pct
+        key = (dt.subject, dt.dt_number, dt.grade)
+        class_lookup.setdefault(key, []).append(pct)
+ 
+    # ── 5. Per-student subject averages ──────────────────────────────────────
     ranked = []
     for s in students:
         sub_avgs = {}
         all_pcts = []
         for subject in DT_SUBJECTS:
-            pcts = []
-            for dt_number in DT_NUMBERS:
-                dt = DiagnosticTest.query.filter_by(
-                    dt_number=dt_number, subject=subject,
-                    grade=s.grade, academic_year=academic_year
-                ).filter(
-                    db.or_(DiagnosticTest.section == None,
-                           DiagnosticTest.section == s.section)
-                ).first()
-                if not dt:
-                    continue
-                mark = DTMark.query.filter_by(dt_id=dt.id, student_id=s.id).first()
-                if mark and dt.max_marks:
-                    pcts.append(round(mark.marks_obtained / dt.max_marks * 100, 1))
+            pcts = [mark_lookup[(s.id, subject, n)]
+                    for n in DT_NUMBERS
+                    if (s.id, subject, n) in mark_lookup]
             sub_avgs[subject] = safe_avg(pcts) if pcts else None
-            if pcts:
-                all_pcts.extend(pcts)
+            all_pcts.extend(pcts)
         ranked.append({
-            'id': s.id,
-            'name': s.name,
-            'username': s.username,
-            'grade': s.grade,
-            'section': s.section or '',
-            'avg_pct': safe_avg(all_pcts) if all_pcts else 0,
+            'id': s.id, 'name': s.name, 'username': s.username,
+            'grade': s.grade, 'section': s.section or '',
+            'avg_pct':     safe_avg(all_pcts) if all_pcts else 0,
             'subject_avgs': sub_avgs,
         })
     ranked.sort(key=lambda x: -x['avg_pct'])
  
-    # ── Subject × DT class averages (for trend chart) ─────────────────────────
+    # ── 6. Subject × DT class averages (for trend chart) ─────────────────────
     subject_dt_avgs = {}
     for subject in DT_SUBJECTS:
-        dt_avgs = []
-        for dt_number in DT_NUMBERS:
-            # find all DTs matching this slot (may span sections)
-            dts_q = DiagnosticTest.query.filter_by(
-                dt_number=dt_number, subject=subject, academic_year=academic_year
-            )
-            if grade:
-                dts_q = dts_q.filter_by(grade=grade)
-            dts = dts_q.all()
+        avgs = []
+        for n in DT_NUMBERS:
             pcts = []
-            for dt in dts:
-                for mark in dt.marks:
-                    if grade and mark.student.grade != grade:
-                        continue
-                    if section and mark.student.section != section:
-                        continue
-                    if dt.max_marks:
-                        pcts.append(round(mark.marks_obtained / dt.max_marks * 100, 1))
-            dt_avgs.append(safe_avg(pcts) if pcts else 0)
-        subject_dt_avgs[subject] = dt_avgs
+            # collect across all matching grades
+            for g in (DT_GRADES if not grade else [grade]):
+                key = (subject, n, g)
+                pcts.extend(class_lookup.get(key, []))
+            avgs.append(safe_avg(pcts) if pcts else 0)
+        subject_dt_avgs[subject] = avgs
  
-    # ── Grade summary (for cross-grade view) ──────────────────────────────────
+    # ── 7. Grade summary (for cross-grade view) ───────────────────────────────
     target_grades = [grade] if grade else DT_GRADES
     grades_summary = []
     for g in target_grades:
         g_students = User.query.filter_by(role='student', grade=g).all()
         g_ids      = {s.id for s in g_students}
+        g_marks    = [m for m in all_marks if m.student_id in g_ids]
         sub_avgs_g = {}
         all_pcts_g = []
         for subject in DT_SUBJECTS:
-            dts = DiagnosticTest.query.filter_by(
-                subject=subject, grade=g, academic_year=academic_year
-            ).all()
             pcts = []
-            for dt in dts:
-                for mark in dt.marks:
-                    if mark.student_id in g_ids and dt.max_marks:
-                        pcts.append(round(mark.marks_obtained / dt.max_marks * 100, 1))
+            for m in g_marks:
+                dt = dt_map.get(m.dt_id)
+                if dt and dt.subject == subject and dt.max_marks:
+                    pcts.append(round(m.marks_obtained / dt.max_marks * 100, 1))
             sub_avgs_g[subject] = safe_avg(pcts) if pcts else 0
             all_pcts_g.extend(pcts)
         grades_summary.append({
-            'grade': g,
+            'grade':        g,
             'student_count': len(g_students),
-            'subject_avgs': sub_avgs_g,
-            'overall_avg': safe_avg(all_pcts_g) if all_pcts_g else 0,
+            'subject_avgs':  sub_avgs_g,
+            'overall_avg':   safe_avg(all_pcts_g) if all_pcts_g else 0,
         })
  
     return {
