@@ -27,6 +27,32 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'pool_recycle': 300,
 }
 db = SQLAlchemy(app)
+import time
+from functools import wraps
+ 
+# ── Simple time-based cache ───────────────────────────────────────────────────
+_cache = {}          # { cache_key: (timestamp, data) }
+CACHE_TTL = 120      # seconds — analytics cached for 2 minutes
+ 
+ 
+def cache_get(key):
+    """Return cached value if still fresh, else None."""
+    if key in _cache:
+        ts, data = _cache[key]
+        if time.time() - ts < CACHE_TTL:
+            return data
+    return None
+ 
+ 
+def cache_set(key, data):
+    _cache[key] = (time.time(), data)
+ 
+ 
+def cache_clear(prefix=''):
+    """Call after any write operation to invalidate stale analytics."""
+    keys_to_delete = [k for k in _cache if k.startswith(prefix)]
+    for k in keys_to_delete:
+        del _cache[k]
 
 SUBJECTS  = ['English', 'Mathematics', 'Science', 'Reasoning']
 DT_SUBJECTS = ['English', 'Hindi', 'Maths', 'Science', 'Urdu', 'ICT']
