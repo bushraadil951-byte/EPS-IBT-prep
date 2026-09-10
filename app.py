@@ -785,35 +785,6 @@ def assessment_cross_grade_analytics(atype, academic_year=ACADEMIC_YEAR):
 @app.route('/health')
 def health():
     return 'OK', 200
-    
-# ── PORTAL HOME (the "choose IBT or DT" landing screen) ─────────────────────
-
-@app.route('/portal')
-def portal_home():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
- 
-    role    = session.get('role')
-    modules = PORTAL_MODULES.get(role, [])
-    label   = PORTAL_ROLE_LABELS.get(role, role)
- 
-    # Filter out any module whose endpoint doesn't exist yet
-    # (e.g. assessment_hub may not be built) — prevents 500 errors
-    valid_modules = []
-    for m in modules:
-        try:
-            url_for(m['endpoint'])
-            valid_modules.append(m)
-        except Exception:
-            pass   # silently skip missing endpoints
- 
-    return render_template(
-        'portal_home.html',
-        modules=valid_modules,
-        role_label=label,
-        user_name=session.get('name', ''),
-    )
- 
 
 # ── AUTH ──────────────────────────────────────────────────────────────────────
 
