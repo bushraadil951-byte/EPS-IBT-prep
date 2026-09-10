@@ -1063,7 +1063,45 @@ def admin_questions(test_id):
     questions = json.loads(test.questions or '[]')
     return render_template('admin/questions.html', test=test, questions=questions, subject_sections=subject_sections)
 
-
+@app.route('/admin/tests/<int:test_id>/recalculate', methods=['POST'])
+@login_required('Resource_Manager')
+def recalculate_results(test_id):
+    test = db.session.get(MockTest, test_id)
+    if not test:
+        flash('Test not found.', 'error')
+        return redirect(url_for('admin_tests'))
+    
+    questions = json.loads(test.questions or '[]')
+    answer_key = {str(q['id']): q['answer'] for q in questions}
+    total = len(questions)
+    
+    results = TestResult.query.filter_by(test_id=test_id).all()
+    updated = 0
+    
+    for result in results:
+        answers = json.loads(result.answers or '{}')
+        score = 0
+        section_scores = {}
+        
+        for q in questions:
+            qid = str(q['id'])
+            sec = q.get('section', 'General')
+            section_scores.setdefault(sec, {'correct':0,'total':0})
+            section_scores[sec]['total'] += 1
+            if qid in answers and answers[qid] == answer_key[qid]:
+                score += 1
+                section_scores[sec]['correct'] += 1
+        
+        result.score = score
+        result.total = total
+        result.percent = round(score/total*100, 1) if total else 0
+        result.section_scores = json.dumps(section_scores)
+        updated += 1
+    
+    db.session.commit()
+    flash(f'✅ Recalculated {updated} student results with updated answer key!', 'success')
+    return redirect(url_for('admin_questions', test_id=test_id))
+ 
 @app.route('/admin/tests/<int:test_id>/upload-pdf', methods=['POST'])
 @login_required('Resource_Manager')
 def upload_pdf_questions(test_id):
@@ -1091,7 +1129,6 @@ def upload_pdf_questions(test_id):
     except Exception as e:
         flash(f'Error reading PDF: {str(e)}', 'error')
     return redirect(url_for('admin_questions', test_id=test_id))
-
 
 @app.route('/admin/questions/edit/<int:test_id>/<int:q_id>', methods=['POST'])
 @login_required('Resource_Manager')
