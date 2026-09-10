@@ -2103,82 +2103,157 @@ def dt_latest_available_number(series):
 
 
 def dt_grade_analytics(grade, section=None, academic_year=ACADEMIC_YEAR):
-    """Aggregated diagnostic analytics for a single grade (optionally one
-    section): subject x DT-number class averages, subject overall averages,
-    and a ranked list of students with their own diagnostic average."""
-    query = User.query.filter_by(role='student', grade=grade)
+    """
+    Fast version — replaces the old one that called dt_student_series()
+    once per student (causing hundreds of DB queries).
+    Now uses 2 bulk queries regardless of student count.
+    """
+    # ONE query — all diagnostic tests for this grade
+    all_dts = DiagnosticTest.query.filter_by(
+        grade=grade, academic_year=academic_year
+    ).all()
+    dt_map = {dt.id: dt for dt in all_dts}
+
+    if not dt_map:
+        students = User.query.filter_by(role='student', grade=grade).all()
+        return {
+            'students': students,
+            'subject_dt_avg': {s: [None]*len(DT_NUMBERS) for s in DT_SUBJECTS},
+            'subject_overall_avg': {s: None for s in DT_SUBJECTS},
+            'student_rows': [],
+            'class_overall_avg': None,
+        }
+
+    # ONE query — all marks for those tests
+    all_marks = (DTMark.query
+                 .filter(DTMark.dt_id.in_(list(dt_map.keys())))
+                 .join(User, DTMark.student_id == User.id)
+                 .all())
+
+    # Load students
+    sq = User.query.filter_by(role='student', grade=grade)
     if section:
-        query = query.filter_by(section=section)
-    students = query.order_by(User.name).all()
+        sq = sq.filter_by(section=section)
+    students    = sq.order_by(User.name).all()
+    student_ids = {s.id for s in students}
 
-    per_student_series = {s.id: dt_student_series(s.id, academic_year) for s in students}
+    # Filter marks to requested students only
+    marks = [m for m in all_marks if m.student_id in student_ids]
 
+    # Build lookup: (student_id, subject, dt_number) → percentage
+    mark_lookup = {}
+    for m in marks:
+        dt = dt_map.get(m.dt_id)
+        if not dt or not dt.max_marks:
+            continue
+        pct = round(m.marks_obtained / dt.max_marks * 100, 1)
+        mark_lookup[(m.student_id, dt.subject, dt.dt_number)] = pct
+
+    # Subject × DT class averages
     subject_dt_avg = {}
     subject_overall_avg = {}
     for sub in DT_SUBJECTS:
-        per_dt_vals = []
-        for idx in range(len(DT_NUMBERS)):
-            vals = [per_student_series[s.id][sub][idx]['pct']
+        per_dt = []
+        for n in DT_NUMBERS:
+            vals = [mark_lookup[(s.id, sub, n)]
                     for s in students
-                    if per_student_series[s.id][sub][idx]['pct'] is not None]
-            per_dt_vals.append(safe_avg(vals) if vals else None)
-        subject_dt_avg[sub] = per_dt_vals
-        flat_vals = [v for v in per_dt_vals if v is not None]
-        subject_overall_avg[sub] = safe_avg(flat_vals) if flat_vals else None
+                    if (s.id, sub, n) in mark_lookup]
+            per_dt.append(safe_avg(vals) if vals else None)
+        subject_dt_avg[sub] = per_dt
+        flat = [v for v in per_dt if v is not None]
+        subject_overall_avg[sub] = safe_avg(flat) if flat else None
 
+    # Per-student rows
     student_rows = []
     for s in students:
-        insights = dt_student_insights(per_student_series[s.id])
-        overall_vals = [i['average'] for i in insights if i['average'] is not None]
-        overall_avg = safe_avg(overall_vals) if overall_vals else None
-        weak = [i['subject'] for i in insights if i['average'] is not None and i['average'] < 60]
+        all_pcts = [mark_lookup[(s.id, sub, n)]
+                    for sub in DT_SUBJECTS
+                    for n in DT_NUMBERS
+                    if (s.id, sub, n) in mark_lookup]
+        sub_avgs = []
+        for sub in DT_SUBJECTS:
+            pcts = [mark_lookup[(s.id, sub, n)]
+                    for n in DT_NUMBERS
+                    if (s.id, sub, n) in mark_lookup]
+            sub_avgs.append(safe_avg(pcts) if pcts else None)
+        overall_avg = safe_avg(all_pcts) if all_pcts else None
+        weak = [DT_SUBJECTS[i] for i, v in enumerate(sub_avgs)
+                if v is not None and v < 60]
         student_rows.append({
-            'id': s.id, 'name': s.name, 'section': s.section,
-            'overall_avg': overall_avg, 'weak_subjects': weak,
+            'id':           s.id,
+            'name':         s.name,
+            'section':      s.section,
+            'overall_avg':  overall_avg,
+            'weak_subjects': weak,
         })
     student_rows.sort(key=lambda x: (x['overall_avg'] is None, -(x['overall_avg'] or 0)))
 
-    class_overall_vals = [r['overall_avg'] for r in student_rows if r['overall_avg'] is not None]
-    class_overall_avg = safe_avg(class_overall_vals) if class_overall_vals else None
+    class_vals = [r['overall_avg'] for r in student_rows if r['overall_avg'] is not None]
 
     return {
-        'students': students,
-        'subject_dt_avg': subject_dt_avg,
+        'students':            students,
+        'subject_dt_avg':      subject_dt_avg,
         'subject_overall_avg': subject_overall_avg,
-        'student_rows': student_rows,
-        'class_overall_avg': class_overall_avg,
+        'student_rows':        student_rows,
+        'class_overall_avg':   safe_avg(class_vals) if class_vals else None,
     }
 
 
 def dt_cross_grade_analytics(academic_year=ACADEMIC_YEAR):
-    """Aggregated diagnostic analytics across every grade, for comparing
-    grades against each other: per-grade overall average and per-subject
-    average, plus student/data counts."""
+    """
+    Fast version — replaces the old one that called dt_student_series()
+    per student per grade (causing thousands of DB queries).
+    Now uses 2 bulk queries for everything.
+    """
+    # ONE query — all DTs for this academic year
+    all_dts = DiagnosticTest.query.filter_by(academic_year=academic_year).all()
+    dt_map  = {dt.id: dt for dt in all_dts}
+
+    # ONE query — all marks
+    all_marks = []
+    if dt_map:
+        all_marks = (DTMark.query
+                     .filter(DTMark.dt_id.in_(list(dt_map.keys())))
+                     .join(User, DTMark.student_id == User.id)
+                     .all())
+
+    # Build lookup: (student_id, subject, dt_number, grade) → percentage
+    mark_lookup = {}
+    for m in all_marks:
+        dt = dt_map.get(m.dt_id)
+        if not dt or not dt.max_marks:
+            continue
+        pct = round(m.marks_obtained / dt.max_marks * 100, 1)
+        mark_lookup[(m.student_id, dt.subject, dt.dt_number, dt.grade)] = pct
+
+    # Load all students grouped by grade
+    all_students = User.query.filter_by(role='student').all()
+    students_by_grade = {}
+    for s in all_students:
+        students_by_grade.setdefault(s.grade, []).append(s)
+
     grade_data = {}
     for grade in DT_GRADES:
-        students = User.query.filter_by(role='student', grade=grade).all()
-        if not students:
-            grade_data[grade] = {
-                'students': 0, 'overall_avg': None,
-                'subject_avg': {sub: None for sub in DT_SUBJECTS},
-            }
-            continue
-        per_student_series = {s.id: dt_student_series(s.id, academic_year) for s in students}
+        students   = students_by_grade.get(grade, [])
+        s_ids      = {s.id for s in students}
         subject_avg = {}
-        all_vals = []
+        all_vals    = []
+
         for sub in DT_SUBJECTS:
-            vals = []
-            for s in students:
-                vals.extend(p['pct'] for p in per_student_series[s.id][sub] if p['pct'] is not None)
+            vals = [mark_lookup[(sid, sub, n, grade)]
+                    for sid in s_ids
+                    for n in DT_NUMBERS
+                    if (sid, sub, n, grade) in mark_lookup]
             subject_avg[sub] = safe_avg(vals) if vals else None
             all_vals.extend(vals)
+
         grade_data[grade] = {
-            'students': len(students),
+            'students':    len(students),
             'overall_avg': safe_avg(all_vals) if all_vals else None,
             'subject_avg': subject_avg,
         }
-    return grade_data
 
+    return grade_data
 
 def _draw_subject_bar_chart(c, series, dt_number, top_y, chart_width=460):
     """Draws a bar chart of each subject's percentage score for one specific
