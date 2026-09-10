@@ -831,6 +831,26 @@ def login():
         flash('Invalid username or password.', 'error')
     return render_template('login.html')
 
+@app.route('/portal')
+def portal_home():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    role    = session.get('role')
+    modules = PORTAL_MODULES.get(role, [])
+    label   = PORTAL_ROLE_LABELS.get(role, role)
+    valid_modules = []
+    for m in modules:
+        try:
+            url_for(m['endpoint'])
+            valid_modules.append(m)
+        except Exception:
+            pass
+    return render_template('portal_home.html',
+        modules=valid_modules,
+        role_label=label,
+        user_name=session.get('name', ''),
+        academic_year=ACADEMIC_YEAR,
+    )
 @app.route('/logout')
 def logout():
     session.clear()
