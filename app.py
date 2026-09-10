@@ -788,15 +788,32 @@ def health():
     
 # ── PORTAL HOME (the "choose IBT or DT" landing screen) ─────────────────────
 
-@app.route('/home')
-@login_required()
+@app.route('/portal')
 def portal_home():
-    role = session.get('role')
-    modules_def = PORTAL_MODULES.get(role, [])
-    modules = [dict(m, url=url_for(m['endpoint'], **m.get('endpoint_args', {}))) for m in modules_def]
-    return render_template('portal_home.html',
-        modules=modules,
-        role_label=PORTAL_ROLE_LABELS.get(role, role))
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+ 
+    role    = session.get('role')
+    modules = PORTAL_MODULES.get(role, [])
+    label   = PORTAL_ROLE_LABELS.get(role, role)
+ 
+    # Filter out any module whose endpoint doesn't exist yet
+    # (e.g. assessment_hub may not be built) — prevents 500 errors
+    valid_modules = []
+    for m in modules:
+        try:
+            url_for(m['endpoint'])
+            valid_modules.append(m)
+        except Exception:
+            pass   # silently skip missing endpoints
+ 
+    return render_template(
+        'portal_home.html',
+        modules=valid_modules,
+        role_label=label,
+        user_name=session.get('name', ''),
+    )
+ 
 
 # ── AUTH ──────────────────────────────────────────────────────────────────────
 
