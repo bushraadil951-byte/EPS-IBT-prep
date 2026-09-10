@@ -1895,67 +1895,59 @@ def dt_student_insights(series):
 # Add this helper function right after dt_student_insights() 
  
 def build_dt_analytics(grade=None, section=None, academic_year=None):
-    """
-    Optimized: loads all DT marks in 2 bulk queries instead of
-    (n_students × n_subjects × n_dts) individual ones.
-    """
     if academic_year is None:
         academic_year = ACADEMIC_YEAR
  
-    # ── 1. Load ALL relevant DiagnosticTests in one query ────────────────────
+    # Step 1 — Load ALL diagnostic tests in ONE single query
     dt_q = DiagnosticTest.query.filter_by(academic_year=academic_year)
     if grade:
         dt_q = dt_q.filter_by(grade=grade)
     all_dts = dt_q.all()
-    dt_map  = {dt.id: dt for dt in all_dts}   # id → DiagnosticTest
+    dt_map  = {dt.id: dt for dt in all_dts}
  
-    # ── 2. Load ALL DTMarks for those tests in one query ─────────────────────
-    dt_ids = [dt.id for dt in all_dts]
-    if not dt_ids:
-        # No DTs configured yet — return empty structure
+    if not dt_map:
         return {
             'grades_summary':  [],
-            'subject_dt_avgs': {s: [0]*len(DT_NUMBERS) for s in DT_SUBJECTS},
+            'subject_dt_avgs': {s: [0] * len(DT_NUMBERS) for s in DT_SUBJECTS},
             'ranked_students': [],
             'subjects':        DT_SUBJECTS,
             'dt_numbers':      DT_NUMBERS,
             'student_count':   0,
         }
  
+    # Step 2 — Load ALL marks for those tests in ONE single query
     all_marks = (DTMark.query
-                 .filter(DTMark.dt_id.in_(dt_ids))
+                 .filter(DTMark.dt_id.in_(list(dt_map.keys())))
                  .join(User, DTMark.student_id == User.id)
                  .all())
  
-    # ── 3. Load students ──────────────────────────────────────────────────────
+    # Step 3 — Load students
     sq = User.query.filter_by(role='student')
-    if grade:   sq = sq.filter_by(grade=grade)
-    if section: sq = sq.filter_by(section=section)
+    if grade:
+        sq = sq.filter_by(grade=grade)
+    if section:
+        sq = sq.filter_by(section=section)
     students    = sq.order_by(User.name).all()
-    student_map = {s.id: s for s in students}
     student_ids = {s.id for s in students}
  
-    # Filter marks to the requested students
+    # Filter marks to only the requested students
     marks = [m for m in all_marks if m.student_id in student_ids]
-    # Also respect section filter
     if section:
-        marks = [m for m in marks if student_map.get(m.student_id) and
-                 student_map[m.student_id].section == section]
+        sec_ids = {s.id for s in students if s.section == section}
+        marks   = [m for m in marks if m.student_id in sec_ids]
  
-    # ── 4. Build lookup: (student_id, subject, dt_number) → pct ──────────────
-    mark_lookup = {}   # (student_id, subject, dt_number) → pct
-    class_lookup = {}  # (subject, dt_number, grade) → [pcts]  for class avg
- 
+    # Step 4 — Build a fast lookup dictionary (no more nested queries)
+    mark_lookup  = {}   # (student_id, subject, dt_number) → percentage
+    class_lookup = {}   # (subject, dt_number, grade)      → [percentages]
     for m in marks:
-        dt  = dt_map.get(m.dt_id)
+        dt = dt_map.get(m.dt_id)
         if not dt or not dt.max_marks:
             continue
         pct = round(m.marks_obtained / dt.max_marks * 100, 1)
         mark_lookup[(m.student_id, dt.subject, dt.dt_number)] = pct
-        key = (dt.subject, dt.dt_number, dt.grade)
-        class_lookup.setdefault(key, []).append(pct)
+        class_lookup.setdefault((dt.subject, dt.dt_number, dt.grade), []).append(pct)
  
-    # ── 5. Per-student subject averages ──────────────────────────────────────
+    # Step 5 — Per-student averages (pure Python, zero DB hits)
     ranked = []
     for s in students:
         sub_avgs = {}
@@ -1967,32 +1959,32 @@ def build_dt_analytics(grade=None, section=None, academic_year=None):
             sub_avgs[subject] = safe_avg(pcts) if pcts else None
             all_pcts.extend(pcts)
         ranked.append({
-            'id': s.id, 'name': s.name, 'username': s.username,
-            'grade': s.grade, 'section': s.section or '',
-            'avg_pct':     safe_avg(all_pcts) if all_pcts else 0,
+            'id':           s.id,
+            'name':         s.name,
+            'username':     s.username,
+            'grade':        s.grade,
+            'section':      s.section or '',
+            'avg_pct':      safe_avg(all_pcts) if all_pcts else 0,
             'subject_avgs': sub_avgs,
         })
     ranked.sort(key=lambda x: -x['avg_pct'])
  
-    # ── 6. Subject × DT class averages (for trend chart) ─────────────────────
+    # Step 6 — Subject × DT class averages for trend chart
     subject_dt_avgs = {}
     for subject in DT_SUBJECTS:
         avgs = []
         for n in DT_NUMBERS:
             pcts = []
-            # collect across all matching grades
-            for g in (DT_GRADES if not grade else [grade]):
-                key = (subject, n, g)
-                pcts.extend(class_lookup.get(key, []))
+            for g in ([grade] if grade else DT_GRADES):
+                pcts.extend(class_lookup.get((subject, n, g), []))
             avgs.append(safe_avg(pcts) if pcts else 0)
         subject_dt_avgs[subject] = avgs
  
-    # ── 7. Grade summary (for cross-grade view) ───────────────────────────────
-    target_grades = [grade] if grade else DT_GRADES
+    # Step 7 — Grade summary for cross-grade page
+    target_grades  = [grade] if grade else DT_GRADES
     grades_summary = []
     for g in target_grades:
-        g_students = User.query.filter_by(role='student', grade=g).all()
-        g_ids      = {s.id for s in g_students}
+        g_ids      = {s.id for s in User.query.filter_by(role='student', grade=g).all()}
         g_marks    = [m for m in all_marks if m.student_id in g_ids]
         sub_avgs_g = {}
         all_pcts_g = []
@@ -2005,8 +1997,8 @@ def build_dt_analytics(grade=None, section=None, academic_year=None):
             sub_avgs_g[subject] = safe_avg(pcts) if pcts else 0
             all_pcts_g.extend(pcts)
         grades_summary.append({
-            'grade':        g,
-            'student_count': len(g_students),
+            'grade':         g,
+            'student_count': len(g_ids),
             'subject_avgs':  sub_avgs_g,
             'overall_avg':   safe_avg(all_pcts_g) if all_pcts_g else 0,
         })
@@ -2018,8 +2010,7 @@ def build_dt_analytics(grade=None, section=None, academic_year=None):
         'subjects':        DT_SUBJECTS,
         'dt_numbers':      DT_NUMBERS,
         'student_count':   len(students),
-    }
- 
+    } 
 # ── DT GRADE ANALYTICS ────────────────────────────────────────────────────────
  
 @app.route('/teacher/dt/analytics', endpoint='teacher_dt_analytics')
