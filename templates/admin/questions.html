@@ -14,6 +14,15 @@
   <span style="background:{{ '#dcfce7' if test.status=='active' else '#fef9c3' }};color:{{ '#166534' if test.status=='active' else '#92400e' }};padding:4px 12px;border-radius:10px;font-size:.82rem">{{ test.status }}</span>
   <span style="font-size:.82rem;color:var(--ink3);margin-left:auto">{{ questions|length }} question{{ 's' if questions|length != 1 }}</span>
 </div>
+<form method="POST" action="/admin/tests/{{ test.id }}/recalculate"
+      onsubmit="return confirm('Recalculate all student results using the current answer key?')"
+      style="display:inline">
+  <button type="submit"
+    style="background:#f59e0b;color:#fff;border:none;padding:7px 14px;
+           border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer">
+    🔄 Recalculate Results
+  </button>
+</form>
 
 <!-- PDF Import -->
 <div class="card" style="margin-bottom:20px;border:2px dashed #c7d2fe;background:#f5f7ff">
