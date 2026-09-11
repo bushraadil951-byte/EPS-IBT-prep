@@ -4,16 +4,14 @@
 {% block content %}
 <div class="portal-wrap">
 
-  <div class="portal-header">
-    <div class="portal-greeting">
-      <div class="portal-avatar">{{ user_name[:2].upper() }}</div>
-      <div>
-        <div class="portal-name">{{ user_name }}</div>
-        <div class="portal-role">{{ role_label }} · Eastern Public School</div>
-      </div>
+<div class="portal-header">
+  <div class="portal-greeting">
+    <div>
+      <div class="portal-welcome">Welcome to the Hub</div>
+      <div class="portal-name">{{ user_name }}</div>
     </div>
-    <a href="{{ url_for('logout') }}" class="btn-signout">Sign out</a>
   </div>
+</div>
 
   <div class="portal-title-row">
     <h2 class="portal-title">PYP Academic Hub</h2>
