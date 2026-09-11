@@ -6,4 +6,5 @@ psycopg2cffi==2.9.0
 pypdf==4.3.1
 openpyxl==3.1.5
 reportlab
+packaging
 gevent>=24.10.1
