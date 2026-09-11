@@ -1432,7 +1432,7 @@ def ib_atl():
 
 
 @app.route('/ib/learner-profile', methods=['GET', 'POST'])
-@login_required('Resource_Manager')
+@login_required(('Resource_Manager', 'teacher'))
 def ib_learner_profile():
     students = User.query.filter_by(role='student').order_by(User.grade, User.name).all()
     if request.method == 'POST':
