@@ -33,7 +33,24 @@
   </div>
 
 </div>
-
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px">
+  <a
+    {% if not grade_locked %}
+  
+    href="/{{ role_prefix }}/dt/cross-grade-analytics"
+    class="card"
+    style="text-decoration:none;display:block"
+  >
+    <div style="font-size:1.4rem;margin-bottom:6px">🏫</div>
+    <div style="font-weight:800;color:#1e293b">
+      Cross-Grade Analytics
+    </div>
+    <div style="font-size:.78rem;color:#64748b;margin-top:4px">
+      Compare overall and subject-wise performance across every grade.
+    </div>
+  </a>
+  {% endif %}
+</div>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:20px">
 
   <div class="card" style="text-align:center">
@@ -100,53 +117,6 @@
 
 </div>
 
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px">
 
-  <a
-    href="/{{ role_prefix }}/dt/grade-analytics"
-    class="card"
-    style="text-decoration:none;display:block"
-  >
-    <div style="font-size:1.4rem;margin-bottom:6px">📊</div>
-    <div style="font-weight:800;color:#1e293b">
-      Grade Analytics
-    </div>
-    <div style="font-size:.78rem;color:#64748b;margin-top:4px">
-      Subject-wise averages, DT-by-DT trends and a ranked student list for one grade/section.
-    </div>
-  </a>
-
-  <a
-    {% if not grade_locked %}
-  
-    href="/{{ role_prefix }}/dt/cross-grade-analytics"
-    class="card"
-    style="text-decoration:none;display:block"
-  >
-    <div style="font-size:1.4rem;margin-bottom:6px">🏫</div>
-    <div style="font-weight:800;color:#1e293b">
-      Cross-Grade Analytics
-    </div>
-    <div style="font-size:.78rem;color:#64748b;margin-top:4px">
-      Compare overall and subject-wise performance across every grade.
-    </div>
-  </a>
-  {% endif %}
-
-  <a
-    href="/{{ role_prefix }}/dt/graph"
-    class="card"
-    style="text-decoration:none;display:block"
-  >
-    <div style="font-size:1.4rem;margin-bottom:6px">📈</div>
-    <div style="font-weight:800;color:#1e293b">
-      Student Progress Graphs
-    </div>
-    <div style="font-size:.78rem;color:#64748b;margin-top:4px">
-      View one student's trend across all subjects, and download PDF reports.
-    </div>
-  </a>
-
-</div>
 
 {% endblock %}
