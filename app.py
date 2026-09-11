@@ -1481,7 +1481,7 @@ def ib_learner_profile():
 
 
 @app.route('/ib/report/<int:student_id>')
-@login_required('Resource_Manager')
+@login_required(('Resource_Manager', 'teacher'))
 def ib_student_report(student_id):
     student = db.session.get(User, student_id)
     if not student:
