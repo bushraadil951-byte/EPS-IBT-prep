@@ -1364,7 +1364,7 @@ def download_results_template():
 # ── IB HOLISTIC ROUTES ────────────────────────────────────────────────────────
 
 @app.route('/ib')
-@login_required('Resource_Manager')
+@login_required(('Resource_Manager', 'teacher'))
 def ib_dashboard():
     students = User.query.filter_by(role='student').all()
     total_atl = ATLRating.query.count()
