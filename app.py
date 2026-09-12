@@ -18,6 +18,7 @@ compat.register()
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'eps-ibt-portal-secret-key')
 app.jinja_env.filters['from_json'] = json.loads
+app.jinja_env.globals['enumerate'] = enumerate
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
     'DATABASE_URL', 'sqlite:///database.db'
 ).replace('postgres://', 'postgresql://')
