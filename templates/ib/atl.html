@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}ATL Skills Rating{% endblock %}
+{% block page_title %}ATL Skills{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-bottom:1.25rem">
+  <form method="GET" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+    <div>
+      <label style="display:block;font-size:.75rem;font-weight:600;color:#475569;margin-bottom:4px">Student</label>
+      <select name="student_id" onchange="this.form.submit()"
+        style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.83rem;min-width:200px">
+        <option value="">— Select student —</option>
+        {% for s in students %}
+        <option value="{{ s.id }}" {% if s.id == selected_student %}selected{% endif %}>
+          {{ s.name }} ({{ s.grade }} {{ s.section }})
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label style="display:block;font-size:.75rem;font-weight:600;color:#475569;margin-bottom:4px">Term</label>
+      <select name="term" onchange="this.form.submit()"
+        style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.83rem">
+        {% for t in terms %}
+        <option value="{{ t }}" {% if t == selected_term %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </form>
+</div>
+
+{% if selected_student %}
+{% for skill, grade_descriptors in atl_skills.items() %}
+{% set student_obj = students | selectattr('id', 'equalto', selected_student) | first %}
+{% set descriptors = grade_descriptors.get(student_obj.grade if student_obj else 'Grade 3', []) %}
+
+<form method="POST" style="margin-bottom:1rem">
+  <input type="hidden" name="student_id" value="{{ selected_student }}">
+  <input type="hidden" name="term" value="{{ selected_term }}">
+  <input type="hidden" name="skill" value="{{ skill }}">
+
+  <div class="card">
+    <h3 style="font-size:.95rem;font-weight:700;color:#0f172a;margin-bottom:1rem">🎯 {{ skill }}</h3>
+    {% for i, desc in enumerate(descriptors) %}
+    <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #f1f5f9">
+      <div style="flex:1;font-size:.83rem;color:#374151">{{ desc }}</div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        {% for val, label in rating_scale.items() %}
+        <label style="cursor:pointer;text-align:center">
+          <input type="radio" name="rating_{{ i }}" value="{{ val }}"
+            {% if existing_ratings.get((skill, desc)) == val %}checked{% endif %}
+            style="display:none">
+          <div style="width:36px;padding:4px 2px;border:2px solid {% if existing_ratings.get((skill, desc)) == val %}#6366f1{% else %}#e2e8f0{% endif %};
+               border-radius:6px;font-size:.72rem;font-weight:600;text-align:center;
+               background:{% if existing_ratings.get((skill, desc)) == val %}#eff6ff{% else %}#f8fafc{% endif %};
+               color:{% if existing_ratings.get((skill, desc)) == val %}#6366f1{% else %}#94a3b8{% endif %}">
+            {{ val }}
+          </div>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+    {% else %}
+    <p style="color:#94a3b8;font-size:.83rem">No descriptors for this grade.</p>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary btn-sm" style="margin-top:.75rem">
+      Save {{ skill }}
+    </button>
+  </div>
+</form>
+{% endfor %}
+
+{% else %}
+<div class="card" style="text-align:center;padding:3rem;color:#94a3b8">
+  <div style="font-size:2rem;margin-bottom:.5rem">👆</div>
+  <div>Select a student above to rate ATL skills</div>
+</div>
+{% endif %}
+{% endblock %}
