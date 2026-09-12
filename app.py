@@ -1383,7 +1383,11 @@ def ib_dashboard():
 @app.route('/ib/atl', methods=['GET', 'POST'])
 @login_required(('Resource_Manager', 'teacher'))
 def ib_atl():
-    students = User.query.filter_by(role='student').order_by(User.grade, User.name).all()
+    current_user_obj = db.session.get(User, session['user_id'])
+sq = User.query.filter_by(role='student')
+if current_user_obj.role == 'teacher' and current_user_obj.grade:
+    sq = sq.filter_by(grade=current_user_obj.grade)
+students = sq.order_by(User.grade, User.name).all()
     if request.method == 'POST':
         student_id = int(request.form.get('student_id'))
         term       = request.form.get('term')
@@ -1434,7 +1438,11 @@ def ib_atl():
 @app.route('/ib/learner-profile', methods=['GET', 'POST'])
 @login_required(('Resource_Manager', 'teacher'))
 def ib_learner_profile():
-    students = User.query.filter_by(role='student').order_by(User.grade, User.name).all()
+    current_user_obj = db.session.get(User, session['user_id'])
+sq = User.query.filter_by(role='student')
+if current_user_obj.role == 'teacher' and current_user_obj.grade:
+    sq = sq.filter_by(grade=current_user_obj.grade)
+students = sq.order_by(User.grade, User.name).all()
     if request.method == 'POST':
         student_id = int(request.form.get('student_id'))
         term       = request.form.get('term')
