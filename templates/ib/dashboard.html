@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% block title %}IB Profile Dashboard{% endblock %}
 {% block page_title %}IB Profile Development{% endblock %}
+<a href="{{ url_for('ib_learner_profile') }}" class="btn btn-primary">🌱 Rate Learner Profile</a>
+<a href="{{ url_for('ib_atl') }}" class="btn btn-secondary">🎯 Rate ATL Skills</a>
 
 {% block content %}
 <div style="display:flex;gap:10px;margin-bottom:1.5rem;flex-wrap:wrap">
