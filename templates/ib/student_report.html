@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}IB Report — {{ student.name }}{% endblock %}
+{% block page_title %}IB Report — {{ student.name }}{% endblock %}
+
+{% block back_button %}
+<a href="{{ url_for('ib_dashboard') }}" class="btn btn-sm btn-secondary">← Back</a>
+{% endblock %}
+
+{% block content %}
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem">
+  <div class="card">
+    <div style="font-size:.75rem;color:#64748b;margin-bottom:2px">Student</div>
+    <div style="font-size:1.1rem;font-weight:700;color:#0f172a">{{ student.name }}</div>
+    <div style="font-size:.83rem;color:#64748b">{{ student.grade }} · Section {{ student.section or '—' }}</div>
+  </div>
+  <div class="card">
+    <div style="font-size:.75rem;color:#64748b;margin-bottom:2px">IBT Performance</div>
+    {% if test_results %}
+    <div style="font-size:1.1rem;font-weight:700;color:#6366f1">
+      {{ (test_results | map(attribute='percent') | list | sum / test_results|length) | round(1) }}%
+    </div>
+    <div style="font-size:.83rem;color:#64748b">avg across {{ test_results|length }} test(s)</div>
+    {% else %}
+    <div style="color:#94a3b8;font-size:.83rem">No test results yet</div>
+    {% endif %}
+  </div>
+</div>
+
+{% for term in terms %}
+{% set term_data = report.get(term, {}) %}
+{% set lp_data   = term_data.get('lp', {}) %}
+{% set atl_data  = term_data.get('atl', {}) %}
+
+<div class="card" style="margin-bottom:1.25rem">
+  <h3 style="font-size:1rem;font-weight:700;color:#0f172a;margin-bottom:1rem;
+             padding-bottom:.5rem;border-bottom:2px solid #6366f1">{{ term }}</h3>
+
+  {% if lp_data %}
+  <h4 style="font-size:.83rem;font-weight:600;color:#475569;margin-bottom:.75rem">🌱 Learner Profile</h4>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-bottom:1rem">
+    {% for attr, emoji, desc in learner_profile %}
+    {% set d = lp_data.get(attr) %}
+    {% if d %}
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:.75rem">
+      <div style="font-size:1rem">{{ emoji }}</div>
+      <div style="font-size:.78rem;font-weight:600;color:#1e293b;margin:3px 0">{{ attr }}</div>
+      {% if d.teacher %}
+      <div style="font-size:.72rem;color:#64748b">
+        Teacher: <span style="font-weight:600;color:{{ rating_colors[d.teacher] }}">
+          {{ d.teacher }} — {{ rating_scale[d.teacher] }}
+        </span>
+      </div>
+      {% endif %}
+      {% if d.student %}
+      <div style="font-size:.72rem;color:#64748b">
+        Self: <span style="font-weight:600;color:{{ rating_colors[d.student] }}">
+          {{ d.student }} — {{ rating_scale[d.student] }}
+        </span>
+      </div>
+      {% endif %}
+      {% if d.evidence %}
+      <div style="font-size:.7rem;color:#94a3b8;margin-top:4px;font-style:italic">{{ d.evidence }}</div>
+      {% endif %}
+    </div>
+    {% endif %}
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if atl_data %}
+  <h4 style="font-size:.83rem;font-weight:600;color:#475569;margin-bottom:.75rem">🎯 ATL Skills</h4>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px">
+    {% for skill, data in atl_data.items() %}
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:.75rem">
+      <div style="font-size:.83rem;font-weight:600;color:#1e293b;margin-bottom:4px">{{ skill }}</div>
+      <div style="font-size:1.1rem;font-weight:700;
+                  color:{% if data.avg >= 3 %}#10b981{% elif data.avg >= 2 %}#f59e0b{% else %}#ef4444{% endif %}">
+        {{ data.avg }} / 4
+      </div>
+      <div style="font-size:.72rem;color:#94a3b8">{{ rating_scale.get(data.avg|int, '') }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if not lp_data and not atl_data %}
+  <p style="color:#94a3b8;font-size:.83rem;text-align:center;padding:1rem">
+    No ratings recorded for {{ term }} yet.
+  </p>
+  {% endif %}
+</div>
+{% endfor %}
+{% endblock %}
