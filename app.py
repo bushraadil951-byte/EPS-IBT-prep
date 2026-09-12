@@ -3376,6 +3376,23 @@ def student_diagnostics():
 
 with app.app_context():
     db.create_all()
+    # Fix missing columns added after initial table creation
+    try:
+        db.engine.execute("ALTER TABLE lp_rating ADD COLUMN IF NOT EXISTS teacher_id INTEGER REFERENCES \"user\"(id)")
+    except Exception:
+        pass
+    try:
+        db.engine.execute("ALTER TABLE lp_rating ADD COLUMN IF NOT EXISTS rater_type VARCHAR(10) DEFAULT 'teacher'")
+    except Exception:
+        pass
+    try:
+        db.engine.execute("ALTER TABLE atl_rating ADD COLUMN IF NOT EXISTS teacher_id INTEGER REFERENCES \"user\"(id)")
+    except Exception:
+        pass
+    try:
+        db.engine.execute("ALTER TABLE atl_rating ADD COLUMN IF NOT EXISTS rater_type VARCHAR(10) DEFAULT 'teacher'")
+    except Exception:
+        pass
     seed_db()
 
 
