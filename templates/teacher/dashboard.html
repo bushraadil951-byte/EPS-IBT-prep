@@ -10,6 +10,11 @@
   <div class="stat-card"><div class="stat-icon" style="background:#fffbeb">✅</div><div class="stat-value">{{ results|length }}</div><div class="stat-label">Submissions</div></div>
   <div class="stat-card"><div class="stat-icon" style="background:#f5f3ff">📊</div><div class="stat-value">{{ avg_score }}%</div><div class="stat-label">Class Average</div></div>
 </div>
+<div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+  <a href="/portal" class="btn btn-secondary btn-sm">
+    🏠 Portal Home
+  </a>
+</div>
 <div class="card">
   <div class="sec-header"><div class="sec-title">Recent Submissions</div><a href="/teacher/analytics" class="btn btn-secondary btn-sm">Analytics →</a></div>
   {% if recent %}
