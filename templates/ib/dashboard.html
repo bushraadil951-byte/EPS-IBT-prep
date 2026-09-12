@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}IB Profile Dashboard{% endblock %}
+{% block page_title %}IB Profile Development{% endblock %}
+
+{% block content %}
+<div style="display:flex;gap:10px;margin-bottom:1.5rem;flex-wrap:wrap">
+  <a href="{{ url_for('ib_learner_profile') }}" class="btn btn-primary">🌱 Rate Learner Profile</a>
+  <a href="{{ url_for('ib_atl') }}" class="btn btn-secondary">🎯 Rate ATL Skills</a>
+</div>
+
+<!-- Stats row -->
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem">
+  <div class="card" style="text-align:center">
+    <div style="font-size:2rem;font-weight:800;color:#6366f1">{{ students|length }}</div>
+    <div style="font-size:.83rem;color:#64748b;margin-top:4px">Total Students</div>
+  </div>
+  <div class="card" style="text-align:center">
+    <div style="font-size:2rem;font-weight:800;color:#10b981">{{ total_lp }}</div>
+    <div style="font-size:.83rem;color:#64748b;margin-top:4px">LP Ratings Recorded</div>
+  </div>
+  <div class="card" style="text-align:center">
+    <div style="font-size:2rem;font-weight:800;color:#f59e0b">{{ total_atl }}</div>
+    <div style="font-size:.83rem;color:#64748b;margin-top:4px">ATL Ratings Recorded</div>
+  </div>
+</div>
+
+<!-- Learner Profile averages -->
+<div class="card" style="margin-bottom:1.5rem">
+  <h3 style="font-size:.95rem;font-weight:700;margin-bottom:1rem;color:#0f172a">Learner Profile — Class Averages</h3>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px">
+    {% for attr, emoji, desc in learner_profile %}
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:.875rem">
+      <div style="font-size:1.3rem;margin-bottom:4px">{{ emoji }}</div>
+      <div style="font-size:.83rem;font-weight:600;color:#1e293b;margin-bottom:4px">{{ attr }}</div>
+      {% set avg = lp_avgs.get(attr, 0) %}
+      <div style="font-size:1.2rem;font-weight:700;color:{% if avg >= 3 %}#10b981{% elif avg >= 2 %}#f59e0b{% else %}#94a3b8{% endif %}">
+        {{ avg if avg else '—' }}
+        <span style="font-size:.7rem;color:#94a3b8">/ 4</span>
+      </div>
+      <div style="font-size:.7rem;color:#94a3b8;margin-top:2px">{{ rating_scale.get(avg|int, 'No data') if avg else 'No data' }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Student list -->
+<div class="card">
+  <h3 style="font-size:.95rem;font-weight:700;margin-bottom:1rem;color:#0f172a">Students</h3>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Grade</th>
+        <th>Section</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for student in students %}
+      <tr>
+        <td><strong>{{ student.name }}</strong></td>
+        <td>{{ student.grade }}</td>
+        <td>{{ student.section or '—' }}</td>
+        <td>
+          <a href="{{ url_for('ib_student_report', student_id=student.id) }}"
+             class="btn btn-sm btn-secondary">View Report</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
