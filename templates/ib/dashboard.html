@@ -1,13 +1,27 @@
 {% extends "base.html" %}
 {% block title %}IB Profile Dashboard{% endblock %}
 {% block page_title %}IB Profile Development{% endblock %}
-<a href="{{ url_for('ib_learner_profile') }}" class="btn btn-primary">🌱 Rate Learner Profile</a>
-<a href="{{ url_for('ib_atl') }}" class="btn btn-secondary">🎯 Rate ATL Skills</a>
 
 {% block content %}
-<div style="display:flex;gap:10px;margin-bottom:1.5rem;flex-wrap:wrap">
-  <a href="{{ url_for('ib_learner_profile') }}" class="btn btn-primary">🌱 Rate Learner Profile</a>
-  <a href="{{ url_for('ib_atl') }}" class="btn btn-secondary">🎯 Rate ATL Skills</a>
+
+<!-- Two big action cards -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">
+  <a href="{{ url_for('ib_learner_profile') }}"
+     style="display:block;background:#6366f1;color:#fff;border-radius:12px;
+            padding:1.5rem;text-decoration:none;text-align:center;
+            transition:all .15s;box-shadow:0 4px 14px rgba(99,102,241,.25)">
+    <div style="font-size:2.2rem;margin-bottom:.5rem">🌱</div>
+    <div style="font-size:1rem;font-weight:700;margin-bottom:4px">Learner Profile</div>
+    <div style="font-size:.78rem;opacity:.85">Rate 10 IB attributes per student per UOI</div>
+  </a>
+  <a href="{{ url_for('ib_atl') }}"
+     style="display:block;background:#10b981;color:#fff;border-radius:12px;
+            padding:1.5rem;text-decoration:none;text-align:center;
+            transition:all .15s;box-shadow:0 4px 14px rgba(16,185,129,.25)">
+    <div style="font-size:2.2rem;margin-bottom:.5rem">🎯</div>
+    <div style="font-size:1rem;font-weight:700;margin-bottom:4px">ATL Skills</div>
+    <div style="font-size:.78rem;opacity:.85">Rate 5 skill categories per student per UOI</div>
+  </a>
 </div>
 
 <!-- Stats row -->
@@ -28,18 +42,23 @@
 
 <!-- Learner Profile averages -->
 <div class="card" style="margin-bottom:1.5rem">
-  <h3 style="font-size:.95rem;font-weight:700;margin-bottom:1rem;color:#0f172a">Learner Profile — Class Averages</h3>
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px">
+  <h3 style="font-size:.95rem;font-weight:700;margin-bottom:1rem;color:#0f172a">
+    🌱 Learner Profile — Class Averages (All UOIs)
+  </h3>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">
     {% for attr, emoji, desc in learner_profile %}
+    {% set avg = lp_avgs.get(attr, 0) %}
     <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:.875rem">
       <div style="font-size:1.3rem;margin-bottom:4px">{{ emoji }}</div>
-      <div style="font-size:.83rem;font-weight:600;color:#1e293b;margin-bottom:4px">{{ attr }}</div>
-      {% set avg = lp_avgs.get(attr, 0) %}
-      <div style="font-size:1.2rem;font-weight:700;color:{% if avg >= 3 %}#10b981{% elif avg >= 2 %}#f59e0b{% else %}#94a3b8{% endif %}">
+      <div style="font-size:.83rem;font-weight:600;color:#1e293b;margin-bottom:6px">{{ attr }}</div>
+      <div style="font-size:1.4rem;font-weight:800;
+                  color:{% if avg >= 3 %}#10b981{% elif avg >= 2 %}#f59e0b{% elif avg > 0 %}#ef4444{% else %}#94a3b8{% endif %}">
         {{ avg if avg else '—' }}
-        <span style="font-size:.7rem;color:#94a3b8">/ 4</span>
+        <span style="font-size:.7rem;color:#94a3b8;font-weight:400">/ 4</span>
       </div>
-      <div style="font-size:.7rem;color:#94a3b8;margin-top:2px">{{ rating_scale.get(avg|int, 'No data') if avg else 'No data' }}</div>
+      <div style="font-size:.7rem;color:#94a3b8;margin-top:2px">
+        {{ rating_scale.get(avg|int, 'No data') if avg else 'No data' }}
+      </div>
     </div>
     {% endfor %}
   </div>
@@ -63,9 +82,13 @@
         <td><strong>{{ student.name }}</strong></td>
         <td>{{ student.grade }}</td>
         <td>{{ student.section or '—' }}</td>
-        <td>
+        <td style="display:flex;gap:6px">
+          <a href="{{ url_for('ib_learner_profile') }}?student_id={{ student.id }}"
+             class="btn btn-sm btn-primary">🌱 LP</a>
+          <a href="{{ url_for('ib_atl') }}?student_id={{ student.id }}"
+             class="btn btn-sm btn-secondary">🎯 ATL</a>
           <a href="{{ url_for('ib_student_report', student_id=student.id) }}"
-             class="btn btn-sm btn-secondary">View Report</a>
+             class="btn btn-sm btn-secondary">📄 Report</a>
         </td>
       </tr>
       {% endfor %}
