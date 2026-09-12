@@ -212,7 +212,7 @@ PORTAL_MODULES = {
             'name':     'IB Profile Development',
             'icon':     '🌱',
             'desc':     'Rate your students on Learner Profile attributes and ATL skills each term.',
-            'endpoint': 'ib_learner_profile',
+            'endpoint': 'ib_dashboard',
         },
     ],
     'student': [
