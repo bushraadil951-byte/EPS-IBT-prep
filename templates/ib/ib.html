@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}My IB Profile{% endblock %}
+{% block page_title %}My IB Profile{% endblock %}
+
+{% block content %}
+<!-- Term selector -->
+<div style="display:flex;gap:8px;margin-bottom:1.5rem">
+  {% for t in terms %}
+  <a href="?term={{ t }}"
+     style="padding:7px 18px;border-radius:20px;font-size:.83rem;font-weight:600;text-decoration:none;
+            {% if t == selected_term %}background:#6366f1;color:#fff{% else %}background:#f1f5f9;color:#475569{% endif %}">
+    {{ t }}
+  </a>
+  {% endfor %}
+</div>
+
+<!-- Radar chart of LP -->
+{% if self_ratings or teacher_ratings %}
+<div class="card" style="margin-bottom:1.25rem">
+  <h3 style="font-size:.95rem;font-weight:700;margin-bottom:1rem">📊 Profile Overview — {{ selected_term }}</h3>
+  <div style="max-width:400px;margin:0 auto">
+    <canvas id="radarChart" role="img" aria-label="Radar chart of learner profile ratings"></canvas>
+  </div>
+</div>
+{% endif %}
+
+<!-- ATL ratings from teacher -->
+{% if atl_ratings %}
+<div class="card" style="margin-bottom:1.25rem">
+  <h3 style="font-size:.95rem;font-weight:700;margin-bottom:1rem">🎯 ATL Skills — Teacher Assessment</h3>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.75rem">
+    {% for skill, items in atl_ratings.items() %}
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:.875rem">
+      <div style="font-size:.88rem;font-weight:700;color:#1e293b;margin-bottom:.5rem">{{ skill }}</div>
+      {% for item in items %}
+      <div style="display:flex;justify-content:space-between;align-items:center;
+                  padding:4px 0;border-bottom:1px solid #f1f5f9;font-size:.78rem">
+        <span style="color:#475569;flex:1">{{ item.desc[:40] }}{% if item.desc|length > 40 %}…{% endif %}</span>
+        <span style="font-weight:700;margin-left:8px;
+               color:{% if item.rating >= 3 %}#10b981{% elif item.rating >= 2 %}#f59e0b{% else %}#ef4444{% endif %}">
+          {{ item.rating }}/4
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Self rating form -->
+<form method="POST">
+  <input type="hidden" name="term" value="{{ selected_term }}">
+  <div class="card">
+    <h3 style="font-size:.95rem;font-weight:700;margin-bottom:.5rem">🌱 Learner Profile — Self Assessment</h3>
+    <p style="font-size:.78rem;color:#64748b;margin-bottom:1rem">
+      Rate yourself honestly. Your teacher's rating is shown alongside yours.
+    </p>
+
+    {% for attr, emoji, desc in learner_profile %}
+    <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid #f1f5f9">
+      <div style="font-size:1.5rem;flex-shrink:0">{{ emoji }}</div>
+      <div style="flex:1">
+        <div style="font-size:.88rem;font-weight:600;color:#0f172a">{{ attr }}</div>
+        <div style="font-size:.72rem;color:#64748b;margin-bottom:.5rem">{{ desc }}</div>
+
+        <!-- Teacher rating display -->
+        {% set tr = teacher_ratings.get(attr) %}
+        {% if tr %}
+        <div style="font-size:.72rem;margin-bottom:.4rem">
+          Teacher: <span style="font-weight:700;color:{{ rating_colors[tr] }}">
+            {{ tr }} — {{ rating_scale[tr] }}
+          </span>
+        </div>
+        {% endif %}
+
+        <!-- Self rating buttons -->
+        <div style="display:flex;gap:6px;margin-bottom:.4rem">
+          {% for val, label in rating_scale.items() %}
+          <label style="cursor:pointer">
+            <input type="radio" name="self_{{ attr }}" value="{{ val }}"
+              {% if self_ratings.get(attr) == val %}checked{% endif %}
+              style="display:none">
+            <div style="padding:5px 10px;border:2px solid {% if self_ratings.get(attr) == val %}#6366f1{% else %}#e2e8f0{% endif %};
+                 border-radius:8px;font-size:.75rem;font-weight:600;text-align:center;
+                 background:{% if self_ratings.get(attr) == val %}#eff6ff{% else %}#f8fafc{% endif %};
+                 color:{% if self_ratings.get(attr) == val %}#6366f1{% else %}#94a3b8{% endif %}">
+              {{ val }}<br><span style="font-size:.6rem;font-weight:400">{{ label }}</span>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+
+        <!-- Reflection -->
+        <textarea name="reflection_{{ attr }}" rows="2"
+          placeholder="Write a short reflection on how you show {{ attr }}..."
+          style="width:100%;padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;
+                 font-size:.78rem;resize:vertical;font-family:inherit">{{ reflections.get(attr, '') }}</textarea>
+      </div>
+    </div>
+    {% endfor %}
+
+    <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;margin-top:1rem">
+      💾 Save My Self-Assessment for {{ selected_term }}
+    </button>
+  </div>
+</form>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script>
+const labels    = {{ learner_profile | map(attribute=0) | list | tojson }};
+const selfData  = {{ learner_profile | map(attribute=0) | map('extract', self_ratings, [0]) | list | tojson }};
+const teachData = {{ learner_profile | map(attribute=0) | map('extract', teacher_ratings, [0]) | list | tojson }};
+
+const ctx = document.getElementById('radarChart');
+if (ctx) {
+  new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'My self-rating',
+          data: selfData.map(v => v || 0),
+          borderColor: '#6366f1',
+          backgroundColor: 'rgba(99,102,241,0.15)',
+          borderWidth: 2,
+          pointRadius: 4,
+        },
+        {
+          label: 'Teacher rating',
+          data: teachData.map(v => v || 0),
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16,185,129,0.10)',
+          borderWidth: 2,
+          borderDash: [5, 4],
+          pointRadius: 4,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        r: {
+          min: 0, max: 4,
+          ticks: { stepSize: 1, backdropColor: 'transparent', font: { size: 10 } },
+          pointLabels: { font: { size: 11 } }
+        }
+      },
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 11 } } }
+      }
+    }
+  });
+}
+</script>
+{% endblock %}
