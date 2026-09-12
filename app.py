@@ -1637,7 +1637,16 @@ def teacher_students():
 @app.route('/teacher/analytics')
 @login_required('teacher')
 def teacher_analytics():
-    data = build_analytics(filter_grade=current_teacher_grade())
+    current_user_obj = db.session.get(User, session['user_id'])
+    teacher_grade = current_user_obj.grade if current_user_obj else None
+
+    cache_key = f"analytics:{teacher_grade}::"
+    data = cache_get(cache_key)
+    if data is None:
+        data = build_analytics(
+            filter_grade=teacher_grade or None,
+        )
+        cache_set(cache_key, data)
     return render_template('teacher/analytics.html', **data)
 
 # ── STUDENT ───────────────────────────────────────────────────────────────────
