@@ -3,6 +3,7 @@
 {% block page_title %}Learner Profile{% endblock %}
 
 {% block content %}
+
 <!-- Filter bar -->
 <div class="card" style="margin-bottom:1.25rem">
   <form method="GET" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
@@ -19,7 +20,7 @@
       </select>
     </div>
     <div>
-      <label style="display:block;font-size:.75rem;font-weight:600;color:#475569;margin-bottom:4px">Term</label>
+      <label style="display:block;font-size:.75rem;font-weight:600;color:#475569;margin-bottom:4px">UOI</label>
       <select name="term" onchange="this.form.submit()"
         style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.83rem">
         {% for t in terms %}
@@ -27,6 +28,10 @@
         {% endfor %}
       </select>
     </div>
+    {% if selected_student %}
+    <a href="{{ url_for('ib_atl') }}?student_id={{ selected_student }}&term={{ selected_term }}"
+       class="btn btn-secondary btn-sm">Switch to ATL Skills →</a>
+    {% endif %}
   </form>
 </div>
 
@@ -35,72 +40,77 @@
   <input type="hidden" name="student_id" value="{{ selected_student }}">
   <input type="hidden" name="term" value="{{ selected_term }}">
 
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;margin-bottom:1.25rem">
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;margin-bottom:1.25rem">
     {% for attr, emoji, desc in learner_profile %}
+    {% set current_rating = existing_ratings.get(attr) %}
     <div class="card">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:.5rem">
-        <span style="font-size:1.4rem">{{ emoji }}</span>
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:.75rem">
+        <span style="font-size:1.5rem;flex-shrink:0">{{ emoji }}</span>
         <div>
           <div style="font-size:.88rem;font-weight:700;color:#0f172a">{{ attr }}</div>
-          <div style="font-size:.72rem;color:#64748b;line-height:1.4">{{ desc }}</div>
+          <div style="font-size:.72rem;color:#64748b;line-height:1.4;margin-top:2px">{{ desc }}</div>
         </div>
       </div>
 
-      <!-- Rating buttons 1-4 -->
-      <div style="display:flex;gap:6px;margin-top:.75rem">
+      <!-- Rating 1-4 -->
+      <div style="display:flex;gap:6px;margin-bottom:.625rem">
         {% for val, label in rating_scale.items() %}
-        <label style="flex:1;text-align:center;cursor:pointer">
+        {% set is_sel = current_rating == val %}
+        <label style="flex:1;cursor:pointer;text-align:center">
           <input type="radio" name="teacher_{{ attr }}" value="{{ val }}"
-            {% if existing_ratings.get(attr) == val %}checked{% endif %}
-            style="display:none" class="rating-radio">
-          <div class="rating-btn {% if existing_ratings.get(attr) == val %}rating-selected{% endif %}"
-            style="border:2px solid {% if existing_ratings.get(attr) == val %}{{ rating_colors[val] }}{% else %}#e2e8f0{% endif %};
-                   background:{% if existing_ratings.get(attr) == val %}{{ rating_colors[val] }}22{% else %}#f8fafc{% endif %};
-                   border-radius:8px;padding:6px 4px;font-size:.75rem;font-weight:600;
-                   color:{% if existing_ratings.get(attr) == val %}{{ rating_colors[val] }}{% else %}#94a3b8{% endif %}">
-            {{ val }}<br><span style="font-size:.65rem;font-weight:400">{{ label }}</span>
+            {% if is_sel %}checked{% endif %}
+            style="display:none"
+            onchange="highlightLP(this)">
+          <div style="border:2px solid {% if is_sel %}{{ rating_colors[val] }}{% else %}#e2e8f0{% endif %};
+               background:{% if is_sel %}{{ rating_colors[val] }}22{% else %}#f8fafc{% endif %};
+               color:{% if is_sel %}{{ rating_colors[val] }}{% else %}#94a3b8{% endif %};
+               border-radius:8px;padding:6px 2px;font-size:.75rem;font-weight:600">
+            {{ val }}<br>
+            <span style="font-size:.62rem;font-weight:400">{{ label }}</span>
           </div>
         </label>
         {% endfor %}
       </div>
 
       <!-- Evidence -->
-      <textarea name="evidence_{{ attr }}" rows="2" placeholder="Evidence / notes (optional)"
-        style="width:100%;margin-top:.5rem;padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:.78rem;resize:vertical;font-family:inherit">{{ existing_evidence.get(attr, '') }}</textarea>
+      <textarea name="evidence_{{ attr }}" rows="2"
+        placeholder="Evidence / observation notes (optional)"
+        style="width:100%;padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;
+               font-size:.78rem;resize:vertical;font-family:inherit;color:#374151">{{ existing_evidence.get(attr, '') }}</textarea>
     </div>
     {% endfor %}
   </div>
 
-  <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:12px">
-    💾 Save Learner Profile Ratings for {{ selected_term }}
+  <button type="submit" class="btn btn-primary"
+          style="width:100%;justify-content:center;padding:12px;font-size:.95rem">
+    💾 Save Learner Profile — {{ selected_term }}
   </button>
 </form>
 
 {% else %}
 <div class="card" style="text-align:center;padding:3rem;color:#94a3b8">
-  <div style="font-size:2rem;margin-bottom:.5rem">👆</div>
-  <div>Select a student above to start rating</div>
+  <div style="font-size:2.5rem;margin-bottom:.75rem">🌱</div>
+  <div style="font-size:.95rem;font-weight:600;margin-bottom:.25rem">Select a student to begin</div>
+  <div style="font-size:.83rem">Choose a student and UOI from the filters above</div>
 </div>
 {% endif %}
 
 <script>
-// Highlight selected rating button on click
-document.querySelectorAll('.rating-radio').forEach(radio => {
-  radio.addEventListener('change', function() {
-    const name = this.name;
-    document.querySelectorAll(`input[name="${name}"]`).forEach(r => {
-      const btn = r.nextElementSibling;
-      btn.style.borderColor = '#e2e8f0';
-      btn.style.background  = '#f8fafc';
-      btn.style.color       = '#94a3b8';
-    });
-    const colors = { 1:'#ef4444', 2:'#f59e0b', 3:'#3b82f6', 4:'#10b981' };
-    const c = colors[this.value];
-    const btn = this.nextElementSibling;
-    btn.style.borderColor = c;
-    btn.style.background  = c + '22';
-    btn.style.color       = c;
+function highlightLP(radio) {
+  const colors = { 1:'#ef4444', 2:'#f59e0b', 3:'#3b82f6', 4:'#10b981' };
+  const allRadios = radio.closest('div').querySelectorAll('input[type=radio]');
+  allRadios.forEach(r => {
+    const d = r.nextElementSibling;
+    d.style.borderColor = '#e2e8f0';
+    d.style.background  = '#f8fafc';
+    d.style.color       = '#94a3b8';
   });
-});
+  const c = colors[radio.value];
+  const d = radio.nextElementSibling;
+  d.style.borderColor = c;
+  d.style.background  = c + '22';
+  d.style.color       = c;
+}
 </script>
+
 {% endblock %}
