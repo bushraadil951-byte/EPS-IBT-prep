@@ -3425,6 +3425,9 @@ with app.app_context():
             conn.execute(db.text('ALTER TABLE lp_rating ADD COLUMN IF NOT EXISTS evidence TEXT'))
             conn.execute(db.text('ALTER TABLE atl_rating ADD COLUMN IF NOT EXISTS teacher_id INTEGER'))
             conn.execute(db.text('ALTER TABLE atl_rating ADD COLUMN IF NOT EXISTS rater_type VARCHAR(10) DEFAULT \'teacher\''))
+            # Copy rater_id to teacher_id if rater_id exists
+            conn.execute(db.text('UPDATE lp_rating SET teacher_id = rater_id WHERE teacher_id IS NULL'))
+            conn.execute(db.text('UPDATE atl_rating SET teacher_id = rater_id WHERE teacher_id IS NULL'))
             conn.commit()
     except Exception as e:
         print(f'Column migration note: {e}')
