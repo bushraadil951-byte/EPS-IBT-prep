@@ -842,6 +842,7 @@ def admin_dashboard():
     results   = TestResult.query.all()
     avg_score = safe_avg([r.percent for r in results])
     recent    = sorted(results, key=lambda r: r.taken_at, reverse=True)[:8]
+    subject_data = {}
     for s in SUBJECTS:
         rs = [r for r in results if r.test.subject == s]
         subject_data[s] = {
