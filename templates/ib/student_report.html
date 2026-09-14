@@ -63,11 +63,15 @@
     <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:.75rem">
       <div style="font-size:.83rem;font-weight:600;color:#1e293b;margin-bottom:4px">{{ skill }}</div>
       <div style="font-size:1.1rem;font-weight:700;
-                  color:{% if data.avg >= 3 %}#10b981{% elif data.avg >= 2 %}#f59e0b{% else %}#ef4444{% endif %}">
-        {{ data.avg }} / 4
+                  color:{% if data['avg'] >= 3 %}#10b981{% elif data['avg'] >= 2 %}#f59e0b{% else %}#ef4444{% endif %}">
+        {{ data['avg'] }} / 4
       </div>
-      <div style="font-size:.72rem;color:#94a3b8">{{ rating_scale.get(data.avg|int, '') }}</div>
+      <div style="font-size:.72rem;color:#94a3b8">
+        {{ rating_scale.get(data['avg']|int, '') }}
+      </div>
     </div>
+    {% else %}
+    <p style="color:#94a3b8;font-size:.83rem">No ATL ratings recorded yet.</p>
     {% endfor %}
   </div>
   {% endif %}
