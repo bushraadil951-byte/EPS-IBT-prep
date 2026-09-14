@@ -1246,6 +1246,19 @@ def admin_analytics():
     filter_grade   = request.args.get('grade', '')
     filter_section = request.args.get('section', '')
     filter_subject = request.args.get('subject', '')
+    # Don't run heavy query without a grade filter
+    if not filter_grade:
+        return render_template('admin/analytics.html',
+            filter_grade='', filter_section='', filter_subject='',
+            sections=['A','B','C','D'], grades=GRADES,
+            subjects=SUBJECTS,
+            # empty data
+            overall_avg=0, above80=0, below60=0,
+            total_results=0, total_students=0,
+            grade_data={}, subject_data={},
+            grade_subject={}, section_avgs={},
+            subject_strands={}, student_rows=[],
+        )
  
     cache_key = f"analytics:{filter_grade}:{filter_section}:{filter_subject}"
  
