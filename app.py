@@ -1393,12 +1393,17 @@ def download_results_template():
 def ib_dashboard():
     current_user_obj = db.session.get(User, session['user_id'])
     filter_section = request.args.get('section', '')
+    filter_grade   = request.args.get('grade', '')
     sq = User.query.filter_by(role='student')
+    # Teacher only sees their own grade
     if current_user_obj.role == 'teacher' and current_user_obj.grade:
         sq = sq.filter_by(grade=current_user_obj.grade)
+    # Admin can filter by any grade
+    elif filter_grade:
+        sq = sq.filter_by(grade=filter_grade)
     if filter_section:
         sq = sq.filter_by(section=filter_section)
-    students = sq.order_by(User.name).all()
+    students = sq.order_by(User.grade, User.name).all()
     total_atl = ATLRating.query.count()
     total_lp  = LearnerProfileRating.query.count()
     lp_avgs = {}
