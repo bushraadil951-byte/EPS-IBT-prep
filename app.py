@@ -507,6 +507,7 @@ def build_analytics(filter_grade=None, filter_section=None, filter_subject=None)
     if filter_section: q = q.filter(User.section == filter_section)
     if filter_subject: q = q.filter(MockTest.subject == filter_subject)
  
+    q = q.order_by(TestResult.taken_at.desc()).limit(500)
     rows        = q.all()
     all_results = [r for r, u, t in rows]
     # Build lookup dicts from the single query
