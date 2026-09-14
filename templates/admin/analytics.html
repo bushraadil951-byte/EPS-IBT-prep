@@ -2,6 +2,7 @@
 {% block title %}Analytics — EPS IBT Portal{% endblock %}
 {% block page_title %}Analytics{% endblock %}
 {% block back_button %}<a href="/admin" class="back-btn">← Back</a>{% endblock %}
+{% block content %}
 {% if not filter_grade %}
 <div class="card" style="text-align:center;padding:3rem">
   <div style="font-size:2.5rem;margin-bottom:1rem">📊</div>
@@ -18,7 +19,6 @@
   </div>
 </div>
 {% else %}
-{% block content %}
 
 {# ── ALL YOUR EXISTING ANALYTICS CONTENT GOES HERE ── #}
 
