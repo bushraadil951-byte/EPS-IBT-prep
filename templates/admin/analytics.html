@@ -11,13 +11,11 @@
   <p style="color:#64748b;font-size:.88rem;margin-bottom:1.5rem">
     Please select a grade to load analytics data.
   </p>
-  <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
     {% for g in grades %}
     <a href="?grade={{ g }}" class="btn btn-primary">{{ g }}</a>
     {% endfor %}
-  </div>
 </div> 
-
+<br>
 
 {# ── ALL YOUR EXISTING ANALYTICS CONTENT GOES HERE ── #}
 
