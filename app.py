@@ -1367,7 +1367,14 @@ def download_results_template():
 @app.route('/ib')
 @login_required(('Resource_Manager', 'teacher'))
 def ib_dashboard():
-    students = User.query.filter_by(role='student').all()
+    current_user_obj = db.session.get(User, session['user_id'])
+    filter_section = request.args.get('section', '')
+    sq = User.query.filter_by(role='student')
+    if current_user_obj.role == 'teacher' and current_user_obj.grade:
+        sq = sq.filter_by(grade=current_user_obj.grade)
+    if filter_section:
+        sq = sq.filter_by(section=filter_section)
+students = sq.order_by(User.name).all()
     total_atl = ATLRating.query.count()
     total_lp  = LearnerProfileRating.query.count()
     lp_avgs = {}
@@ -1375,7 +1382,7 @@ def ib_dashboard():
         ratings = LearnerProfileRating.query.filter_by(attribute=attr).all()
         lp_avgs[attr] = round(sum(r.rating for r in ratings) / len(ratings), 1) if ratings else 0
     return render_template('ib/dashboard.html',
-        students=students, total_atl=total_atl, total_lp=total_lp,
+        students=students, filter_section=filter_section, sections=DT_SECTIONS, total_atl=total_atl, total_lp=total_lp,
         lp_avgs=lp_avgs, learner_profile=LEARNER_PROFILE,
         rating_scale=RATING_SCALE, rating_colors=RATING_COLORS,
         atl_skills=ATL_SKILLS, terms=TERMS)
