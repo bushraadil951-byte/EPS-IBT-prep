@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 {% block title %}ATL Skills Rating{% endblock %}
 {% block page_title %}ATL Skills{% endblock %}
-
+{% block back_button %}
+<a href="{{ url_for('ib_dashboard') }}" class="btn btn-sm btn-secondary">← Back</a>
+{% endblock %}
 {% block content %}
 
 <!-- Filter bar -->
