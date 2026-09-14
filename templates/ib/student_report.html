@@ -13,17 +13,6 @@
     <div style="font-size:1.1rem;font-weight:700;color:#0f172a">{{ student.name }}</div>
     <div style="font-size:.83rem;color:#64748b">{{ student.grade }} · Section {{ student.section or '—' }}</div>
   </div>
-  <div class="card">
-    <div style="font-size:.75rem;color:#64748b;margin-bottom:2px">IBT Performance</div>
-    {% if test_results %}
-    <div style="font-size:1.1rem;font-weight:700;color:#6366f1">
-      {{ (test_results | map(attribute='percent') | list | sum / test_results|length) | round(1) }}%
-    </div>
-    <div style="font-size:.83rem;color:#64748b">avg across {{ test_results|length }} test(s)</div>
-    {% else %}
-    <div style="color:#94a3b8;font-size:.83rem">No test results yet</div>
-    {% endif %}
-  </div>
 </div>
 
 {% for term in terms %}
