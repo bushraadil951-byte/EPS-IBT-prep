@@ -3,7 +3,7 @@
 {% block page_title %}Analytics{% endblock %}
 {% block back_button %}<a href="/admin" class="back-btn">← Back</a>{% endblock %}
 {% block content %}
-{% if not filter_grade %}
+
 <div class="card" style="text-align:center;padding:3rem">
   <div style="font-size:2.5rem;margin-bottom:1rem">📊</div>
   <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:.5rem">
@@ -19,7 +19,7 @@
   </div>
 </div>
 <br>
-{% else %}
+
 
 {# ── ALL YOUR EXISTING ANALYTICS CONTENT GOES HERE ── #}
 
@@ -31,20 +31,7 @@
   <div class="stat-card"><div class="stat-icon" style="background:#fef2f2">⚠️</div><div class="stat-value">{{ below60 }}</div><div class="stat-label">Below 60%</div></div>
   <div class="stat-card"><div class="stat-icon" style="background:#fffbeb">✅</div><div class="stat-value">{{ total_results }}</div><div class="stat-label">Total Submissions</div></div>
 </div>
-<div class="card" style="text-align:center;padding:3rem">
-  <div style="font-size:2.5rem;margin-bottom:1rem">📊</div>
-  <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:.5rem">
-    Select a Grade to view analytics
-  </h3>
-  <p style="color:#64748b;font-size:.88rem;margin-bottom:1.5rem">
-    Please select a grade to load analytics data.
-  </p>
-  <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-    {% for g in grades %}
-    <a href="?grade={{ g }}" class="btn btn-primary">{{ g }}</a>
-    {% endfor %}
-  </div>
-</div>
+
 <!-- Analysis tabs -->
 <div class="tab-bar" style="max-width:600px;margin-bottom:20px">
   <button class="tab-btn active" onclick="showTab('overall',this)">Overall</button>
