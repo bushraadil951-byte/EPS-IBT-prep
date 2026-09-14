@@ -140,15 +140,14 @@
 {% block scripts %}
 
 <script>
+// Grade chart — uses API call
 fetch('/api/analytics')
-  .then(response => response.json())
+  .then(r => r.json())
   .then(data => {
     new Chart(document.getElementById('gradeChart'), {
       type: 'bar',
-
       data: {
         labels: Object.keys(data),
-
         datasets: [{
           label: 'Avg %',
           data: Object.values(data),
@@ -157,49 +156,48 @@ fetch('/api/analytics')
           borderSkipped: false
         }]
       },
-
       options: {
         responsive: true,
         maintainAspectRatio: true,
         aspectRatio: 2,
-
-        plugins: {
-          legend: {
-            display: false
-          }
-        },
-
+        plugins: { legend: { display: false } },
         scales: {
-          y: {
-            min: 0,
-            max: 100,
-            grid: {
-              color: '#f1f5f9'
-            },
-            ticks: {
-              font: {
-                size: 10
-              }
-            }
-          },
-
-          x: {
-            grid: {
-              display: false
-            },
-            ticks: {
-              font: {
-                size: 10
-              }
-            }
-          }
+          y: { min: 0, max: 100, grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } },
+          x: { grid: { display: false }, ticks: { font: { size: 10 } } }
         }
       }
     });
   });
 
-const subjectData =
-  {{ subject_data | tojson if subject_data is defined else '{}' }};
-</script>
+// Subject chart — uses inline data (no API call, instant)
+const subjectData = {{ subject_data | tojson if subject_data is defined else '{}' }};
+const subjectLabels = Object.keys(subjectData);
+const subjectValues = subjectLabels.map(s => subjectData[s]?.avg || 0);
 
+if (subjectLabels.length && document.getElementById('subjectChart')) {
+  new Chart(document.getElementById('subjectChart'), {
+    type: 'bar',
+    data: {
+      labels: subjectLabels,
+      datasets: [{
+        label: 'Avg %',
+        data: subjectValues,
+        backgroundColor: ['#3b82f6bb','#10b981bb','#f59e0bbb','#8b5cf6bb'],
+        borderRadius: 6,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      aspectRatio: 2,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { min: 0, max: 100, grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 }, callback: v => v + '%' } },
+        x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+}
+</script>
 {% endblock %}
