@@ -4,7 +4,7 @@
 {% block back_button %}
 <div style="display: flex; align-items: center; gap: 1rem; width: 100%; justify-content: space-between;">
   <a href="/admin" class="back-btn">← Back</a>
-  
+{% block content %}
   <!-- Grade Filter Pills -->
   <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
     {% for g in grades %}
