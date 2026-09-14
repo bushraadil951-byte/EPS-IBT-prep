@@ -842,9 +842,15 @@ def admin_dashboard():
     results   = TestResult.query.all()
     avg_score = safe_avg([r.percent for r in results])
     recent    = sorted(results, key=lambda r: r.taken_at, reverse=True)[:8]
+    for s in SUBJECTS:
+        rs = [r for r in results if r.test.subject == s]
+        subject_data[s] = {
+            'avg': safe_avg([r.percent for r in rs]),
+            'count': len(rs)
+        }
     return render_template('admin/dashboard.html',
         students=students, tests=tests, results=results,
-        avg_score=avg_score, recent=recent, subjects=SUBJECTS, grades=GRADES)
+        avg_score=avg_score, recent=recent, subjects=SUBJECTS, grades=GRADES, subject_data=subject_data,)
 
 
 @app.route('/admin/students', methods=['GET', 'POST'])
