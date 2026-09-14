@@ -1605,7 +1605,12 @@ def student_ib():
         learner_profile=LEARNER_PROFILE, rating_scale=RATING_SCALE,
         rating_colors=RATING_COLORS,
         self_ratings=self_ratings, teacher_ratings=teacher_ratings,
-        reflections=reflections, atl_ratings=atl_ratings)
+        reflections=reflections, atl_ratings=atl_ratings,
+        # Pre-built chart data — avoids Jinja2 extract filter
+       lp_attrs=[attr for attr, e, d in LEARNER_PROFILE],
+       lp_self_data=[self_ratings.get(attr, 0) for attr, e, d in LEARNER_PROFILE],
+       lp_teacher_data=[teacher_ratings.get(attr, 0) for attr, e, d in LEARNER_PROFILE],
+    )
 
 
 # ── TEACHER ───────────────────────────────────────────────────────────────────
