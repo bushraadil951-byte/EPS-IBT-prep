@@ -1255,9 +1255,12 @@ def admin_analytics():
             # empty data
             overall_avg=0, above80=0, below60=0,
             total_results=0, total_students=0,
-            grade_data={}, subject_data={},
-            grade_subject={}, section_avgs={},
-            subject_strands={}, student_rows=[],
+            grade_data={g: {'avg':0,'count':0,'students':0} for g in GRADES},
+            subject_data={s: {'avg':0,'count':0} for s in SUBJECTS},
+            grade_subject={g: {s: 0 for s in SUBJECTS} for g in GRADES},
+            section_avgs={},
+            subject_strands={s: {} for s in SUBJECTS},
+            student_rows=[],
         )
  
     cache_key = f"analytics:{filter_grade}:{filter_section}:{filter_subject}"
