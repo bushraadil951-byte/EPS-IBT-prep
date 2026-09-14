@@ -68,7 +68,7 @@ SECTIONS_BY_SUBJECT = {
     'Reasoning':   ['Verbal Reasoning', 'Non-Verbal Reasoning', 'Logical Thinking', 'Pattern Recognition'],
 }
 
-TERMS = ['UOI-1', 'UOI-2', 'UOI-1', 'UOI-4', 'UOI-5', 'UOI-6']
+TERMS = ['UOI-1', 'UOI-2', 'UOI-3', 'UOI-4', 'UOI-5', 'UOI-6']
 RATING_SCALE = {1: 'Beginning', 2: 'Developing', 3: 'Achieved', 4: 'Exceeding'}
 RATING_COLORS = {1: '#ef4444', 2: '#f59e0b', 3: '#3b82f6', 4: '#10b981'}
 
