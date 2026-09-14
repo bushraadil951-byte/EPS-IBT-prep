@@ -3373,26 +3373,19 @@ def student_diagnostics():
 
 
 # ── MAIN ──────────────────────────────────────────────────────────────────────
-
 with app.app_context():
     db.create_all()
-    # Fix missing columns added after initial table creation
+    # Fix missing columns in existing tables
     try:
-        db.engine.execute("ALTER TABLE lp_rating ADD COLUMN IF NOT EXISTS teacher_id INTEGER REFERENCES \"user\"(id)")
-    except Exception:
-        pass
-    try:
-        db.engine.execute("ALTER TABLE lp_rating ADD COLUMN IF NOT EXISTS rater_type VARCHAR(10) DEFAULT 'teacher'")
-    except Exception:
-        pass
-    try:
-        db.engine.execute("ALTER TABLE atl_rating ADD COLUMN IF NOT EXISTS teacher_id INTEGER REFERENCES \"user\"(id)")
-    except Exception:
-        pass
-    try:
-        db.engine.execute("ALTER TABLE atl_rating ADD COLUMN IF NOT EXISTS rater_type VARCHAR(10) DEFAULT 'teacher'")
-    except Exception:
-        pass
+        with db.engine.connect() as conn:
+            conn.execute(db.text('ALTER TABLE lp_rating ADD COLUMN IF NOT EXISTS teacher_id INTEGER'))
+            conn.execute(db.text('ALTER TABLE lp_rating ADD COLUMN IF NOT EXISTS rater_type VARCHAR(10) DEFAULT \'teacher\''))
+            conn.execute(db.text('ALTER TABLE lp_rating ADD COLUMN IF NOT EXISTS evidence TEXT'))
+            conn.execute(db.text('ALTER TABLE atl_rating ADD COLUMN IF NOT EXISTS teacher_id INTEGER'))
+            conn.execute(db.text('ALTER TABLE atl_rating ADD COLUMN IF NOT EXISTS rater_type VARCHAR(10) DEFAULT \'teacher\''))
+            conn.commit()
+    except Exception as e:
+        print(f'Column migration note: {e}')
     seed_db()
 
 
