@@ -3,7 +3,34 @@
 {% block page_title %}IB Profile Development{% endblock %}
 
 {% block content %}
-
+<!-- Section filter -->
+<div class="card" style="margin-bottom:1.25rem">
+  <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+    <div>
+      <label style="display:block;font-size:.75rem;font-weight:600;
+                    color:#475569;margin-bottom:4px">Filter by Section</label>
+      <select name="section" onchange="this.form.submit()"
+        style="padding:7px 12px;border:1px solid #e2e8f0;
+               border-radius:8px;font-size:.83rem;min-width:160px">
+        <option value="">All sections</option>
+        {% for s in sections %}
+        <option value="{{ s }}"
+          {% if s == filter_section %}selected{% endif %}>
+          Section {{ s }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    {% if filter_section %}
+    <a href="{{ url_for('ib_dashboard') }}" class="btn btn-secondary btn-sm">
+      Clear filter
+    </a>
+    {% endif %}
+    <div style="font-size:.83rem;color:#64748b;align-self:center">
+      Showing <strong>{{ students|length }}</strong> student(s)
+    </div>
+  </form>
+</div>
 <!-- Two big action cards -->
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">
   <a href="{{ url_for('ib_learner_profile') }}"
