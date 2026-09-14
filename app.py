@@ -1741,6 +1741,7 @@ def submit_test(test_id):
         answers=json.dumps(answers), section_scores=json.dumps(section_scores),
         time_taken=time_taken))
     db.session.commit()
+    cache_clear('analytics:') 
     return jsonify({'score': score, 'total': total, 'percent': percent, 'section_scores': section_scores})
 
 
