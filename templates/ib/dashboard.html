@@ -3,6 +3,26 @@
 {% block page_title %}IB Profile Development{% endblock %}
 
 {% block content %}
+<!-- Two big action cards -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">
+  <a href="{{ url_for('ib_learner_profile') }}"
+     style="display:block;background:#6366f1;color:#fff;border-radius:12px;
+            padding:1.5rem;text-decoration:none;text-align:center;
+            transition:all .15s;box-shadow:0 4px 14px rgba(99,102,241,.25)">
+    <div style="font-size:2.2rem;margin-bottom:.5rem">🌱</div>
+    <div style="font-size:1rem;font-weight:700;margin-bottom:4px">Learner Profile</div>
+    <div style="font-size:.78rem;opacity:.85">Rate 10 IB attributes per student per UOI</div>
+  </a>
+  <a href="{{ url_for('ib_atl') }}"
+     style="display:block;background:#10b981;color:#fff;border-radius:12px;
+            padding:1.5rem;text-decoration:none;text-align:center;
+            transition:all .15s;box-shadow:0 4px 14px rgba(16,185,129,.25)">
+    <div style="font-size:2.2rem;margin-bottom:.5rem">🎯</div>
+    <div style="font-size:1rem;font-weight:700;margin-bottom:4px">ATL Skills</div>
+    <div style="font-size:.78rem;opacity:.85">Rate 5 skill categories per student per UOI</div>
+  </a>
+</div>
+
 <!-- Section filter -->
 <div class="card" style="margin-bottom:1.25rem">
   <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
@@ -30,25 +50,6 @@
       Showing <strong>{{ students|length }}</strong> student(s)
     </div>
   </form>
-</div>
-<!-- Two big action cards -->
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">
-  <a href="{{ url_for('ib_learner_profile') }}"
-     style="display:block;background:#6366f1;color:#fff;border-radius:12px;
-            padding:1.5rem;text-decoration:none;text-align:center;
-            transition:all .15s;box-shadow:0 4px 14px rgba(99,102,241,.25)">
-    <div style="font-size:2.2rem;margin-bottom:.5rem">🌱</div>
-    <div style="font-size:1rem;font-weight:700;margin-bottom:4px">Learner Profile</div>
-    <div style="font-size:.78rem;opacity:.85">Rate 10 IB attributes per student per UOI</div>
-  </a>
-  <a href="{{ url_for('ib_atl') }}"
-     style="display:block;background:#10b981;color:#fff;border-radius:12px;
-            padding:1.5rem;text-decoration:none;text-align:center;
-            transition:all .15s;box-shadow:0 4px 14px rgba(16,185,129,.25)">
-    <div style="font-size:2.2rem;margin-bottom:.5rem">🎯</div>
-    <div style="font-size:1rem;font-weight:700;margin-bottom:4px">ATL Skills</div>
-    <div style="font-size:.78rem;opacity:.85">Rate 5 skill categories per student per UOI</div>
-  </a>
 </div>
 
 <!-- Stats row -->
