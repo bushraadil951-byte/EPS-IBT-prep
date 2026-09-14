@@ -1532,40 +1532,53 @@ def ib_student_report(student_id):
     if not student:
         flash('Student not found.', 'error')
         return redirect(url_for('ib_dashboard'))
+
     report = {}
     for term in TERMS:
-        atl_data = {}
-        for skill in ATL_SKILLS:
-            ratings = ATLRating.query.filter_by(
-                student_id=student_id, term=term, skill=skill, rater_type='teacher'
-            ).all()
-            if ratings:
-                atl_data[skill] = {
-                    'avg': round(sum(r.rating for r in ratings) / len(ratings), 1),
-                    'descriptors': [(r.descriptor, r.rating) for r in ratings]
-                }
+        # LP data
         lp_data = {}
-        for attr, _emoji, _desc in LEARNER_PROFILE:
+        for attr, _e, _d in LEARNER_PROFILE:
             t_r = LearnerProfileRating.query.filter_by(
-                student_id=student_id, term=term, attribute=attr, rater_type='teacher'
+                student_id=student_id, term=term,
+                attribute=attr, rater_type='teacher'
             ).first()
             s_r = LearnerProfileRating.query.filter_by(
-                student_id=student_id, term=term, attribute=attr, rater_type='student'
+                student_id=student_id, term=term,
+                attribute=attr, rater_type='student'
             ).first()
             if t_r or s_r:
                 lp_data[attr] = {
-                    'teacher': t_r.rating if t_r else None,
-                    'student': s_r.rating if s_r else None,
+                    'teacher':  t_r.rating if t_r else None,
+                    'student':  s_r.rating if s_r else None,
                     'evidence': t_r.evidence if t_r else '',
                 }
+
+        # ATL data — load ALL ratings for this student+term, no rater_type filter
+        atl_data = {}
+        all_atl = ATLRating.query.filter_by(
+            student_id=student_id,
+            term=term
+        ).all()
+        for r in all_atl:
+            if r.skill not in atl_data:
+                atl_data[r.skill] = {'ratings': [], 'avg': 0}
+            atl_data[r.skill]['ratings'].append(r.rating)
+
+        # Calculate avg per skill
+        for skill in atl_data:
+            vals = atl_data[skill]['ratings']
+            atl_data[skill]['avg'] = round(sum(vals)/len(vals), 1) if vals else 0
+
         report[term] = {'atl': atl_data, 'lp': lp_data}
 
-    test_results = TestResult.query.filter_by(student_id=student_id).all()
     return render_template('ib/student_report.html',
         student=student, report=report, terms=TERMS,
-        learner_profile=LEARNER_PROFILE, atl_skills=list(ATL_SKILLS.keys()),
-        rating_scale=RATING_SCALE, rating_colors=RATING_COLORS,
-        test_results=test_results)
+        learner_profile=LEARNER_PROFILE,
+        atl_skills=list(ATL_SKILLS.keys()),
+        rating_scale=RATING_SCALE,
+        rating_colors=RATING_COLORS,
+        test_results=TestResult.query.filter_by(student_id=student_id).all(),
+    )
 
 
 # ── STUDENT IB SELF-RATING ─────────────────────────────────────────────────────
