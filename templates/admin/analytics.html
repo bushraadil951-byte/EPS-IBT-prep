@@ -3,7 +3,26 @@
 {% block page_title %}Analytics{% endblock %}
 {% block back_button %}<a href="/admin" class="back-btn">← Back</a>{% endblock %}
 {% block content %}
+{% if not filter_grade %}
+<div class="card" style="text-align:center;padding:3rem">
+  <div style="font-size:2.5rem;margin-bottom:1rem">📊</div>
+  <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:.5rem">
+    Select a Grade to view analytics
+  </h3>
+  <p style="color:#64748b;font-size:.88rem;margin-bottom:1.5rem">
+    Please select a grade to load analytics data.
+  </p>
+  <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+    {% for g in grades %}
+    <a href="?grade={{ g }}" class="btn btn-primary">{{ g }}</a>
+    {% endfor %}
+  </div>
+</div>
+{% else %}
 
+{# ── ALL YOUR EXISTING ANALYTICS CONTENT GOES HERE ── #}
+
+{% endif %}
 <!-- Top stats -->
 <div class="stat-grid" style="margin-bottom:20px">
   <div class="stat-card"><div class="stat-icon" style="background:#eef2ff">📊</div><div class="stat-value">{{ overall_avg }}%</div><div class="stat-label">Overall Average</div></div>
