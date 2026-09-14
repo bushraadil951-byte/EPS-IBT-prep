@@ -1374,7 +1374,7 @@ def ib_dashboard():
         sq = sq.filter_by(grade=current_user_obj.grade)
     if filter_section:
         sq = sq.filter_by(section=filter_section)
-students = sq.order_by(User.name).all()
+    students = sq.order_by(User.name).all()
     total_atl = ATLRating.query.count()
     total_lp  = LearnerProfileRating.query.count()
     lp_avgs = {}
