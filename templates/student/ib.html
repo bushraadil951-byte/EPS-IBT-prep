@@ -24,6 +24,25 @@
 </div>
 {% endif %}
 
+<div style="display:flex;gap:6px;margin-bottom:.625rem">
+  {% for val, label in rating_scale.items() %}
+  <div onclick="selectRating(this, '{{ attr }}', {{ val }})"
+       data-attr="{{ attr }}"
+       data-val="{{ val }}"
+       style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;
+              border:2px solid {% if self_ratings.get(attr) == val %}{{ rating_colors[val] }}{% else %}#e2e8f0{% endif %};
+              background:{% if self_ratings.get(attr) == val %}{{ rating_colors[val] }}22{% else %}#f8fafc{% endif %};
+              color:{% if self_ratings.get(attr) == val %}{{ rating_colors[val] }}{% else %}#94a3b8{% endif %};
+              border-radius:8px;font-size:.78rem;font-weight:600;user-select:none">
+    {{ val }}<br>
+    <span style="font-size:.65rem;font-weight:400">{{ label }}</span>
+    <input type="radio" name="self_{{ attr }}" value="{{ val }}"
+           {% if self_ratings.get(attr) == val %}checked{% endif %}
+           style="display:none">
+  </div>
+  {% endfor %}
+</div>
+
 <!-- ATL ratings from teacher -->
 {% if atl_ratings %}
 <div class="card" style="margin-bottom:1.25rem">
@@ -108,12 +127,31 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script>
+const colors = { 1:'#ef4444', 2:'#f59e0b', 3:'#3b82f6', 4:'#10b981' };
+
+function selectRating(div, attr, val) {
+  // Reset all buttons for this attribute
+  document.querySelectorAll(`[data-attr="${attr}"]`).forEach(d => {
+    d.style.borderColor = '#e2e8f0';
+    d.style.background  = '#f8fafc';
+    d.style.color       = '#94a3b8';
+    d.querySelector('input').checked = false;
+  });
+  // Highlight selected
+  const c = colors[val];
+  div.style.borderColor = c;
+  div.style.background  = c + '22';
+  div.style.color       = c;
+  div.querySelector('input').checked = true;
+}
+
+// Radar chart
 const labels    = {{ lp_attrs | tojson }};
 const selfData  = {{ lp_self_data | tojson }};
 const teachData = {{ lp_teacher_data | tojson }};
 
 const ctx = document.getElementById('radarChart');
-if (ctx) {
+if (ctx && (selfData.some(v => v > 0) || teachData.some(v => v > 0))) {
   new Chart(ctx, {
     type: 'radar',
     data: {
@@ -121,7 +159,7 @@ if (ctx) {
       datasets: [
         {
           label: 'My self-rating',
-          data: selfData.map(v => v || 0),
+          data: selfData,
           borderColor: '#6366f1',
           backgroundColor: 'rgba(99,102,241,0.15)',
           borderWidth: 2,
@@ -129,11 +167,11 @@ if (ctx) {
         },
         {
           label: 'Teacher rating',
-          data: teachData.map(v => v || 0),
+          data: teachData,
           borderColor: '#10b981',
           backgroundColor: 'rgba(16,185,129,0.10)',
           borderWidth: 2,
-          borderDash: [5, 4],
+          borderDash: [5,4],
           pointRadius: 4,
         }
       ]
