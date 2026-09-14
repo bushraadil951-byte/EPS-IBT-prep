@@ -108,9 +108,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script>
-const labels    = {{ learner_profile | map(attribute=0) | list | tojson }};
-const selfData  = {{ learner_profile | map(attribute=0) | map('extract', self_ratings, [0]) | list | tojson }};
-const teachData = {{ learner_profile | map(attribute=0) | map('extract', teacher_ratings, [0]) | list | tojson }};
+const labels    = {{ lp_attrs | tojson }};
+const selfData  = {{ lp_self_data | tojson }};
+const teachData = {{ lp_teacher_data | tojson }};
 
 const ctx = document.getElementById('radarChart');
 if (ctx) {
