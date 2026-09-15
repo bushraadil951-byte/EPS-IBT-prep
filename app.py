@@ -297,7 +297,7 @@ class ATLRating(db.Model):
     __tablename__ = 'atl_rating'
     id           = db.Column(db.Integer, primary_key=True)
     student_id   = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    rater_id     = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    teacher_id   = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     rater_type   = db.Column(db.String(10), nullable=False, default='teacher')  # 'teacher' or 'student'
     term         = db.Column(db.String(20), nullable=False)
     skill        = db.Column(db.String(50), nullable=False)
@@ -305,14 +305,14 @@ class ATLRating(db.Model):
     rating       = db.Column(db.Integer, nullable=False)  # 1-4
     created_at   = db.Column(db.DateTime, default=datetime.utcnow)
     student      = db.relationship('User', foreign_keys=[student_id])
-    rater        = db.relationship('User', foreign_keys=[teacher_id])
+    teacher      = db.relationship('User', foreign_keys=[teacher_id])
 
 
 class LearnerProfileRating(db.Model):
     __tablename__ = 'lp_rating'
     id           = db.Column(db.Integer, primary_key=True)
     student_id   = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    rater_id   = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    teacher_id   = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     rater_type   = db.Column(db.String(10), nullable=False, default='teacher')  # 'teacher' or 'student'
     term         = db.Column(db.String(20), nullable=False)
     attribute    = db.Column(db.String(50), nullable=False)
@@ -320,7 +320,7 @@ class LearnerProfileRating(db.Model):
     evidence     = db.Column(db.Text, nullable=True)
     created_at   = db.Column(db.DateTime, default=datetime.utcnow)
     student      = db.relationship('User', foreign_keys=[student_id])
-    rater      = db.relationship('User', foreign_keys=[teacher_id])
+    teacher      = db.relationship('User', foreign_keys=[teacher_id])
 
 
 class StudentReflection(db.Model):
@@ -1445,7 +1445,7 @@ def ib_atl():
                     existing.rating = int(rating_val)
                 else:
                     db.session.add(ATLRating(
-                        student_id=student_id, rater_id=session['user_id'],
+                        student_id=student_id, teacher_id=session['user_id'],
                         term=term, skill=skill, descriptor=desc,
                         rating=int(rating_val), rater_type=rater_type
                     ))
@@ -1606,7 +1606,7 @@ def student_ib():
                 else:
                     db.session.add(LearnerProfileRating(
                         student_id=student.id,
-                        rater_id=None,
+                        teacher_id=None,
                         term=term,
                         attribute=attr,
                         rating=int(s_rating),
