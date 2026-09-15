@@ -3447,17 +3447,31 @@ with app.app_context():
     # Fix missing columns in existing tables
     try:
         with db.engine.connect() as conn:
-            conn.execute(db.text('ALTER TABLE lp_rating ADD COLUMN IF NOT EXISTS teacher_id INTEGER'))
-            conn.execute(db.text('ALTER TABLE lp_rating ADD COLUMN IF NOT EXISTS rater_type VARCHAR(10) DEFAULT \'teacher\''))
-            conn.execute(db.text('ALTER TABLE lp_rating ADD COLUMN IF NOT EXISTS evidence TEXT'))
-            conn.execute(db.text('ALTER TABLE atl_rating ADD COLUMN IF NOT EXISTS teacher_id INTEGER'))
-            conn.execute(db.text('ALTER TABLE atl_rating ADD COLUMN IF NOT EXISTS rater_type VARCHAR(10) DEFAULT \'teacher\''))
-            # Copy rater_id to teacher_id if rater_id exists
-            conn.execute(db.text('UPDATE lp_rating SET teacher_id = rater_id WHERE teacher_id IS NULL'))
-            conn.execute(db.text('UPDATE atl_rating SET teacher_id = rater_id WHERE teacher_id IS NULL'))
-            conn.execute(db.text('ALTER TABLE lp_rating ALTER COLUMN teacher_id DROP NOT NULL'))
-            conn.execute(db.text('ALTER TABLE atl_rating ALTER COLUMN teacher_id DROP NOT NULL'))
-            conn.commit()
+            # Drop NOT NULL on rater_id (the actual column name in DB)
+            conn.execute(db.text(
+                'ALTER TABLE lp_rating ALTER COLUMN rater_id DROP NOT NULL'
+            ))
+            conn.execute(db.text(
+                'ALTER TABLE atl_rating ALTER COLUMN rater_id DROP NOT NULL'
+            ))
+            # Add teacher_id column if missing
+            conn.execute(db.text(
+                'ALTER TABLE lp_rating ADD COLUMN IF NOT EXISTS teacher_id INTEGER'
+            ))
+            conn.execute(db.text(
+                'ALTER TABLE atl_rating ADD COLUMN IF NOT EXISTS teacher_id INTEGER'
+            ))
+            # Add rater_type if missing
+            conn.execute(db.text(
+                "ALTER TABLE lp_rating ADD COLUMN IF NOT EXISTS rater_type VARCHAR(10) DEFAULT 'teacher'"
+            ))
+            conn.execute(db.text(
+                "ALTER TABLE atl_rating ADD COLUMN IF NOT EXISTS rater_type VARCHAR(10) DEFAULT 'teacher'"
+            ))
+            # Add evidence if missing
+            conn.execute(db.text(
+                'ALTER TABLE lp_rating ADD COLUMN IF NOT EXISTS evidence TEXT'
+            ))
     except Exception as e:
         print(f'Column migration note: {e}')
     seed_db()
