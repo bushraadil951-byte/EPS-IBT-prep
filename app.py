@@ -1594,18 +1594,23 @@ def student_ib():
         for attr, _emoji, _desc in LEARNER_PROFILE:
             s_rating    = request.form.get(f'self_{attr}')
             reflection  = request.form.get(f'reflection_{attr}', '')
-            if s_rating:
-                existing = LearnerProfileRating.query.filter_by(
-                    student_id=student.id, term=term,
-                    attribute=attr, rater_type='student'
-                ).first()
-                if existing:
-                    existing.rating = int(s_rating)
-                else:
-                    db.session.add(LearnerProfileRating(
-                        student_id=student.id, term=term,
-                        attribute=attr, rating=int(s_rating), rater_type='student'
-                    ))
+                 if s_rating:
+                     existing = LearnerProfileRating.query.filter_by(
+                         student_id=student.id, term=term,
+                         attribute=attr, rater_type='student'
+                     ).first()
+                     if existing:
+                         existing.rating = int(s_rating)
+                     else:
+                         db.session.add(LearnerProfileRating(
+                             student_id=student.id,
+                             teacher_id=None,          # ← explicitly set null
+                             term=term,
+                             attribute=attr,
+                             rating=int(s_rating),
+                             rater_type='student',
+                             evidence=None,
+                         ))
             if reflection:
                 existing_r = StudentReflection.query.filter_by(
                     student_id=student.id, term=term, attribute=attr
@@ -3441,6 +3446,8 @@ with app.app_context():
             # Copy rater_id to teacher_id if rater_id exists
             conn.execute(db.text('UPDATE lp_rating SET teacher_id = rater_id WHERE teacher_id IS NULL'))
             conn.execute(db.text('UPDATE atl_rating SET teacher_id = rater_id WHERE teacher_id IS NULL'))
+            conn.execute(db.text('ALTER TABLE lp_rating ALTER COLUMN teacher_id DROP NOT NULL'))
+            conn.execute(db.text('ALTER TABLE atl_rating ALTER COLUMN teacher_id DROP NOT NULL'))
             conn.commit()
     except Exception as e:
         print(f'Column migration note: {e}')
