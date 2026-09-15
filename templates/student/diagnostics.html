@@ -108,51 +108,6 @@
   {% endfor %}
 </div>
 
-<!-- Practice recommendations -->
-{% set focus = insights
-  |selectattr('average', 'ne', none)
-  |selectattr('average', 'lt', 80)
-  |list
-%}
-
-{% if focus and practice_tests %}
-
-<div
-  class="card"
-  style="margin-top:18px;border-left:4px solid #f59e0b"
->
-  <div
-    style="font-weight:800;color:#334155;margin-bottom:5px"
-  >
-    🎯 Practice next
-  </div>
-
-  <div
-    style="font-size:.78rem;color:#64748b;margin-bottom:12px"
-  >
-    These published tests match subjects where you can build confidence.
-  </div>
-
-  <div
-    style="display:flex;gap:8px;flex-wrap:wrap"
-  >
-    {% for test in practice_tests if test.subject in weak_subjects %}
-
-    <a
-      href="/student/test/{{ test.id }}"
-      class="btn btn-secondary btn-sm"
-    >
-      {{ test.subject }} · {{ test.name }}
-    </a>
-
-    {% endfor %}
-  </div>
-</div>
-
-{% endif %}
-
-{% if not has_any_marks %}
-
 <div
   class="card"
   style="margin-top:18px;text-align:center;padding:28px;color:#64748b"
