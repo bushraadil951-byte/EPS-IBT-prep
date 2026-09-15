@@ -27,18 +27,20 @@
 <div style="display:flex;gap:6px;margin-bottom:.625rem">
   {% for val, label in rating_scale.items() %}
   <div onclick="selectRating(this, '{{ attr }}', {{ val }})"
+       id="btn_{{ attr }}_{{ val }}"
        data-attr="{{ attr }}"
        data-val="{{ val }}"
-       style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;
+       style="flex:1;text-align:center;padding:10px 4px;cursor:pointer;
               border:2px solid {% if self_ratings.get(attr) == val %}{{ rating_colors[val] }}{% else %}#e2e8f0{% endif %};
               background:{% if self_ratings.get(attr) == val %}{{ rating_colors[val] }}22{% else %}#f8fafc{% endif %};
               color:{% if self_ratings.get(attr) == val %}{{ rating_colors[val] }}{% else %}#94a3b8{% endif %};
-              border-radius:8px;font-size:.78rem;font-weight:600;user-select:none">
+              border-radius:8px;font-size:.78rem;font-weight:600;
+              user-select:none;-webkit-user-select:none">
     {{ val }}<br>
     <span style="font-size:.65rem;font-weight:400">{{ label }}</span>
     <input type="radio" name="self_{{ attr }}" value="{{ val }}"
            {% if self_ratings.get(attr) == val %}checked{% endif %}
-           style="display:none">
+           style="position:absolute;opacity:0;pointer-events:none">
   </div>
   {% endfor %}
 </div>
