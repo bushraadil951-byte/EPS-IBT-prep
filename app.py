@@ -3444,36 +3444,18 @@ def student_diagnostics():
 # ── MAIN ──────────────────────────────────────────────────────────────────────
 with app.app_context():
     db.create_all()
-    # Fix missing columns in existing tables
     try:
         with db.engine.connect() as conn:
-            # Drop NOT NULL on rater_id (the actual column name in DB)
             conn.execute(db.text(
                 'ALTER TABLE lp_rating ALTER COLUMN rater_id DROP NOT NULL'
             ))
             conn.execute(db.text(
                 'ALTER TABLE atl_rating ALTER COLUMN rater_id DROP NOT NULL'
             ))
-            # Add teacher_id column if missing
-            conn.execute(db.text(
-                'ALTER TABLE lp_rating ADD COLUMN IF NOT EXISTS teacher_id INTEGER'
-            ))
-            conn.execute(db.text(
-                'ALTER TABLE atl_rating ADD COLUMN IF NOT EXISTS teacher_id INTEGER'
-            ))
-            # Add rater_type if missing
-            conn.execute(db.text(
-                "ALTER TABLE lp_rating ADD COLUMN IF NOT EXISTS rater_type VARCHAR(10) DEFAULT 'teacher'"
-            ))
-            conn.execute(db.text(
-                "ALTER TABLE atl_rating ADD COLUMN IF NOT EXISTS rater_type VARCHAR(10) DEFAULT 'teacher'"
-            ))
-            # Add evidence if missing
-            conn.execute(db.text(
-                'ALTER TABLE lp_rating ADD COLUMN IF NOT EXISTS evidence TEXT'
-            ))
+            conn.commit()
+            print('Migration done — rater_id now nullable')
     except Exception as e:
-        print(f'Column migration note: {e}')
+        print(f'Migration note: {e}')
     seed_db()
 
 
