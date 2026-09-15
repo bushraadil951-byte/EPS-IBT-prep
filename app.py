@@ -1592,44 +1592,53 @@ def student_ib():
     if request.method == 'POST':
         term = request.form.get('term')
         for attr, _emoji, _desc in LEARNER_PROFILE:
-            s_rating    = request.form.get(f'self_{attr}')
-            reflection  = request.form.get(f'reflection_{attr}', '')
-                 if s_rating:
-                     existing = LearnerProfileRating.query.filter_by(
-                         student_id=student.id, term=term,
-                         attribute=attr, rater_type='student'
-                     ).first()
-                     if existing:
-                         existing.rating = int(s_rating)
-                     else:
-                         db.session.add(LearnerProfileRating(
-                             student_id=student.id,
-                             teacher_id=None,          # ← explicitly set null
-                             term=term,
-                             attribute=attr,
-                             rating=int(s_rating),
-                             rater_type='student',
-                             evidence=None,
-                         ))
+            s_rating = request.form.get(f'self_{attr}')
+            reflection = request.form.get(f'reflection_{attr}', '')
+
+            if s_rating:
+                existing = LearnerProfileRating.query.filter_by(
+                    student_id=student.id, term=term,
+                    attribute=attr, rater_type='student'
+                ).first()
+
+                if existing:
+                    existing.rating = int(s_rating)
+                else:
+                    db.session.add(LearnerProfileRating(
+                        student_id=student.id,
+                        teacher_id=None,
+                        term=term,
+                        attribute=attr,
+                        rating=int(s_rating),
+                        rater_type='student',
+                        evidence=None,
+                    ))
+
             if reflection:
                 existing_r = StudentReflection.query.filter_by(
                     student_id=student.id, term=term, attribute=attr
                 ).first()
+
                 if existing_r:
                     existing_r.reflection = reflection
                 else:
                     db.session.add(StudentReflection(
-                        student_id=student.id, term=term,
-                        attribute=attr, reflection=reflection
+                        student_id=student.id,
+                        term=term,
+                        attribute=attr,
+                        reflection=reflection
                     ))
+
         db.session.commit()
         flash('Your self-assessment has been saved!', 'success')
         return redirect(url_for('student_ib', term=term))
 
     self_ratings = {}
-    reflections  = {}
+    reflections = {}
     ratings = LearnerProfileRating.query.filter_by(
-        student_id=student.id, term=selected_term, rater_type='student'
+        student_id=student.id,
+        term=selected_term,
+        rater_type='student'
     ).all()
     for r in ratings:
         self_ratings[r.attribute] = r.rating
