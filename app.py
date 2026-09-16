@@ -1659,10 +1659,11 @@ def student_ib():
 
     teacher_ratings = {}
     t_ratings = LearnerProfileRating.query.filter_by(
-        student_id=student.id, term=selected_term, rater_type='teacher'
+        student_id=student.id, term=selected_term
     ).all()
     for r in t_ratings:
-        teacher_ratings[r.attribute] = r.rating
+        if r.rater_type == 'teacher':
+            teacher_ratings[r.attribute] = r.rating
 
     refs = StudentReflection.query.filter_by(
         student_id=student.id, term=selected_term
@@ -1672,10 +1673,13 @@ def student_ib():
 
     atl_ratings = {}
     atl = ATLRating.query.filter_by(
-        student_id=student.id, term=selected_term, rater_type='teacher'
+        student_id=student.id, term=selected_term
     ).all()
     for r in atl:
-        atl_ratings.setdefault(r.skill, []).append({'desc': r.descriptor, 'rating': r.rating})
+        atl_ratings.setdefault(r.skill, []).append({
+            'desc': r.descriptor,
+            'rating': r.rating
+        })
 
     return render_template('student/ib.html',
         student=student, terms=TERMS, selected_term=selected_term,
