@@ -1600,6 +1600,7 @@ def ib_student_report(student_id):
 def student_ib():
     student  = db.session.get(User, session['user_id'])
     selected_term = request.args.get('term', TERMS[0])
+    selected_term = selected_term.replace('+', ' ')
 
     if request.method == 'POST':
         term = request.form.get('term')
