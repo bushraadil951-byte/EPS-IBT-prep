@@ -1591,6 +1591,7 @@ def student_ib():
 
     if request.method == 'POST':
         term = request.form.get('term')
+        print(f'DEBUG student saving term: {term}')
         for attr, _emoji, _desc in LEARNER_PROFILE:
             s_rating = request.form.get(f'self_{attr}')
             reflection = request.form.get(f'reflection_{attr}', '')
