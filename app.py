@@ -1540,17 +1540,23 @@ def ib_student_report(student_id):
     print(f'DEBUG saved terms: {saved_terms}')
 
     report = {}
-    for term in TERMS:
+    for index, term in enumerate(TERMS, start=1):
+        possible_terms = [term, f'Term {index}']
         # LP data
         lp_data = {}
         for attr, _e, _d in LEARNER_PROFILE:
-            t_r = LearnerProfileRating.query.filter_by(
-                student_id=student_id, term=term,
-                attribute=attr, rater_type='teacher'
+            t_r = LearnerProfileRating.query.filter(
+                LearnerProfileRating.student_id == student_id,
+                LearnerProfileRating.term.in_(possible_terms),
+                LearnerProfileRating.attribute == attr,
+                LearnerProfileRating.rater_type == 'teacher'
             ).first()
-            s_r = LearnerProfileRating.query.filter_by(
-                student_id=student_id, term=term,
-                attribute=attr, rater_type='student'
+
+            s_r = LearnerProfileRating.query.filter(
+                LearnerProfileRating.student_id == student_id,
+                LearnerProfileRating.term.in_(possible_terms),
+                LearnerProfileRating.attribute == attr,
+                LearnerProfileRating.rater_type == 'student'
             ).first()
             if t_r or s_r:
                 lp_data[attr] = {
@@ -1561,9 +1567,9 @@ def ib_student_report(student_id):
 
         # ATL data — load ALL ratings for this student+term, no rater_type filter
         atl_data = {}
-        all_atl = ATLRating.query.filter_by(
-            student_id=student_id,
-            term=term
+        all_atl = ATLRating.query.filter(
+            ATLRating.student_id == student_id,
+            ATLRating.term.in_(possible_terms)
         ).all()
         for r in all_atl:
             if r.skill not in atl_data:
