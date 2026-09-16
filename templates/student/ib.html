@@ -7,7 +7,7 @@
 <!-- UOI selector -->
 <div style="display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap">
   {% for t in terms %}
-  <a href="?term={{ t | urlencode }}"
+  <a href="?term={{ t | replace(' ', '+') }}"
      style="padding:7px 18px;border-radius:20px;font-size:.83rem;font-weight:600;
             text-decoration:none;
             {% if t == selected_term %}background:#6366f1;color:#fff;
