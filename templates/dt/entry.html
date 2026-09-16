@@ -1,271 +1,208 @@
-{% extends 'base.html' %}
-
+{% extends "base.html" %}
 {% block title %}Diagnostic Marks{% endblock %}
 {% block page_title %}Diagnostic Marks{% endblock %}
 
 {% block content %}
 
-{% set section_options = sections or ['A', 'B', 'C', 'D'] %}
-
-<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:18px">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:10px">
   <div>
-    <div style="font-size:1.05rem;font-weight:800;color:#1e293b">
-      📈 Diagnostic marks entry
-    </div>
-
-    <div style="font-size:.8rem;color:#64748b;margin-top:4px">
-      Enter one subject at a time, or upload a CSV for the whole class.
-    </div>
+    <h2 style="font-size:1.1rem;font-weight:700;color:#0f172a;margin-bottom:3px">
+      📝 Diagnostic marks entry
+    </h2>
+    <p style="font-size:.83rem;color:#64748b">
+      Set all filters below, then click Load Students. Date is optional.
+    </p>
   </div>
-
-  <a
-    href="/{{ role_prefix }}/dt/graph?grade={{ grade }}&section={{ section }}"
-    class="btn btn-secondary"
-  >
+  <a href="{{ url_for(role_prefix + '_dt_graph') }}" class="btn btn-secondary">
     View student graphs →
   </a>
 </div>
 
-<!-- Filters -->
-<form
-  method="GET"
-  action="/{{ role_prefix }}/dt"
-  class="card"
-  style="margin-bottom:16px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap"
->
-    <div>
-    <label class="field-label">Grade</label>
-
-    {% if grade_locked %}
-    <div
-      class="field-input"
-      style="background:#f1f5f9;color:#334155;font-weight:600;display:flex;align-items:center;cursor:not-allowed"
-    >
-      {{ grade }}
-    </div>
-    <input type="hidden" name="grade" value="{{ grade }}">
-    {% else %}
-    <select name="grade" class="field-input">
-      {% for g in grades %}
-      <option value="{{ g }}" {{ 'selected' if g == grade }}>
-        {{ g }}
-      </option>
-      {% endfor %}
-    </select>
-    {% endif %}
-  </div>
-
-  <div>
-    <label class="field-label">Section</label>
-
-    <select name="section" class="field-input">
-      <option value="">All sections</option>
-
-      {% for s in section_options %}
-      <option value="{{ s }}" {{ 'selected' if s == section }}>
-        Section {{ s }}
-      </option>
-      {% endfor %}
-    </select>
-  </div>
-
-  <div>
-    <label class="field-label">Subject</label>
-
-    <select name="subject" class="field-input">
-      {% for s in subjects %}
-      <option value="{{ s }}" {{ 'selected' if s == subject }}>
-        {{ s }}
-      </option>
-      {% endfor %}
-    </select>
-  </div>
-
-  <div>
-    <label class="field-label">Diagnostic test</label>
-
-    <select name="dt_number" class="field-input">
-      {% for n in dt_numbers %}
-      <option value="{{ n }}" {{ 'selected' if n == dt_number }}>
-        DT{{ n }}
-      </option>
-      {% endfor %}
-    </select>
-  </div>
-
-  <button class="btn btn-primary" type="submit">
-    Load students
-  </button>
-</form>
-
-<!-- Marks form -->
-<form
-  method="POST"
-  action="/{{ role_prefix }}/dt"
-  class="card"
->
-  <input
-    type="hidden"
-    name="grade"
-    value="{{ grade }}"
-  >
-
-  <input
-    type="hidden"
-    name="section"
-    value="{{ section }}"
-  >
-
-  <input
-    type="hidden"
-    name="subject"
-    value="{{ subject }}"
-  >
-
-  <input
-    type="hidden"
-    name="dt_number"
-    value="{{ dt_number }}"
-  >
-
-  <!-- Test details -->
-  <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px">
+{# ── FILTER FORM ── #}
+<div class="card" style="margin-bottom:1.25rem">
+  <form method="GET" id="filterForm"
+        action="{{ url_for(role_prefix + '_dt') }}"
+        style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
 
     <div>
-      <label class="field-label">Maximum marks</label>
-
-      <input
-        class="field-input"
-        type="number"
-        name="max_marks"
-        min="1"
-        step="0.5"
-        value="{{ dt.max_marks if dt else 25 }}"
-        required
-      >
+      <label style="display:block;font-size:.72rem;font-weight:600;color:#475569;margin-bottom:4px">Grade</label>
+      <select name="grade" id="gradeSelect"
+        style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.83rem;min-width:110px">
+        <option value="">— Grade —</option>
+        {% for g in grades %}
+        <option value="{{ g }}" {% if g == grade %}selected{% endif %}>{{ g }}</option>
+        {% endfor %}
+      </select>
     </div>
 
     <div>
-      <label class="field-label">Test date</label>
-
-      <input
-        class="field-input"
-        type="date"
-        name="test_date"
-        value="{{ dt.test_date.strftime('%Y-%m-%d') if dt and dt.test_date else '' }}"
-      >
+      <label style="display:block;font-size:.72rem;font-weight:600;color:#475569;margin-bottom:4px">Section</label>
+      <select name="section"
+        style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.83rem;min-width:110px">
+        <option value="">All sections</option>
+        {% for s in sections %}
+        <option value="{{ s }}" {% if s == section %}selected{% endif %}>Section {{ s }}</option>
+        {% endfor %}
+      </select>
     </div>
 
-    <button
-      class="btn btn-primary"
-      type="submit"
-    >
-      💾 Save marks
+    <div>
+      <label style="display:block;font-size:.72rem;font-weight:600;color:#475569;margin-bottom:4px">Subject</label>
+      <select name="subject"
+        style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.83rem;min-width:110px">
+        <option value="">— Subject —</option>
+        {% for s in subjects %}
+        <option value="{{ s }}" {% if s == subject %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div>
+      <label style="display:block;font-size:.72rem;font-weight:600;color:#475569;margin-bottom:4px">Diagnostic test</label>
+      <select name="dt_number"
+        style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.83rem;min-width:90px">
+        <option value="">— DT —</option>
+        {% for n in dt_numbers %}
+        <option value="{{ n }}" {% if n == dt_number %}selected{% endif %}>DT{{ n }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <button type="submit" class="btn btn-primary">
+      Load students
     </button>
 
-    <a
-      href="/{{ role_prefix }}/dt/upload?grade={{ grade }}&section={{ section }}&subject={{ subject }}&dt_number={{ dt_number }}"
-      class="btn btn-secondary"
-    >
-      ⬆ Upload CSV
-    </a>
-  </div>
+    {% if grade and subject and dt_number %}
+    <a href="{{ url_for(role_prefix + '_dt') }}" class="btn btn-secondary">Clear</a>
+    {% endif %}
 
-  <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:.76rem;color:#166534">
-    After saving marks, open
-    <strong>View student graphs</strong>
-    above to generate a DT PDF across all subjects or a complete DT progress report for parents.
-  </div>
+  </form>
+</div>
 
-  {% if students %}
+{# ── ONLY SHOW MARKS TABLE IF ALL REQUIRED FILTERS ARE SET ── #}
+{% if grade and subject and dt_number %}
 
-  <div style="overflow-x:auto">
-    <table class="data-table">
+<form method="POST" action="{{ url_for(role_prefix + '_dt') }}">
+  <input type="hidden" name="grade"     value="{{ grade }}">
+  <input type="hidden" name="section"   value="{{ section }}">
+  <input type="hidden" name="subject"   value="{{ subject }}">
+  <input type="hidden" name="dt_number" value="{{ dt_number }}">
 
+  <div class="card" style="margin-bottom:1.25rem">
+    <div style="display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap;margin-bottom:1rem">
+      <div>
+        <label style="display:block;font-size:.72rem;font-weight:600;color:#475569;margin-bottom:4px">
+          Maximum marks
+        </label>
+        <input type="number" name="max_marks" step="0.5" min="1"
+               value="{{ dt.max_marks if dt else 25 }}"
+               style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;
+                      font-size:.83rem;width:130px">
+      </div>
+      <div>
+        <label style="display:block;font-size:.72rem;font-weight:600;color:#475569;margin-bottom:4px">
+          Test date <span style="font-weight:400;color:#94a3b8">(optional)</span>
+        </label>
+        <input type="date" name="test_date"
+               value="{{ dt.test_date.strftime('%Y-%m-%d') if dt and dt.test_date else '' }}"
+               style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.83rem">
+      </div>
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <button type="submit" class="btn btn-primary">
+          💾 Save marks
+        </button>
+        <a href="{{ url_for(role_prefix + '_dt_upload',
+                    grade=grade, section=section,
+                    subject=subject, dt_number=dt_number) }}"
+           class="btn btn-secondary">
+          ↑ Upload CSV
+        </a>
+      </div>
+    </div>
+
+    {% if dt %}
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;
+                padding:10px 14px;font-size:.83rem;color:#166534;margin-bottom:1rem">
+      After saving marks, open
+      <a href="{{ url_for(role_prefix + '_dt_graph') }}"
+         style="font-weight:600;color:#166534">View student graphs</a>
+      above to generate a DT PDF across all subjects or a complete DT progress report for parents.
+    </div>
+    {% endif %}
+
+    {# ── MARKS TABLE ── #}
+    {% if students %}
+    <table style="width:100%;border-collapse:collapse;font-size:.83rem">
       <thead>
-        <tr>
-          <th>#</th>
-          <th>Student</th>
-          <th>Username</th>
-          <th>Marks / {{ dt.max_marks if dt else 25 }}</th>
-          <th>Remarks</th>
+        <tr style="background:#f8fafc">
+          <th style="padding:10px 14px;text-align:left;font-size:.72rem;color:#64748b;
+                     text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #e2e8f0">#</th>
+          <th style="padding:10px 14px;text-align:left;font-size:.72rem;color:#64748b;
+                     text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #e2e8f0">Student</th>
+          <th style="padding:10px 14px;text-align:left;font-size:.72rem;color:#64748b;
+                     text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #e2e8f0">Username</th>
+          <th style="padding:10px 14px;text-align:left;font-size:.72rem;color:#64748b;
+                     text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #e2e8f0">
+            Marks / {{ dt.max_marks if dt else 25 }}
+          </th>
+          <th style="padding:10px 14px;text-align:left;font-size:.72rem;color:#64748b;
+                     text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #e2e8f0">Remarks</th>
         </tr>
       </thead>
-
       <tbody>
-        {% for s in students %}
-
-        {% set saved = existing_marks.get(s.id, {}) %}
-
-        <tr>
-          <td>
-            {{ loop.index }}
-
-            <!-- Required by dt_entry() to save marks -->
-            <input
-              type="hidden"
-              name="student_id"
-              value="{{ s.id }}"
-            >
+        {% for student in students %}
+        {% set em = existing_marks.get(student.id) %}
+        <input type="hidden" name="student_id" value="{{ student.id }}">
+        <tr style="border-bottom:1px solid #f1f5f9">
+          <td style="padding:10px 14px;color:#94a3b8;font-size:.75rem">{{ loop.index }}</td>
+          <td style="padding:10px 14px;font-weight:600;color:#1e293b">{{ student.name }}</td>
+          <td style="padding:10px 14px;color:#94a3b8">{{ student.username }}</td>
+          <td style="padding:10px 14px">
+            <input type="number" name="marks_{{ student.id }}"
+                   value="{{ em.marks if em else '' }}"
+                   step="0.5" min="0"
+                   placeholder="—"
+                   style="width:90px;padding:6px 10px;border:1px solid #e2e8f0;
+                          border-radius:6px;font-size:.83rem;text-align:center">
           </td>
-
-          <td style="font-weight:600">
-            {{ s.name }}
-          </td>
-
-          <td>
-            <code>{{ s.username }}</code>
-          </td>
-
-          <td>
-            <input
-              class="field-input"
-              style="width:110px"
-              type="number"
-              name="marks_{{ s.id }}"
-              min="0"
-              max="{{ dt.max_marks if dt else 25 }}"
-              step="0.5"
-              value="{{ saved.get('marks', '') }}"
-            >
-          </td>
-
-          <td>
-            <input
-              class="field-input"
-              style="min-width:220px"
-              type="text"
-              name="remark_{{ s.id }}"
-              value="{{ saved.get('remarks', '') }}"
-              placeholder="Optional note"
-            >
+          <td style="padding:10px 14px">
+            <input type="text" name="remark_{{ student.id }}"
+                   value="{{ em.remarks if em else '' }}"
+                   placeholder="Optional note"
+                   style="width:100%;max-width:220px;padding:6px 10px;
+                          border:1px solid #e2e8f0;border-radius:6px;font-size:.83rem">
           </td>
         </tr>
-
         {% endfor %}
       </tbody>
-
     </table>
+
+    <div style="margin-top:1rem;display:flex;justify-content:flex-end">
+      <button type="submit" class="btn btn-primary">💾 Save marks</button>
+    </div>
+
+    {% else %}
+    <div style="text-align:center;padding:2.5rem;color:#94a3b8">
+      <div style="font-size:1.5rem;margin-bottom:.5rem">👥</div>
+      <div style="font-size:.88rem">No students found for
+        {{ grade }}{% if section %} Section {{ section }}{% endif %}.
+      </div>
+    </div>
+    {% endif %}
   </div>
-
-  <!-- Bottom save button -->
-  <div style="display:flex;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:1px solid #e2e8f0">
-    <button
-      class="btn btn-primary"
-      type="submit"
-    >
-      💾 Update / Save Marks
-    </button>
-  </div>
-
-  {% else %}
-
-  <div style="text-align:center;padding:40px;color:#64748b">
-    No students match this grade and section.
-  </div>
-
-  {% endif %}
-
 </form>
+
+{% else %}
+{# ── PLACEHOLDER WHEN FILTERS NOT SET ── #}
+<div class="card" style="text-align:center;padding:3rem;color:#94a3b8">
+  <div style="font-size:2.5rem;margin-bottom:.75rem">📝</div>
+  <div style="font-size:.95rem;font-weight:600;color:#64748b;margin-bottom:.4rem">
+    Select all filters above
+  </div>
+  <div style="font-size:.83rem">
+    Choose Grade, Subject and Diagnostic Test number, then click Load Students.
+  </div>
+</div>
+{% endif %}
 
 {% endblock %}
