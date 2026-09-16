@@ -1599,7 +1599,7 @@ def ib_student_report(student_id):
 @login_required('student')
 def student_ib():
     student  = db.session.get(User, session['user_id'])
-    selected_term = request.args.get('term', 'Term 1')
+    selected_term = request.args.get('term', TERMS[0])
 
     if request.method == 'POST':
         term = request.form.get('term')
@@ -3459,16 +3459,17 @@ with app.app_context():
     db.create_all()
     try:
         with db.engine.connect() as conn:
-            conn.execute(db.text(
-                'ALTER TABLE lp_rating ALTER COLUMN rater_id DROP NOT NULL'
-            ))
-            conn.execute(db.text(
-                'ALTER TABLE atl_rating ALTER COLUMN rater_id DROP NOT NULL'
-            ))
+            # Migrate old Term names to UOI names
+            conn.execute(db.text("UPDATE lp_rating SET term = 'UOI 1' WHERE term = 'Term 1'"))
+            conn.execute(db.text("UPDATE lp_rating SET term = 'UOI 2' WHERE term = 'Term 2'"))
+            conn.execute(db.text("UPDATE lp_rating SET term = 'UOI 3' WHERE term = 'Term 3'"))
+            conn.execute(db.text("UPDATE atl_rating SET term = 'UOI 1' WHERE term = 'Term 1'"))
+            conn.execute(db.text("UPDATE atl_rating SET term = 'UOI 2' WHERE term = 'Term 2'"))
+            conn.execute(db.text("UPDATE atl_rating SET term = 'UOI 3' WHERE term = 'Term 3'"))
             conn.commit()
-            print('Migration done — rater_id now nullable')
+            print('Term migration done')
     except Exception as e:
-        print(f'Migration note: {e}')
+        print(f'Term migration note: {e}')
     seed_db()
 
 
