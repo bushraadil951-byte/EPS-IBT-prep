@@ -1533,6 +1533,12 @@ def ib_student_report(student_id):
         flash('Student not found.', 'error')
         return redirect(url_for('ib_dashboard'))
 
+    # Add this before the loop
+    saved_terms = db.session.query(
+        LearnerProfileRating.term
+    ).filter_by(student_id=student_id).distinct().all()
+    print(f'DEBUG saved terms: {saved_terms}')
+
     report = {}
     for term in TERMS:
         # LP data
