@@ -195,17 +195,6 @@
   </div>
 </div>
 
-<div>
-  <label style="display:block;font-size:.72rem;font-weight:600;color:#475569;margin-bottom:4px">Section</label>
-  <select name="section"
-    style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.83rem;min-width:110px">
-    <option value="">All sections</option>
-    {% for s in sections %}
-    <option value="{{ s }}" {% if s == section %}selected{% endif %}>Section {{ s }}</option>
-    {% endfor %}
-  </select>
-</div>
-
 {% endblock %}
 {% block scripts %}
 <script>
