@@ -1446,7 +1446,7 @@ def ib_atl():
                 else:
                     db.session.add(ATLRating(
                         student_id=student_id,
-                        rater_id=session['user_id'],    ← change teacher_id to rater_id
+                        rater_id=session['user_id'],
                         term=term,
                         skill=skill,
                         descriptor=desc,
@@ -1502,7 +1502,7 @@ def ib_learner_profile():
                 else:
                     db.session.add(LearnerProfileRating(
                         student_id=student_id,
-                        rater_id=session['user_id'],    ← change this
+                        rater_id=session['user_id'],
                         term=term,
                         attribute=attr,
                         rating=int(t_rating),
