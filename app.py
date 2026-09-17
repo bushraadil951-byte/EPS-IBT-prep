@@ -1445,9 +1445,13 @@ def ib_atl():
                     existing.rating = int(rating_val)
                 else:
                     db.session.add(ATLRating(
-                        student_id=student_id, teacher_id=session['user_id'],
-                        term=term, skill=skill, descriptor=desc,
-                        rating=int(rating_val), rater_type=rater_type
+                        student_id=student_id,
+                        rater_id=session['user_id'],    ← change teacher_id to rater_id
+                        term=term,
+                        skill=skill,
+                        descriptor=desc,
+                        rating=int(rating_val),
+                        rater_type='teacher'
                     ))
                 saved += 1
         db.session.commit()
@@ -1497,9 +1501,13 @@ def ib_learner_profile():
                     existing.evidence = evidence
                 else:
                     db.session.add(LearnerProfileRating(
-                        student_id=student_id, teacher_id=session['user_id'],
-                        term=term, attribute=attr,
-                        rating=int(t_rating), rater_type='teacher', evidence=evidence
+                        student_id=student_id,
+                        rater_id=session['user_id'],    ← change this
+                        term=term,
+                        attribute=attr,
+                        rating=int(t_rating),
+                        rater_type='teacher',
+                        evidence=evidence
                     ))
         db.session.commit()
         flash(f'Learner Profile saved for {student.name} ({term})', 'success')
@@ -3464,7 +3472,14 @@ with app.app_context():
     db.create_all()
     try:
         with db.engine.connect() as conn:
-            # Migrate old Term names to UOI names
+            # Fix rater_id NOT NULL constraint
+            conn.execute(db.text(
+                'ALTER TABLE lp_rating ALTER COLUMN rater_id DROP NOT NULL'
+            ))
+            conn.execute(db.text(
+                'ALTER TABLE atl_rating ALTER COLUMN rater_id DROP NOT NULL'
+            ))
+            # Migrate old term names
             conn.execute(db.text("UPDATE lp_rating SET term = 'UOI 1' WHERE term = 'Term 1'"))
             conn.execute(db.text("UPDATE lp_rating SET term = 'UOI 2' WHERE term = 'Term 2'"))
             conn.execute(db.text("UPDATE lp_rating SET term = 'UOI 3' WHERE term = 'Term 3'"))
@@ -3472,9 +3487,9 @@ with app.app_context():
             conn.execute(db.text("UPDATE atl_rating SET term = 'UOI 2' WHERE term = 'Term 2'"))
             conn.execute(db.text("UPDATE atl_rating SET term = 'UOI 3' WHERE term = 'Term 3'"))
             conn.commit()
-            print('Term migration done')
+            print('Migration done')
     except Exception as e:
-        print(f'Term migration note: {e}')
+        print(f'Migration note: {e}')
     seed_db()
 
 
