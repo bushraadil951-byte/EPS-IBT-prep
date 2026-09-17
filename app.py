@@ -1427,7 +1427,8 @@ def ib_atl():
     students = sq.order_by(User.grade, User.name).all()
     if request.method == 'POST':
         student_id = int(request.form.get('student_id'))
-        term       = request.form.get('term')
+        term = request.form.get('term', TERMS[0])
+        term = term.replace('+', ' ')  # fix URL encoding
         skill      = request.form.get('skill')
         rater_type = 'teacher'
         student    = db.session.get(User, student_id)
@@ -1459,15 +1460,16 @@ def ib_atl():
         return redirect(url_for('ib_dashboard'))
 
     selected_student = request.args.get('student_id', type=int)
-    selected_term    = request.args.get('term', 'Term 1')
-
+    selected_term    = request.args.get('term', TERMS[0])
     existing_ratings = {}
     if selected_student:
-        ratings = ATLRating.query.filter_by(
-            student_id=selected_student, term=selected_term, rater_type='teacher'
+        all_atl = ATLRating.query.filter_by(
+            student_id=selected_student,
+            rater_type='teacher'
         ).all()
-        for r in ratings:
-            existing_ratings[(r.skill, r.descriptor)] = r.rating
+        for r in all_atl:
+            if r.term == selected_term:
+                existing_ratings[(r.skill, r.descriptor)] = r.rating
 
     return render_template('ib/atl.html',
         students=students, terms=TERMS,
@@ -1486,7 +1488,8 @@ def ib_learner_profile():
     students = sq.order_by(User.grade, User.name).all()
     if request.method == 'POST':
         student_id = int(request.form.get('student_id'))
-        term       = request.form.get('term')
+        term = request.form.get('term', TERMS[0])
+        term = term.replace('+', ' ')  # fix URL encoding
         student    = db.session.get(User, student_id)
         for attr, _emoji, _desc in LEARNER_PROFILE:
             t_rating = request.form.get(f'teacher_{attr}')
@@ -1514,16 +1517,21 @@ def ib_learner_profile():
         return redirect(url_for('ib_dashboard'))
 
     selected_student = request.args.get('student_id', type=int)
-    selected_term    = request.args.get('term', 'Term 1')
-    existing_ratings = {}
+    selected_term    = request.args.get('term', TERMS[0])
+    existing_ratings  = {}
     existing_evidence = {}
     if selected_student:
-        ratings = LearnerProfileRating.query.filter_by(
-            student_id=selected_student, term=selected_term, rater_type='teacher'
+        # Load ALL ratings for this student regardless of term
+        # to debug what's actually saved
+        all_ratings = LearnerProfileRating.query.filter_by(
+            student_id=selected_student,
+            rater_type='teacher'
         ).all()
-        for r in ratings:
-            existing_ratings[r.attribute]  = r.rating
-            existing_evidence[r.attribute] = r.evidence or ''
+        # Filter by selected term in Python
+        for r in all_ratings:
+            if r.term == selected_term:
+                existing_ratings[r.attribute]  = r.rating
+                existing_evidence[r.attribute] = r.evidence or ''
 
     return render_template('ib/learner_profile.html',
         students=students, terms=TERMS,
