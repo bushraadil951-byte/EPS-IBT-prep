@@ -33,9 +33,18 @@
 <!-- ATL ratings from teacher -->
 {% if atl_ratings %}
 <div class="card" style="margin-bottom:1.25rem">
-  <h3 style="font-size:.95rem;font-weight:700;margin-bottom:1rem">
-    🎯 ATL Skills — Teacher Assessment
-  </h3>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+    <h3 style="font-size:.95rem;font-weight:700;margin:0">
+      🎯 ATL Skills — Teacher Assessment
+    </h3>
+    <!-- Toggle Button -->
+    <button type="button" onclick="toggleATLCard()" id="atlToggleBtn"
+            style="padding:6px 14px;background:#6366f1;color:#fff;border:none;border-radius:6px;
+                   font-size:.78rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+      <span>✏️ Self Assessment</span>
+    </button>
+  </div>
+
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.75rem">
     {% for skill, items in atl_ratings.items() %}
     <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:.875rem">
@@ -63,10 +72,12 @@
 {% endif %}
 
 <!-- ATL self rating form -->
-<div class="card" style="margin-bottom:1.25rem">
+<!-- ATL self rating form (Default Hidden) -->
+<div class="card" id="atlSelfCard" style="display:none;margin-bottom:1.25rem">
   <h3 style="font-size:.95rem;font-weight:700;margin-bottom:.5rem">
     🎯 ATL Skills — My Self Assessment
   </h3>
+  <!-- Baaki ka content waisa hi rahega -->
   <p style="font-size:.78rem;color:#64748b;margin-bottom:1rem">
     Rate yourself on each ATL skill. Your teacher's rating is shown for comparison.
   </p>
@@ -299,6 +310,22 @@ if (ctx && (selfData.some(function(v){ return v > 0; })
       }
     }
   });
+}
+function toggleATLCard() {
+  var card = document.getElementById('atlSelfCard');
+  var btn = document.getElementById('atlToggleBtn');
+  
+  if (card.style.display === 'none' || card.style.display === '') {
+    card.style.display = 'block';
+    btn.innerHTML = '✖ Hide Assessment';
+    btn.style.background = '#475569';
+    // Smooth scroll karke seedhe self assessment card par le aayega
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } else {
+    card.style.display = 'none';
+    btn.innerHTML = '✏️ Self Assessment';
+    btn.style.background = '#6366f1';
+  }
 }
 </script>
 
