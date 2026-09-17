@@ -1446,7 +1446,7 @@ def ib_atl():
                 else:
                     db.session.add(ATLRating(
                         student_id=student_id,
-                        rater_id=session['user_id'],
+                        teacher_id=session['user_id'],
                         term=term,
                         skill=skill,
                         descriptor=desc,
@@ -1456,7 +1456,7 @@ def ib_atl():
                 saved += 1
         db.session.commit()
         flash(f'ATL ratings saved for {student.name} — {skill} ({term})', 'success')
-        return redirect(url_for('ib_atl'))
+        return redirect(url_for('ib_dashboard'))
 
     selected_student = request.args.get('student_id', type=int)
     selected_term    = request.args.get('term', 'Term 1')
@@ -1502,7 +1502,7 @@ def ib_learner_profile():
                 else:
                     db.session.add(LearnerProfileRating(
                         student_id=student_id,
-                        rater_id=session['user_id'],
+                        teacher_id=session['user_id'],
                         term=term,
                         attribute=attr,
                         rating=int(t_rating),
@@ -1511,7 +1511,7 @@ def ib_learner_profile():
                     ))
         db.session.commit()
         flash(f'Learner Profile saved for {student.name} ({term})', 'success')
-        return redirect(url_for('ib_learner_profile'))
+        return redirect(url_for('ib_dashboard'))
 
     selected_student = request.args.get('student_id', type=int)
     selected_term    = request.args.get('term', 'Term 1')
