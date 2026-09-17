@@ -322,6 +322,20 @@ class LearnerProfileRating(db.Model):
     student      = db.relationship('User', foreign_keys=[student_id])
     teacher      = db.relationship('User', foreign_keys=[teacher_id])
 
+class ATLSelfRating(db.Model):
+    __tablename__ = 'atl_self_rating'
+    id          = db.Column(db.Integer, primary_key=True)
+    student_id  = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    term        = db.Column(db.String(20), nullable=False)
+    skill       = db.Column(db.String(50), nullable=False)
+    descriptor  = db.Column(db.String(255), nullable=False)
+    rating      = db.Column(db.Integer, nullable=False)
+    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
+    student     = db.relationship('User', foreign_keys=[student_id])
+    __table_args__ = (
+        db.UniqueConstraint('student_id','term','skill','descriptor',
+                            name='uq_atl_self'),
+    )
 
 class StudentReflection(db.Model):
     __tablename__ = 'student_reflection'
@@ -1696,6 +1710,13 @@ def student_ib():
             'desc': r.descriptor,
             'rating': r.rating
         })
+    # Load student ATL self ratings
+    atl_self_ratings = {}
+    self_atl = ATLSelfRating.query.filter_by(
+        student_id=student.id, term=selected_term
+    ).all()
+    for r in self_atl:
+        atl_self_ratings[(r.skill, r.descriptor)] = r.rating
 
     return render_template('student/ib.html',
         student=student, terms=TERMS, selected_term=selected_term,
@@ -1703,12 +1724,39 @@ def student_ib():
         rating_colors=RATING_COLORS,
         self_ratings=self_ratings, teacher_ratings=teacher_ratings,
         reflections=reflections, atl_ratings=atl_ratings,
+        atl_skills=ATL_SKILLS,        # ← add this
+        atl_self_ratings=atl_self_ratings,  # ← add this
         # Pre-built chart data — avoids Jinja2 extract filter
-       lp_attrs=[attr for attr, e, d in LEARNER_PROFILE],
-       lp_self_data=[self_ratings.get(attr, 0) for attr, e, d in LEARNER_PROFILE],
-       lp_teacher_data=[teacher_ratings.get(attr, 0) for attr, e, d in LEARNER_PROFILE],
+        lp_attrs=[attr for attr, e, d in LEARNER_PROFILE],
+        lp_self_data=[self_ratings.get(attr, 0) for attr, e, d in LEARNER_PROFILE],
+        lp_teacher_data=[teacher_ratings.get(attr, 0) for attr, e, d in LEARNER_PROFILE],
     )
 
+@app.route('/student/atl-self', methods=['POST'], endpoint='student_atl_self')
+@login_required('student')
+def student_atl_self():
+    student = db.session.get(User, session['user_id'])
+    term    = request.form.get('term', TERMS[0]).replace('+', ' ')
+    for skill, grade_descriptors in ATL_SKILLS.items():
+        descriptors = grade_descriptors.get(student.grade, [])
+        for i, desc in enumerate(descriptors):
+            val = request.form.get(f'atl_{skill}_{i}')
+            if val:
+                existing = ATLSelfRating.query.filter_by(
+                    student_id=student.id, term=term,
+                    skill=skill, descriptor=desc
+                ).first()
+                if existing:
+                    existing.rating = int(val)
+                else:
+                    db.session.add(ATLSelfRating(
+                        student_id=student.id, term=term,
+                        skill=skill, descriptor=desc, rating=int(val)
+                    ))
+    db.session.commit()
+    flash('ATL self-assessment saved!', 'success')
+    return redirect(url_for('student_ib',
+                            term=term.replace(' ', '+')))
 
 # ── TEACHER ───────────────────────────────────────────────────────────────────
 
