@@ -54,7 +54,7 @@
               style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
                      border:none;background:none;cursor:pointer;font-size:18px;
                      padding:4px;color:#64748b;"
-              aria-label="Show password">👁️</button>
+              aria-label="Show password">👁</button>
     </div>
   </div> 
   
@@ -83,11 +83,11 @@
 
     if (password.type === 'password') {
       password.type = 'text';
-      button.textContent = '⊘';
+      button.textContent = '⃠';
       button.setAttribute('aria-label', 'Hide password');
     } else {
       password.type = 'password';
-      button.textContent = '👁️';
+      button.textContent = '👁';
       button.setAttribute('aria-label', 'Show password');
     }
   }
