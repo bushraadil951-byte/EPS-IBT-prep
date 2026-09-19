@@ -40,14 +40,17 @@
 {% if selected_student %}
 
 {% for skill, grade_descriptors in atl_skills.items() %}
-  {% set student_obj = none %}
-  {% for s in students %}
-    {% if s.id == selected_student %}
-      {% set student_obj = s %}
-    {% endif %}
-  {% endfor %}
 
-  {% set grade_key = student_obj.grade if student_obj else 'Grade 3' %}
+  {# Get the selected student's actual grade #}
+  {% set student_obj = students | selectattr('id', 'equalto', selected_student) | first %}
+
+  {% if student_obj %}
+    {% set grade_key = student_obj.grade %}
+  {% else %}
+    {% set grade_key = '' %}
+  {% endif %}
+
+  {# Load descriptors for ONLY this student's grade #}
   {% set descriptors = grade_descriptors.get(grade_key, []) %}
 
   <form method="POST" style="margin-bottom:1rem">
@@ -56,6 +59,7 @@
     <input type="hidden" name="skill" value="{{ skill }}">
 
     <div class="card">
+
       <h3 style="font-size:.95rem;font-weight:700;color:#0f172a;margin-bottom:1rem;
                  display:flex;align-items:center;gap:8px">
         🎯 {{ skill }}
@@ -63,19 +67,29 @@
 
       {% for desc in descriptors %}
         {% set desc_idx = loop.index0 %}
+
         <div style="display:flex;align-items:center;gap:12px;
                     padding:10px 0;border-bottom:1px solid #f1f5f9">
-          <div style="flex:1;font-size:.83rem;color:#374151">{{ desc }}</div>
+
+          <div style="flex:1;font-size:.83rem;color:#374151">
+            {{ desc }}
+          </div>
+
           <div style="display:flex;gap:6px;flex-shrink:0">
+
             {% for val, label in rating_scale.items() %}
+
               {% set is_selected = existing_ratings.get((skill, desc)) == val %}
+
               <label style="cursor:pointer;text-align:center">
+
                 <input type="radio"
                        name="rating_{{ desc_idx }}"
                        value="{{ val }}"
                        {% if is_selected %}checked{% endif %}
                        style="display:none"
                        onchange="highlightRating(this)">
+
                 <div class="atl-rating-btn"
                      data-val="{{ val }}"
                      style="width:40px;padding:5px 2px;
@@ -83,24 +97,53 @@
                             border-radius:6px;font-size:.75rem;font-weight:600;text-align:center;
                             background:{% if is_selected %}{{ rating_colors[val] }}22{% else %}#f8fafc{% endif %};
                             color:{% if is_selected %}{{ rating_colors[val] }}{% else %}#94a3b8{% endif %}">
+
                   {{ val }}<br>
-                  <span style="font-size:.6rem;font-weight:400">{{ label[:4] }}</span>
+
+                  <span style="font-size:.6rem;font-weight:400">
+                    {{ label[:4] }}
+                  </span>
+
                 </div>
               </label>
+
             {% endfor %}
+
           </div>
         </div>
+
       {% else %}
-        <p style="color:#94a3b8;font-size:.83rem">No descriptors available for {{ grade_key }}.</p>
+
+        <p style="color:#94a3b8;font-size:.83rem">
+          No descriptors available for {{ grade_key }}.
+        </p>
+
       {% endfor %}
 
-      <button type="submit" class="btn btn-primary btn-sm"
+      <button type="submit"
+              class="btn btn-primary btn-sm"
               style="margin-top:.875rem">
         💾 Save {{ skill }}
       </button>
+
     </div>
   </form>
+
 {% endfor %}
+
+{% else %}
+
+<div class="card" style="text-align:center;padding:3rem;color:#94a3b8">
+  <div style="font-size:2.5rem;margin-bottom:.75rem">🎯</div>
+  <div style="font-size:.95rem;font-weight:600;margin-bottom:.25rem">
+    Select a student to begin
+  </div>
+  <div style="font-size:.83rem">
+    Choose a student and UOI from the filters above
+  </div>
+</div>
+
+{% endif %}
 
 {% else %}
 <div class="card" style="text-align:center;padding:3rem;color:#94a3b8">
