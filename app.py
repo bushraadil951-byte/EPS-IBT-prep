@@ -89,30 +89,248 @@ LEARNER_PROFILE = [
 # ATL skills: category -> grade -> list of descriptor sentences
 ATL_SKILLS = {
     'Communication': {
-        'Grade 3': ['Shares ideas clearly in class discussions', 'Listens attentively when others speak', 'Writes sentences with a clear beginning and end', 'Reads aloud with expression and understanding'],
-        'Grade 4': ['Expresses ideas using appropriate vocabulary', 'Asks clarifying questions during discussions', 'Organises written work with introduction and conclusion', 'Reads and summarises key information'],
-        'Grade 5': ['Communicates effectively for different audiences', 'Evaluates and responds to others ideas respectfully', 'Writes structured arguments with evidence', 'Analyses texts and identifies authors purpose'],
+
+        'Grade 1': [
+            'Listens to others and responds when prompted',
+            'Shares ideas and experiences with others',
+            'Reads simple words, sentences and information',
+            'Writes simple words and sentences to communicate ideas',
+            'Uses appropriate language to express thoughts and needs',
+            'Uses simple digital tools to communicate information'
+        ],
+
+        'Grade 2': [
+            'Listens carefully and responds appropriately to others',
+            'Shares ideas clearly in conversations and discussions',
+            'Reads and identifies information from simple texts',
+            'Writes simple sentences to communicate ideas and information',
+            'Uses language appropriately to express and share ideas',
+            'Uses digital tools to gather and communicate simple information'
+        ],
+
+        'Grade 3': [
+            'Listens and responds appropriately when others speak',
+            'Shares ideas clearly in discussions',
+            'Reads and understands simple information',
+            'Writes to communicate ideas and information',
+            'Uses age-appropriate language to communicate meaning',
+            'Uses digital tools to gather and communicate information'
+        ],
+
+        'Grade 4': [
+            'Listens, interprets and responds appropriately to information',
+            'Expresses ideas clearly using appropriate vocabulary',
+            'Reads and identifies key information from different texts',
+            'Writes clearly to communicate ideas and information',
+            'Uses language appropriately for different purposes',
+            'Uses technology to gather, investigate and communicate information'
+        ],
+
+        'Grade 5': [
+            'Listens, interprets and responds thoughtfully to different viewpoints',
+            'Communicates ideas clearly for different audiences and purposes',
+            'Reads, analyses and interprets information from different texts',
+            'Writes clearly and effectively to communicate ideas and information',
+            'Uses language appropriately to gather and communicate information',
+            'Uses technology effectively to gather, investigate and communicate information'
+        ]
     },
+
+
     'Self-Management': {
-        'Grade 3': ['Brings required materials to class', 'Follows classroom routines independently', 'Manages time during tasks with teacher support', 'Stays on task with minimal reminders'],
-        'Grade 4': ['Organises work and materials independently', 'Sets personal goals with teacher guidance', 'Manages time effectively during class activities', 'Reflects on learning with prompting'],
-        'Grade 5': ['Plans and organises multi-step tasks independently', 'Sets and monitors personal learning goals', 'Manages time across multiple responsibilities', 'Reflects critically on own learning and progress'],
+
+        'Grade 1': [
+            'Organises personal materials with guidance',
+            'Follows simple routines and manages tasks with support',
+            'Uses time appropriately for simple learning tasks',
+            'Stays focused on a learning activity for an appropriate period',
+            'Keeps trying when a task is difficult',
+            'Recognises and expresses emotions appropriately'
+        ],
+
+        'Grade 2': [
+            'Organises materials needed for learning with increasing independence',
+            'Follows routines and completes tasks with some guidance',
+            'Begins to manage time during learning activities',
+            'Stays focused and returns to a task when reminded',
+            'Perseveres when learning becomes challenging',
+            'Begins to manage emotions and respond appropriately to setbacks'
+        ],
+
+        'Grade 3': [
+            'Organises materials needed for learning',
+            'Manages time and tasks with guidance',
+            'Follows routines and completes tasks with support',
+            'Stays focused during learning activities',
+            'Shows perseverance when learning is challenging',
+            'Manages emotions appropriately during learning'
+        ],
+
+        'Grade 4': [
+            'Organises materials and learning tasks independently',
+            'Manages time effectively during learning activities',
+            'Follows routines and completes tasks independently',
+            'Maintains focus with minimal reminders',
+            'Perseveres when faced with challenges',
+            'Demonstrates self-motivation and manages emotions appropriately'
+        ],
+
+        'Grade 5': [
+            'Plans and organises tasks effectively',
+            'Manages time across multiple responsibilities',
+            'Completes tasks independently and responsibly',
+            'Maintains focus and adjusts strategies when needed',
+            'Demonstrates perseverance, resilience and self-motivation',
+            'Manages emotions and setbacks constructively'
+        ]
     },
+
+
     'Research': {
-        'Grade 3': ['Identifies information from given sources', 'Distinguishes between fact and opinion with support', 'Records information in own words', 'Uses library and digital resources with guidance'],
-        'Grade 4': ['Selects relevant information from multiple sources', 'Identifies reliable vs unreliable sources', 'Organises research notes effectively', 'Cites sources with teacher support'],
-        'Grade 5': ['Independently researches using varied sources', 'Evaluates credibility and bias in sources', 'Synthesises information to form conclusions', 'Properly attributes sources and avoids plagiarism'],
+
+        'Grade 1': [
+            'Identifies simple information from familiar sources',
+            'Gathers information with guidance',
+            'Records information using pictures, words or simple formats',
+            'Shares information found during an inquiry',
+            'Uses different media to explore and find information',
+            'Uses digital information safely and responsibly'
+        ],
+
+        'Grade 2': [
+            'Identifies information from simple and familiar sources',
+            'Gathers and records information with guidance',
+            'Organises information using simple categories or formats',
+            'Shares information gathered during an inquiry',
+            'Uses different media to find and communicate information',
+            'Uses digital information appropriately and responsibly'
+        ],
+
+        'Grade 3': [
+            'Identifies information from given sources',
+            'Gathers and records relevant information',
+            'Organises information in a simple format',
+            'Communicates information gathered from sources',
+            'Uses different media to find and share information',
+            'Uses digital information responsibly'
+        ],
+
+        'Grade 4': [
+            'Plans how to find information for an inquiry',
+            'Gathers and records information from different sources',
+            'Organises and interprets information',
+            'Evaluates information with guidance',
+            'Uses different media to gather and communicate information',
+            'Uses digital media and information appropriately and responsibly'
+        ],
+
+        'Grade 5': [
+            'Plans and carries out research using varied sources',
+            'Gathers, records and synthesises relevant information',
+            'Interprets and evaluates information from different sources',
+            'Communicates research findings clearly',
+            'Uses media to interact with, create and communicate ideas and information',
+            'Applies social and ethical principles when using media and information'
+        ]
     },
+
+
     'Thinking': {
-        'Grade 3': ['Makes connections between new and prior learning', 'Identifies patterns and sequences', 'Generates ideas during brainstorming', 'Solves simple problems with support'],
-        'Grade 4': ['Asks why and what if questions', 'Applies knowledge to new situations', 'Identifies cause and effect relationships', 'Evaluates solutions to problems'],
-        'Grade 5': ['Analyses information from multiple perspectives', 'Creates original solutions to complex problems', 'Transfers learning across subjects', 'Justifies reasoning with evidence'],
+
+        'Grade 1': [
+            'Identifies simple ideas and information',
+            'Begins to notice similarities and differences',
+            'Generates simple ideas during activities and discussions',
+            'Tries different ways to complete a task',
+            'Makes simple connections between new and prior learning',
+            'Talks about what was learned and how the task was completed'
+        ],
+
+        'Grade 2': [
+            'Identifies important ideas and information',
+            'Begins to compare information and give simple reasons',
+            'Generates different ideas when solving a problem',
+            'Tries different approaches when completing a task',
+            'Makes connections between new learning and previous experiences',
+            'Reflects on what was learned and identifies what could be improved'
+        ],
+
+        'Grade 3': [
+            'Identifies and discusses simple ideas and information',
+            'Begins to analyse information and make simple judgments',
+            'Generates ideas during brainstorming',
+            'Considers different ways of approaching a task',
+            'Makes connections between new and prior learning',
+            'Reflects on what was learned and how learning took place'
+        ],
+
+        'Grade 4': [
+            'Analyses information and identifies important ideas',
+            'Evaluates ideas and gives reasons for responses',
+            'Generates different ideas and possible solutions',
+            'Considers different perspectives when exploring ideas',
+            'Applies learning and skills in new situations',
+            'Reflects on learning strategies and identifies areas for improvement'
+        ],
+
+        'Grade 5': [
+            'Analyses and evaluates issues, information and ideas',
+            'Uses evidence to support judgments and conclusions',
+            'Generates novel ideas and explores creative solutions',
+            'Considers different perspectives and approaches',
+            'Transfers skills and knowledge to multiple contexts',
+            'Reflects on and evaluates the process of learning'
+        ]
     },
+
+
     'Social': {
-        'Grade 3': ['Takes turns and shares during group activities', 'Shows kindness and respect to classmates', 'Accepts different roles in group work', 'Resolves conflicts with teacher support'],
-        'Grade 4': ['Contributes meaningfully to group discussions', 'Encourages and supports peers', 'Adapts role based on group needs', 'Resolves minor conflicts independently'],
-        'Grade 5': ['Leads and participates effectively in groups', 'Considers diverse perspectives in collaboration', 'Negotiates and compromises to achieve goals', 'Mediates conflicts constructively'],
-    },
+
+        'Grade 1': [
+            'Takes turns and participates in simple group activities',
+            'Uses self-control when working with others',
+            'Shows kindness and respect towards classmates',
+            'Helps and supports peers during group activities',
+            'Recognises and responds to the feelings of others',
+            'Seeks help to manage disagreements appropriately'
+        ],
+
+        'Grade 2': [
+            'Works cooperatively and takes turns during group activities',
+            'Uses self-control when working with others',
+            'Shows respect and consideration towards peers',
+            'Supports classmates during collaborative activities',
+            'Recognises different feelings and responds appropriately',
+            'Begins to manage simple disagreements with guidance'
+        ],
+
+        'Grade 3': [
+            'Takes turns and participates in group activities',
+            'Uses self-control when working with others',
+            'Shows kindness and respect towards peers',
+            'Supports classmates during collaborative activities',
+            'Recognises and responds to the feelings of others',
+            'Manages simple disagreements with support'
+        ],
+
+        'Grade 4': [
+            'Works cooperatively and contributes to group tasks',
+            'Uses self-control and manages setbacks appropriately',
+            'Supports and encourages peers',
+            'Adapts to different roles during collaboration',
+            'Recognises different feelings and perspectives',
+            'Responds appropriately to social situations'
+        ],
+
+        'Grade 5': [
+            'Collaborates effectively and contributes positively to groups',
+            'Uses self-control and manages setbacks constructively',
+            'Supports peers and contributes to a positive learning environment',
+            'Adapts roles and responsibilities to support group goals',
+            'Demonstrates awareness of others’ feelings and perspectives',
+            'Uses social-emotional understanding to manage interactions and relationships'
+        ]
+    }
 }
 # Aptitude strands
 APTITUDE_STRANDS = {
