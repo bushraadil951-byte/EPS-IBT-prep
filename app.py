@@ -2938,8 +2938,17 @@ def dt_entry():
         saved = 0
         for student_id in student_ids:
             value = request.form.get(f'marks_{student_id}', '').strip()
+
             if value == '':
-                continue
+                existing = DTMark.query.filter_by(
+                    dt_id=dt.id,
+                    student_id=int(student_id)
+                ).first()
+
+               if existing:
+                   db.session.delete(existing)
+
+               continue
             try:
                 marks_value = float(value)
             except ValueError:
