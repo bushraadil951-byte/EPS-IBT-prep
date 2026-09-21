@@ -3086,17 +3086,6 @@ def dt_upload():
 
                 continue
 
-            try:
-                marks_value = float(raw_val)
-
-                if marks_value < 0 or marks_value > subject_max_marks[sub]:
-                    skipped += 1
-                    continue
-
-            except ValueError:
-                skipped += 1
-                continue
-
             existing = DTMark.query.filter_by(
                 dt_id=dt.id,
                 student_id=student.id
@@ -3114,7 +3103,22 @@ def dt_upload():
                     entered_by=session['user_id']
                 ))
 
-            added += 1
+       # Blank cell = absent = skip without saving or deleting
+       if marks_raw == '' or marks_raw.strip() in ('', '-', 'A', 'a', 'AB', 'ab', 'absent', 'Absent'):
+           # If blank — delete existing mark so it shows as no data
+           existing = DTMark.query.filter_by(dt_id=dt.id, student_id=student.id).first()
+           if existing:
+               db.session.delete(existing)
+           continue
+
+       try:
+           marks_value = float(marks_raw.strip())
+           if marks_value < 0 or marks_value > max_marks:
+               skipped += 1
+               continue
+       except ValueError:
+           skipped += 1
+           continue     
 
         db.session.commit()
         flash(f'{added} marks uploaded across {len(present_subjects)} subject(s) ({skipped} skipped — check usernames/marks/grade)', 'success')
