@@ -65,16 +65,7 @@
 
 {% for skill, grade_descriptors in atl_skills.items() %}
 
-  {% set student_obj = none %}
-
-  {% for s in students %}
-    {% if s.id == selected_student %}
-      {% set student_obj = s %}
-    {% endif %}
-  {% endfor %}
-
-  {% set grade_key = student_obj.grade if student_obj else 'Grade 3' %}
-  {% set descriptors = grade_descriptors.get(grade_key, []) %}
+  {% set descriptors = grade_descriptors.get(selected_grade, []) %}
 
 
   <form method="POST" style="margin-bottom:1rem">
