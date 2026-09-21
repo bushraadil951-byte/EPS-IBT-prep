@@ -2938,19 +2938,16 @@ def dt_entry():
         saved = 0
         for student_id in student_ids:
             value = request.form.get(f'marks_{student_id}', '').strip()
-
             if value == '':
-                existing = DTMark.query.filter_by(
-                    dt_id=dt.id,
-                    student_id=int(student_id)
-                ).first()
-
-               if existing:
-                   db.session.delete(existing)
-
-               continue
+                # Blank = absent — delete existing mark if any
+                existing = DTMark.query.filter_by(dt_id=dt.id, student_id=int(student_id)).first()
+                if existing:
+                    db.session.delete(existing)
+                continue
             try:
                 marks_value = float(value)
+                if marks_value < 0 or marks_value > dt.max_marks:
+                    continue
             except ValueError:
                 continue
             remark = request.form.get(f'remark_{student_id}', '').strip()
