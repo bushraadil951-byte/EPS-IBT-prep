@@ -3887,35 +3887,48 @@ def student_aptitude():
         aptitude=aptitude,
         strands=list(APTITUDE_STRANDS.keys()),
     )
- 
- 
+
 @app.route('/teacher/aptitude', endpoint='teacher_aptitude')
 @app.route('/admin/aptitude',   endpoint='admin_aptitude')
 @login_required(('teacher', 'Resource_Manager'))
 def teacher_aptitude():
     current_user_obj = db.session.get(User, session['user_id'])
-    section = request.args.get('section', '')
+    section    = request.args.get('section', '')
+    student_id = request.args.get('student_id', type=int)
  
-    sq = User.query.filter_by(role='student')
+    # Grade restriction for teachers
     if current_user_obj.role == 'teacher' and current_user_obj.grade:
-        sq = sq.filter_by(grade=current_user_obj.grade)
+        grade         = current_user_obj.grade
+        grade_choices = [grade]
+    else:
+        grade         = request.args.get('grade', DT_GRADES[0])
+        grade_choices = DT_GRADES
+ 
+    # Student list for dropdown — filtered by grade + section
+    sq = User.query.filter_by(role='student', grade=grade)
     if section:
         sq = sq.filter_by(section=section)
     students = sq.order_by(User.name).all()
  
-    student_aptitudes = {}
-    for s in students:
-        student_aptitudes[s.id] = {
-            'student':  s,
-            'aptitude': compute_aptitude(s.id),
-        }
+    # Only compute aptitude for the selected student
+    selected_student = None
+    aptitude         = None
+    if student_id:
+        selected_student = db.session.get(User, student_id)
+        if selected_student:
+            aptitude = compute_aptitude(student_id)
  
     return render_template('teacher/aptitude.html',
         students=students,
-        student_aptitudes=student_aptitudes,
+        selected_student=selected_student,
+        aptitude=aptitude,
         strands=list(APTITUDE_STRANDS.keys()),
+        grade=grade,
+        grade_choices=grade_choices,
+        section=section,
+        sections=DT_SECTIONS,
     )
- 
+
 # ── MAIN ──────────────────────────────────────────────────────────────────────
 with app.app_context():
     db.create_all()
