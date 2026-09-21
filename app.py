@@ -3923,6 +3923,7 @@ def teacher_aptitude():
         selected_student=selected_student,
         aptitude=aptitude,
         strands=list(APTITUDE_STRANDS.keys()),
+        role_prefix=_dt_role_prefix(),
         grade=grade,
         grade_choices=grade_choices,
         section=section,
