@@ -4,160 +4,206 @@
 
 {% block content %}
 <p style="font-size:.83rem;color:#64748b;margin-bottom:1.25rem">
-  Computed from FA, DT and SA marks. Updates automatically as marks are recorded.
+  Select a student to view their aptitude profile computed from FA, DT and SA marks.
 </p>
 
-<!-- Section filter -->
+<!-- Filters -->
 <div class="card" style="margin-bottom:1.25rem">
   <form method="GET" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+
+    {% if grade_choices|length > 1 %}
     <div>
-      <label style="display:block;font-size:.72rem;font-weight:600;color:#475569;margin-bottom:4px">Section</label>
-      <select name="section" onchange="this.form.submit()"
-        style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.83rem;min-width:140px">
-        <option value="">All sections</option>
-        {% for s in ['A','B','C','D'] %}
-        <option value="{{ s }}" {% if s == request.args.get('section','') %}selected{% endif %}>Section {{ s }}</option>
+      <label style="display:block;font-size:.72rem;font-weight:600;color:#475569;margin-bottom:4px">Grade</label>
+      <select name="grade" onchange="this.form.submit()"
+        style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.83rem;min-width:110px">
+        {% for g in grade_choices %}
+        <option value="{{ g }}" {% if g == grade %}selected{% endif %}>{{ g }}</option>
         {% endfor %}
       </select>
     </div>
-    <div style="font-size:.83rem;color:#64748b;align-self:center">
-      {{ students|length }} student(s)
+    {% endif %}
+
+    <div>
+      <label style="display:block;font-size:.72rem;font-weight:600;color:#475569;margin-bottom:4px">Section</label>
+      <select name="section" onchange="this.form.submit()"
+        style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.83rem;min-width:120px">
+        <option value="">All sections</option>
+        {% for s in sections %}
+        <option value="{{ s }}" {% if s == section %}selected{% endif %}>Section {{ s }}</option>
+        {% endfor %}
+      </select>
     </div>
+
+    <div>
+      <label style="display:block;font-size:.72rem;font-weight:600;color:#475569;margin-bottom:4px">Student</label>
+      <select name="student_id" onchange="this.form.submit()"
+        style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.83rem;min-width:220px">
+        <option value="">— Select student —</option>
+        {% for s in students %}
+        <option value="{{ s.id }}"
+          {% if selected_student and selected_student.id == s.id %}selected{% endif %}>
+          {{ s.name }} ({{ s.section or '—' }})
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    {% if selected_student %}
+    <a href="{{ url_for(role_prefix + '_aptitude') }}?grade={{ grade }}"
+       class="btn btn-secondary btn-sm">Clear</a>
+    {% endif %}
+
   </form>
 </div>
 
-<!-- Class average radar -->
-<div class="card" style="margin-bottom:1.25rem">
-  <h3 style="font-size:.95rem;font-weight:700;margin-bottom:1rem">🧠 Class Aptitude Averages</h3>
-  <div style="max-width:480px;margin:0 auto">
-    <canvas id="classRadar" role="img" aria-label="Class aptitude radar chart"></canvas>
+{% if not selected_student %}
+<!-- Placeholder -->
+<div class="card" style="text-align:center;padding:3rem;color:#94a3b8">
+  <div style="font-size:2.5rem;margin-bottom:.75rem">🧠</div>
+  <div style="font-size:.95rem;font-weight:600;color:#64748b;margin-bottom:.4rem">
+    Select a student above
+  </div>
+  <div style="font-size:.83rem">
+    Choose grade, section and student to view their aptitude profile.
   </div>
 </div>
 
-<!-- Heatmap table -->
-<div class="card" style="margin-bottom:1.25rem">
-  <h3 style="font-size:.95rem;font-weight:700;margin-bottom:1rem">📊 Student Aptitude Heatmap</h3>
-  <div style="overflow-x:auto">
-    <table style="width:100%;border-collapse:collapse;font-size:.78rem;min-width:700px">
-      <thead>
-        <tr style="background:#f8fafc">
-          <th style="padding:10px 12px;text-align:left;border-bottom:2px solid #e2e8f0;white-space:nowrap">Student</th>
-          <th style="padding:10px 12px;text-align:left;border-bottom:2px solid #e2e8f0">Sec</th>
-          {% for strand in strands %}
-          <th style="padding:10px 8px;text-align:center;border-bottom:2px solid #e2e8f0;white-space:nowrap;font-size:.7rem">
-            {{ strand | replace(' & ',' &\n') | replace(' Thinking','') | replace(' Skills','') | replace(' Literacy','') }}
-          </th>
-          {% endfor %}
-          <th style="padding:10px 12px;text-align:center;border-bottom:2px solid #e2e8f0">Overall</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for s in students %}
-        {% set apt = student_aptitudes[s.id].aptitude %}
-        {% set scores = apt.values() | map(attribute='score') | list %}
-        {% set valid = scores | reject('none') | list %}
-        {% set overall = (valid | sum / valid | length) | round(1) if valid else none %}
-        <tr style="border-bottom:1px solid #f1f5f9">
-          <td style="padding:9px 12px;font-weight:600;color:#1e293b;white-space:nowrap">{{ s.name }}</td>
-          <td style="padding:9px 12px;color:#64748b">{{ s.section or '—' }}</td>
-          {% for strand in strands %}
-          {% set sc = apt.get(strand, {}).get('score') %}
-          <td style="padding:6px 8px;text-align:center">
-            {% if sc is not none %}
-            <div style="margin:0 auto;width:44px;padding:4px 2px;border-radius:6px;font-weight:700;font-size:.78rem;text-align:center;
-                 background:{% if sc >= 75 %}#ecfdf5{% elif sc >= 50 %}#fffbeb{% else %}#fef2f2{% endif %};
-                 color:{% if sc >= 75 %}#065f46{% elif sc >= 50 %}#92400e{% else %}#991b1b{% endif %}">
-              {{ sc }}%
-            </div>
-            {% else %}
-            <span style="color:#e2e8f0;font-size:.75rem">—</span>
-            {% endif %}
-          </td>
-          {% endfor %}
-          <td style="padding:9px 12px;text-align:center">
-            {% if overall is not none %}
-            <div style="font-weight:800;font-size:.88rem;
-                 color:{% if overall >= 75 %}#10b981{% elif overall >= 50 %}#f59e0b{% else %}#ef4444{% endif %}">
-              {{ overall }}%
-            </div>
-            {% else %}
-            <span style="color:#e2e8f0">—</span>
-            {% endif %}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+{% else %}
+<!-- Student info bar -->
+<div class="card" style="margin-bottom:1.25rem;display:flex;align-items:center;gap:12px">
+  <div style="width:40px;height:40px;border-radius:50%;background:#6366f1;
+              color:#fff;display:flex;align-items:center;justify-content:center;
+              font-weight:700;font-size:14px;flex-shrink:0">
+    {{ selected_student.name[:2].upper() }}
   </div>
-</div>
-
-<!-- Per-strand ranking -->
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem">
-  {% for strand in strands %}
-  <div class="card">
-    <h4 style="font-size:.83rem;font-weight:700;color:#1e293b;margin-bottom:.75rem">
-      {{ strand }} — Top Students
-    </h4>
-    {% set ranked = [] %}
-    {% for s in students %}
-      {% set sc = student_aptitudes[s.id].aptitude.get(strand, {}).get('score') %}
-      {% if sc is not none %}
-        {% set _ = ranked.append((s.name, s.section, sc)) %}
-      {% endif %}
-    {% endfor %}
-    {% for name, sec, sc in ranked | sort(attribute=2, reverse=True) | list %}
-    {% if loop.index <= 5 %}
-    <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f8fafc">
-      <div style="width:20px;font-size:.72rem;color:#94a3b8;text-align:center">{{ loop.index }}</div>
-      <div style="flex:1;font-size:.8rem;color:#1e293b">{{ name }}</div>
-      <div style="font-size:.72rem;color:#64748b">{{ sec }}</div>
-      <div style="font-weight:700;font-size:.83rem;
-           color:{% if sc >= 75 %}#10b981{% elif sc >= 50 %}#f59e0b{% else %}#ef4444{% endif %}">
-        {{ sc }}%
-      </div>
+  <div>
+    <div style="font-size:1rem;font-weight:700;color:#1e293b">{{ selected_student.name }}</div>
+    <div style="font-size:.78rem;color:#64748b">
+      {{ selected_student.grade }} · Section {{ selected_student.section or '—' }}
     </div>
-    {% endif %}
+  </div>
+</div>
+
+{% if aptitude %}
+
+<!-- Radar chart -->
+<div class="card" style="margin-bottom:1.25rem">
+  <h3 style="font-size:.95rem;font-weight:700;margin-bottom:1rem">🧠 Aptitude Overview</h3>
+  <div style="max-width:440px;margin:0 auto">
+    <canvas id="aptitudeRadar" role="img" aria-label="Radar chart of aptitude scores"></canvas>
+  </div>
+</div>
+
+<!-- Score cards -->
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+            gap:1rem;margin-bottom:1.25rem">
+  {% for strand, data in aptitude.items() %}
+  {% set score = data.score %}
+  {% set color = '#10b981' if score and score >= 75
+                 else '#f59e0b' if score and score >= 50
+                 else '#ef4444' if score else '#94a3b8' %}
+  {% set label = 'Strong' if score and score >= 75
+                 else 'Developing' if score and score >= 50
+                 else 'Needs focus' if score else 'No data yet' %}
+  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;
+              padding:1.125rem;border-top:3px solid {{ color }}">
+    <div style="font-size:.83rem;font-weight:700;color:#1e293b;margin-bottom:.5rem">{{ strand }}</div>
+    <div style="font-size:2rem;font-weight:800;color:{{ color }};line-height:1">
+      {% if score %}{{ score }}%{% else %}—{% endif %}
+    </div>
+    <div style="font-size:.72rem;color:#94a3b8;margin-top:3px">{{ label }}</div>
+
+    {% if data.has_data %}
+    <div style="margin-top:.875rem;display:flex;flex-direction:column;gap:5px">
+      {% if data.fa_score is not none %}
+      <div style="display:flex;align-items:center;gap:6px;font-size:.72rem">
+        <span style="color:#64748b;width:22px">FA</span>
+        <div style="flex:1;height:5px;background:#f1f5f9;border-radius:99px;overflow:hidden">
+          <div style="height:100%;width:{{ data.fa_score }}%;background:#6366f1;border-radius:99px"></div>
+        </div>
+        <span style="color:#1e293b;font-weight:600;min-width:34px">{{ data.fa_score }}%</span>
+      </div>
+      {% endif %}
+      {% if data.dt_score is not none %}
+      <div style="display:flex;align-items:center;gap:6px;font-size:.72rem">
+        <span style="color:#64748b;width:22px">DT</span>
+        <div style="flex:1;height:5px;background:#f1f5f9;border-radius:99px;overflow:hidden">
+          <div style="height:100%;width:{{ data.dt_score }}%;background:#0ea5e9;border-radius:99px"></div>
+        </div>
+        <span style="color:#1e293b;font-weight:600;min-width:34px">{{ data.dt_score }}%</span>
+      </div>
+      {% endif %}
+      {% if data.sa_score is not none %}
+      <div style="display:flex;align-items:center;gap:6px;font-size:.72rem">
+        <span style="color:#64748b;width:22px">SA</span>
+        <div style="flex:1;height:5px;background:#f1f5f9;border-radius:99px;overflow:hidden">
+          <div style="height:100%;width:{{ data.sa_score }}%;background:#10b981;border-radius:99px"></div>
+        </div>
+        <span style="color:#1e293b;font-weight:600;min-width:34px">{{ data.sa_score }}%</span>
+      </div>
+      {% endif %}
+    </div>
     {% else %}
-    <p style="font-size:.78rem;color:#94a3b8">No data yet</p>
-    {% endfor %}
+    <div style="font-size:.72rem;color:#cbd5e1;margin-top:.5rem">Marks not recorded yet</div>
+    {% endif %}
   </div>
   {% endfor %}
 </div>
 
+<!-- Legend -->
+<div class="card" style="display:flex;gap:1.5rem;flex-wrap:wrap;align-items:center">
+  <div style="font-size:.78rem;font-weight:600;color:#475569">Score guide:</div>
+  <div style="display:flex;align-items:center;gap:5px;font-size:.78rem">
+    <div style="width:10px;height:10px;border-radius:2px;background:#10b981"></div>
+    <span style="color:#475569">75%+ Strong</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:5px;font-size:.78rem">
+    <div style="width:10px;height:10px;border-radius:2px;background:#f59e0b"></div>
+    <span style="color:#475569">50–74% Developing</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:5px;font-size:.78rem">
+    <div style="width:10px;height:10px;border-radius:2px;background:#ef4444"></div>
+    <span style="color:#475569">Below 50% Needs focus</span>
+  </div>
+  <div style="margin-left:auto;font-size:.72rem;color:#94a3b8">
+    FA 40% · DT 35% · SA 25% · Arts: SA 100%
+  </div>
+</div>
+
+{% endif %}
+{% endif %}
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script>
+{% if aptitude %}
 const isDark = matchMedia('(prefers-color-scheme:dark)').matches;
 const gc = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
 const tc = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.4)';
-const strands = {{ strands | tojson }};
-const allApt  = {{ student_aptitudes.values() | map(attribute='aptitude') | list | tojson }};
-
-// Compute class average per strand
-const classAvg = strands.map(function(strand) {
-  var vals = allApt.map(function(a){ return a[strand] ? a[strand].score : null; }).filter(function(v){ return v !== null; });
-  return vals.length ? Math.round(vals.reduce(function(a,b){ return a+b; }, 0) / vals.length * 10) / 10 : 0;
-});
-
-new Chart(document.getElementById('classRadar'), {
-  type: 'radar',
-  data: {
-    labels: strands,
-    datasets: [{
-      label: 'Class average',
-      data: classAvg,
-      borderColor: '#6366f1',
-      backgroundColor: 'rgba(99,102,241,0.15)',
-      borderWidth: 2, pointRadius: 5, pointBackgroundColor: '#6366f1',
-    }]
-  },
-  options: {
-    responsive: true,
-    scales: { r: { min:0, max:100,
-      ticks:{ stepSize:25, backdropColor:'transparent', font:{size:10}, color:tc, callback: function(v){ return v+'%'; } },
-      grid:{ color:gc }, pointLabels:{ font:{size:11}, color:tc }
-    }},
-    plugins: { legend:{ display:false } }
-  }
-});
+var radarCtx = document.getElementById('aptitudeRadar');
+if (radarCtx) {
+  new Chart(radarCtx, {
+    type: 'radar',
+    data: {
+      labels: {{ strands | tojson }},
+      datasets: [{
+        label: '{{ selected_student.name }}',
+        data: {{ aptitude.values() | map(attribute='score') | list | tojson }}.map(function(v){ return v || 0; }),
+        borderColor: '#6366f1',
+        backgroundColor: 'rgba(99,102,241,0.15)',
+        borderWidth: 2, pointRadius: 5, pointBackgroundColor: '#6366f1',
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: { r: { min:0, max:100,
+        ticks:{ stepSize:25, backdropColor:'transparent', font:{size:10},
+                color:tc, callback: function(v){ return v+'%'; } },
+        grid:{ color:gc }, pointLabels:{ font:{size:11}, color:tc }
+      }},
+      plugins: { legend:{ display:false } }
+    }
+  });
+}
+{% endif %}
 </script>
 {% endblock %}
