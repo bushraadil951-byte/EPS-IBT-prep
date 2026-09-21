@@ -1613,12 +1613,21 @@ def ib_atl():
             if r.term == selected_term:
                 existing_ratings[(r.skill, r.descriptor)] = r.rating
 
+    # Get selected student's grade for correct descriptors
+    selected_grade = 'Grade 3'
+    if selected_student:
+        s_obj = db.session.get(User, selected_student)
+        if s_obj:
+            selected_grade = s_obj.grade or 'Grade 3'
+
     return render_template('ib/atl.html',
         students=students, terms=TERMS,
-        atl_skills=ATL_SKILLS, rating_scale=RATING_SCALE,
-        selected_student=selected_student, selected_term=selected_term,
+        atl_skills=ATL_SKILLS,
+        rating_scale=RATING_SCALE,
+        selected_student=selected_student,
+        selected_term=selected_term,
+        selected_grade=selected_grade,
         existing_ratings=existing_ratings)
-
 
 @app.route('/ib/learner-profile', methods=['GET', 'POST'])
 @login_required(('Resource_Manager', 'teacher'))
