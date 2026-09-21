@@ -114,6 +114,39 @@ ATL_SKILLS = {
         'Grade 5': ['Leads and participates effectively in groups', 'Considers diverse perspectives in collaboration', 'Negotiates and compromises to achieve goals', 'Mediates conflicts constructively'],
     },
 }
+# Aptitude strands
+APTITUDE_STRANDS = {
+    'Critical Thinking': {
+        'subjects':    ['Science'],
+        'weight_fa':   0.40,
+        'weight_dt':   0.35,
+        'weight_sa':   0.25,
+    },
+    'Analytical Thinking': {
+        'subjects':    ['Maths'],
+        'weight_fa':   0.40,
+        'weight_dt':   0.35,
+        'weight_sa':   0.25,
+    },
+    'Digital Literacy': {
+        'subjects':    ['ICT'],
+        'weight_fa':   0.40,
+        'weight_dt':   0.35,
+        'weight_sa':   0.25,
+    },
+    'Language Skills': {
+        'subjects':    ['English', 'Hindi', 'Urdu'],
+        'weight_fa':   0.40,
+        'weight_dt':   0.35,
+        'weight_sa':   0.25,
+    },
+    'Creativity & Innovation': {
+        'subjects':    ['Arts'],
+        'weight_fa':   0.0,
+        'weight_dt':   0.0,
+        'weight_sa':   1,
+    },
+}
 
 # Rating-level descriptors, per grade band (used for reference/legend purposes)
 ATL_DESCRIPTORS = {
@@ -184,6 +217,13 @@ PORTAL_MODULES = {
             'desc':     'Rate students on Learner Profile attributes and ATL skills. View holistic growth reports per student.',
             'endpoint': 'ib_dashboard',
         },
+        {
+            'key':      'aptitude',
+            'name':     'Aptitude Analytics',
+            'icon':     '🧠',
+            'desc':     'View class aptitude heatmap and per-strand student rankings.',
+            'endpoint': 'teacher_aptitude',
+        },
     ],
     'teacher': [
         {
@@ -214,6 +254,13 @@ PORTAL_MODULES = {
             'desc':     'Rate your students on Learner Profile attributes and ATL skills each term.',
             'endpoint': 'ib_dashboard',
         },
+        {
+            'key':      'aptitude',
+            'name':     'Aptitude Analytics',
+            'icon':     '🧠',
+            'desc':     'View class aptitude heatmap and per-strand student rankings.',
+            'endpoint': 'teacher_aptitude',
+        },
     ],
     'student': [
         {
@@ -236,6 +283,13 @@ PORTAL_MODULES = {
             'icon':     '🌱',
             'desc':     'See your Learner Profile growth, self-rate each term, and write reflections.',
             'endpoint': 'student_ib',
+        },
+        {
+            'key':      'aptitude',
+            'name':     'Aptitude Profile',
+            'icon':     '🧠',
+            'desc':     'See your 8 aptitude scores computed from DT marks, ATL skills and Learner Profile.',
+            'endpoint': 'student_aptitude',
         },
     ],
 }
@@ -447,6 +501,80 @@ def safe_avg(lst):
     lst = [x for x in lst if x is not None]
     return round(sum(lst) / len(lst), 1) if lst else 0
 
+def compute_aptitude(student_id, academic_year=ACADEMIC_YEAR):
+    results = {}
+    for strand, config in APTITUDE_STRANDS.items():
+        fa_pcts = []
+        dt_pcts = []
+        sa_pcts = []
+
+        for subj in config['subjects']:
+
+            # FA scores
+            fa_marks = (AssessmentMark.query
+                .join(Assessment, AssessmentMark.assessment_id == Assessment.id)
+                .filter(
+                    Assessment.atype == 'FA',
+                    Assessment.subject == subj,
+                    Assessment.academic_year == academic_year,
+                    AssessmentMark.student_id == student_id
+                ).all())
+            for m in fa_marks:
+                if m.assessment.max_marks:
+                    fa_pcts.append(round(
+                        m.marks_obtained / m.assessment.max_marks * 100, 1))
+
+            # DT scores
+            dt_marks = (DTMark.query
+                .join(DiagnosticTest, DTMark.dt_id == DiagnosticTest.id)
+                .filter(
+                    DiagnosticTest.subject == subj,
+                    DiagnosticTest.academic_year == academic_year,
+                    DTMark.student_id == student_id
+                ).all())
+            for m in dt_marks:
+                if m.dt.max_marks:
+                    dt_pcts.append(round(
+                        m.marks_obtained / m.dt.max_marks * 100, 1))
+
+            # SA scores
+            sa_marks = (AssessmentMark.query
+                .join(Assessment, AssessmentMark.assessment_id == Assessment.id)
+                .filter(
+                    Assessment.atype == 'SA',
+                    Assessment.subject == subj,
+                    Assessment.academic_year == academic_year,
+                    AssessmentMark.student_id == student_id
+                ).all())
+            for m in sa_marks:
+                if m.assessment.max_marks:
+                    sa_pcts.append(round(
+                        m.marks_obtained / m.assessment.max_marks * 100, 1))
+
+        fa_score = safe_avg(fa_pcts) if fa_pcts else None
+        dt_score = safe_avg(dt_pcts) if dt_pcts else None
+        sa_score = safe_avg(sa_pcts) if sa_pcts else None
+
+        # Only compute final if at least one score exists
+        available = [(fa_score, config['weight_fa']),
+                     (dt_score, config['weight_dt']),
+                     (sa_score, config['weight_sa'])]
+        total_weight = sum(w for s, w in available if s is not None)
+        if total_weight > 0:
+            final = round(
+                sum(s * w for s, w in available if s is not None)
+                / total_weight * 1, 1)
+        else:
+            final = None
+
+        results[strand] = {
+            'score':    final,
+            'fa_score': fa_score,
+            'dt_score': dt_score,
+            'sa_score': sa_score,
+            'has_data': total_weight > 0,
+        }
+    return results
 
 def generate_username(name, grade):
     first = re.sub(r'[^a-z0-9]', '', name.split()[0].lower())
@@ -3522,7 +3650,45 @@ def student_diagnostics():
         has_any_marks=has_any_marks,
         report_url=url_for('student_dt_report'))
 
-
+@app.route('/student/aptitude', endpoint='student_aptitude')
+@login_required('student')
+def student_aptitude():
+    student  = db.session.get(User, session['user_id'])
+    aptitude = compute_aptitude(student.id)
+    return render_template('student/aptitude.html',
+        student=student,
+        aptitude=aptitude,
+        strands=list(APTITUDE_STRANDS.keys()),
+    )
+ 
+ 
+@app.route('/teacher/aptitude', endpoint='teacher_aptitude')
+@app.route('/admin/aptitude',   endpoint='admin_aptitude')
+@login_required(('teacher', 'Resource_Manager'))
+def teacher_aptitude():
+    current_user_obj = db.session.get(User, session['user_id'])
+    section = request.args.get('section', '')
+ 
+    sq = User.query.filter_by(role='student')
+    if current_user_obj.role == 'teacher' and current_user_obj.grade:
+        sq = sq.filter_by(grade=current_user_obj.grade)
+    if section:
+        sq = sq.filter_by(section=section)
+    students = sq.order_by(User.name).all()
+ 
+    student_aptitudes = {}
+    for s in students:
+        student_aptitudes[s.id] = {
+            'student':  s,
+            'aptitude': compute_aptitude(s.id),
+        }
+ 
+    return render_template('teacher/aptitude.html',
+        students=students,
+        student_aptitudes=student_aptitudes,
+        strands=list(APTITUDE_STRANDS.keys()),
+    )
+ 
 # ── MAIN ──────────────────────────────────────────────────────────────────────
 with app.app_context():
     db.create_all()
