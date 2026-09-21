@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}My Aptitude Profile{% endblock %}
+{% block page_title %}My Aptitude Profile{% endblock %}
+
+{% block content %}
+<p style="font-size:.83rem;color:#64748b;margin-bottom:1.25rem">
+  Your aptitude is calculated from FA marks, DT marks and SA marks.
+  Scores update automatically as new marks are recorded.
+</p>
+
+<div class="card" style="margin-bottom:1.25rem">
+  <h3 style="font-size:.95rem;font-weight:700;margin-bottom:1rem">🧠 Aptitude Overview</h3>
+  <div style="max-width:480px;margin:0 auto">
+    <canvas id="aptitudeRadar" role="img" aria-label="Radar chart of aptitude scores"></canvas>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;margin-bottom:1.25rem">
+  {% for strand, data in aptitude.items() %}
+  {% set score = data.score %}
+  {% set color = '#10b981' if score and score >= 75 else '#f59e0b' if score and score >= 50 else '#ef4444' if score else '#94a3b8' %}
+  {% set label = 'Strong' if score and score >= 75 else 'Developing' if score and score >= 50 else 'Needs focus' if score else 'No data yet' %}
+  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:1.125rem;border-top:3px solid {{ color }}">
+    <div style="font-size:.83rem;font-weight:700;color:#1e293b;margin-bottom:.5rem">{{ strand }}</div>
+    <div style="font-size:2rem;font-weight:800;color:{{ color }};line-height:1">
+      {% if score %}{{ score }}%{% else %}—{% endif %}
+    </div>
+    <div style="font-size:.72rem;color:#94a3b8;margin-top:3px">{{ label }}</div>
+    {% if data.has_data %}
+    <div style="margin-top:.875rem;display:flex;flex-direction:column;gap:5px">
+      {% if data.fa_score is not none %}
+      <div style="display:flex;align-items:center;gap:6px;font-size:.72rem">
+        <span style="color:#64748b;width:22px">FA</span>
+        <div style="flex:1;height:5px;background:#f1f5f9;border-radius:99px;overflow:hidden">
+          <div style="height:100%;width:{{ data.fa_score }}%;background:#6366f1;border-radius:99px"></div>
+        </div>
+        <span style="color:#1e293b;font-weight:600;min-width:34px">{{ data.fa_score }}%</span>
+      </div>
+      {% endif %}
+      {% if data.dt_score is not none %}
+      <div style="display:flex;align-items:center;gap:6px;font-size:.72rem">
+        <span style="color:#64748b;width:22px">DT</span>
+        <div style="flex:1;height:5px;background:#f1f5f9;border-radius:99px;overflow:hidden">
+          <div style="height:100%;width:{{ data.dt_score }}%;background:#0ea5e9;border-radius:99px"></div>
+        </div>
+        <span style="color:#1e293b;font-weight:600;min-width:34px">{{ data.dt_score }}%</span>
+      </div>
+      {% endif %}
+      {% if data.sa_score is not none %}
+      <div style="display:flex;align-items:center;gap:6px;font-size:.72rem">
+        <span style="color:#64748b;width:22px">SA</span>
+        <div style="flex:1;height:5px;background:#f1f5f9;border-radius:99px;overflow:hidden">
+          <div style="height:100%;width:{{ data.sa_score }}%;background:#10b981;border-radius:99px"></div>
+        </div>
+        <span style="color:#1e293b;font-weight:600;min-width:34px">{{ data.sa_score }}%</span>
+      </div>
+      {% endif %}
+    </div>
+    {% else %}
+    <div style="font-size:.72rem;color:#cbd5e1;margin-top:.5rem">Marks not recorded yet</div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+<div class="card" style="display:flex;gap:1.5rem;flex-wrap:wrap;align-items:center">
+  <div style="font-size:.78rem;font-weight:600;color:#475569">Score guide:</div>
+  <div style="display:flex;align-items:center;gap:5px;font-size:.78rem">
+    <div style="width:10px;height:10px;border-radius:2px;background:#10b981"></div>
+    <span style="color:#475569">75%+ Strong</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:5px;font-size:.78rem">
+    <div style="width:10px;height:10px;border-radius:2px;background:#f59e0b"></div>
+    <span style="color:#475569">50–74% Developing</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:5px;font-size:.78rem">
+    <div style="width:10px;height:10px;border-radius:2px;background:#ef4444"></div>
+    <span style="color:#475569">Below 50% Needs focus</span>
+  </div>
+  <div style="margin-left:auto;font-size:.72rem;color:#94a3b8">FA 40% · DT 35% · SA 25% · Arts: SA 100%</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script>
+const isDark = matchMedia('(prefers-color-scheme:dark)').matches;
+const gc = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+const tc = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.4)';
+new Chart(document.getElementById('aptitudeRadar'), {
+  type: 'radar',
+  data: {
+    labels: {{ strands | tojson }},
+    datasets: [{
+      label: 'My Aptitude',
+      data: {{ aptitude.values() | map(attribute='score') | list | tojson }}.map(function(v){ return v || 0; }),
+      borderColor: '#6366f1',
+      backgroundColor: 'rgba(99,102,241,0.15)',
+      borderWidth: 2, pointRadius: 5, pointBackgroundColor: '#6366f1',
+    }]
+  },
+  options: {
+    responsive: true,
+    scales: { r: { min:0, max:100,
+      ticks:{ stepSize:25, backdropColor:'transparent', font:{size:10}, color:tc, callback: function(v){ return v+'%'; } },
+      grid:{ color:gc }, pointLabels:{ font:{size:11}, color:tc }
+    }},
+    plugins: { legend:{ display:false } }
+  }
+});
+</script>
+{% endblock %}
