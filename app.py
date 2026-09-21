@@ -3070,29 +3070,51 @@ def dt_upload():
             row_lower = {(k or '').strip().lower(): v for k, v in row.items()}
 
             for sub in present_subjects:
-                raw_val = (row_lower.get(sub.lower()) or '').strip()
-                if raw_val == '':
-                    continue
-                try:
-                    marks_value = float(raw_val)
-                    if marks_value < 0 or marks_value > subject_max_marks[sub]:
-                        skipped += 1
-                        continue
-                except ValueError:
+            raw_val = (row_lower.get(sub.lower()) or '').strip()
+
+            dt = dt_by_subject[sub]
+
+            # Blank cell = remove any previously saved mark
+            if raw_val == '':
+                existing = DTMark.query.filter_by(
+                    dt_id=dt.id,
+                    student_id=student.id
+                ).first()
+
+                if existing:
+                    db.session.delete(existing)
+
+                continue
+
+            try:
+                marks_value = float(raw_val)
+
+                if marks_value < 0 or marks_value > subject_max_marks[sub]:
                     skipped += 1
                     continue
-                dt = dt_by_subject[sub]
-                existing = DTMark.query.filter_by(dt_id=dt.id, student_id=student.id).first()
-                if existing:
-                    existing.marks_obtained = marks_value
-                    existing.entered_by = session['user_id']
-                    existing.entered_at = datetime.utcnow()
-                else:
-                    db.session.add(DTMark(
-                        dt_id=dt.id, student_id=student.id, marks_obtained=marks_value,
-                        entered_by=session['user_id']
-                    ))
-                added += 1
+
+            except ValueError:
+                skipped += 1
+                continue
+
+            existing = DTMark.query.filter_by(
+                dt_id=dt.id,
+                student_id=student.id
+            ).first()
+
+            if existing:
+                existing.marks_obtained = marks_value
+                existing.entered_by = session['user_id']
+                existing.entered_at = datetime.utcnow()
+            else:
+                db.session.add(DTMark(
+                    dt_id=dt.id,
+                    student_id=student.id,
+                    marks_obtained=marks_value,
+                    entered_by=session['user_id']
+                ))
+
+            added += 1
 
         db.session.commit()
         flash(f'{added} marks uploaded across {len(present_subjects)} subject(s) ({skipped} skipped — check usernames/marks/grade)', 'success')
