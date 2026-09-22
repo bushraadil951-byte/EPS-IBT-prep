@@ -336,33 +336,29 @@ ATL_SKILLS = {
 APTITUDE_STRANDS = {
     'Critical Thinking': {
         'subjects':    ['Science'],
-        'weight_fa':   0.40,
+        'weight_fa':   0.30,
         'weight_dt':   0.35,
-        'weight_sa':   0.25,
+        'weight_sa':   0.35,
     },
     'Analytical Thinking': {
         'subjects':    ['Maths'],
-        'weight_fa':   0.40,
+        'weight_fa':   0.30,
         'weight_dt':   0.35,
-        'weight_sa':   0.25,
+        'weight_sa':   0.35,
     },
     'Digital Literacy': {
         'subjects':    ['ICT'],
-        'weight_fa':   0.40,
-        'weight_dt':   0.35,
-        'weight_sa':   0.25,
+        'weight_dt':   1,
     },
     'Language Skills': {
         'subjects':    ['English', 'Hindi', 'Urdu'],
-        'weight_fa':   0.40,
+        'weight_fa':   0.30,
         'weight_dt':   0.35,
-        'weight_sa':   0.25,
+        'weight_sa':   0.35,
     },
     'Creativity & Innovation': {
         'subjects':    ['Arts'],
-        'weight_fa':   0.0,
-        'weight_dt':   0.0,
-        'weight_sa':   1,
+        'weight_fa':   1,
     },
 }
 
@@ -1405,7 +1401,6 @@ def admin_teachers():
     teachers = User.query.filter_by(role='teacher').order_by(User.name).all()
     return render_template('admin/teachers.html', teachers=teachers)
 
-```python
 @app.route('/admin/tests', methods=['GET', 'POST'])
 @login_required('Resource_Manager')
 def admin_tests():
