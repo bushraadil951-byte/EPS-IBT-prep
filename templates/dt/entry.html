@@ -6,147 +6,126 @@
 
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:10px">
   <div>
-    <h2 style="font-size:1.1rem;font-weight:700;color:#0f172a;margin-bottom:3px">
-      📝 Diagnostic marks entry
-    </h2>
-    <p style="font-size:.83rem;color:#64748b">
-      Set all filters below, then click Load Students.
-    </p>
+    <h2 style="font-size:1.1rem;font-weight:700;color:#0f172a;margin-bottom:3px">📝 Diagnostic marks entry</h2>
+    <p style="font-size:.83rem;color:#64748b">Set all filters, then click Load Students.</p>
   </div>
-  <a href="{{ url_for(role_prefix + '_dt_graph') }}" class="btn btn-secondary">
-    View student graphs →
-  </a>
-</div>
-
-{# ── FILTER FORM ── #}
-<div class="card" style="margin-bottom:1.25rem">
-  <form method="GET" id="filterForm"
-        action="{{ url_for(role_prefix + '_dt') }}"
-        style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
-
-    <div>
-      <label style="display:block;font-size:.72rem;font-weight:600;color:#475569;margin-bottom:4px">Grade</label>
-      <select name="grade" id="gradeSelect"
-        style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.83rem;min-width:110px">
-        <option value="">— Grade —</option>
-        {% for g in grades %}
-        <option value="{{ g }}" {% if g == grade %}selected{% endif %}>{{ g }}</option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div>
-      <label style="display:block;font-size:.72rem;font-weight:600;color:#475569;margin-bottom:4px">Section</label>
-      <select name="section"
-        style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.83rem;min-width:110px">
-        <option value="">All sections</option>
-        {% for s in sections %}
-        <option value="{{ s }}" {% if s == section %}selected{% endif %}>Section {{ s }}</option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div>
-      <label style="display:block;font-size:.72rem;font-weight:600;color:#475569;margin-bottom:4px">Subject</label>
-      <select name="subject"
-        style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.83rem;min-width:110px">
-        <option value="">— Subject —</option>
-        {% for s in subjects %}
-        <option value="{{ s }}" {% if s == subject %}selected{% endif %}>{{ s }}</option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div>
-      <label style="display:block;font-size:.72rem;font-weight:600;color:#475569;margin-bottom:4px">Diagnostic test</label>
-      <select name="dt_number"
-        style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.83rem;min-width:90px">
-        <option value="">— DT —</option>
-        {% for n in dt_numbers %}
-        <option value="{{ n }}" {% if n == dt_number %}selected{% endif %}>DT{{ n }}</option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <button type="submit" class="btn btn-primary">
-      Load students
-    </button>
-
+  <div style="display:flex;gap:8px">
     {% if grade and subject and dt_number %}
-    <a href="{{ url_for(role_prefix + '_dt') }}" class="btn btn-secondary">Clear</a>
+    <a href="{{ url_for(role_prefix + '_dt_upload', grade=grade, section=section, subject=subject, dt_number=dt_number) }}"
+       class="btn btn-secondary">↑ Upload CSV</a>
     {% endif %}
-
-  </form>
+    <a href="{{ url_for(role_prefix + '_dt_graph') }}" class="btn btn-secondary">View student graphs →</a>
+  </div>
 </div>
 
-{# ── ONLY SHOW MARKS TABLE IF ALL REQUIRED FILTERS ARE SET ── #}
-{% if grade and subject and dt_number %}
+{# ── ONE LINE FILTER ── #}
+<div class="card" style="margin-bottom:1.25rem">
+  <form method="GET" id="filterForm" action="{{ url_for(role_prefix + '_dt') }}">
+    <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
 
-<form method="POST" action="{{ url_for(role_prefix + '_dt') }}">
-  <input type="hidden" name="grade"     value="{{ grade }}">
-  <input type="hidden" name="section"   value="{{ section }}">
-  <input type="hidden" name="subject"   value="{{ subject }}">
-  <input type="hidden" name="dt_number" value="{{ dt_number }}">
-
-  <div class="card" style="margin-bottom:1.25rem">
-    <div style="display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap;margin-bottom:1rem">
       <div>
-        <label style="display:block;font-size:.72rem;font-weight:600;color:#475569;margin-bottom:4px">
-          Maximum marks
-        </label>
+        <label style="display:block;font-size:.72rem;font-weight:600;color:#475569;margin-bottom:4px">Grade</label>
+        <select name="grade"
+          style="padding:7px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:.83rem;min-width:100px">
+          <option value="">— Grade —</option>
+          {% for g in grades %}
+          <option value="{{ g }}" {% if g == grade %}selected{% endif %}>{{ g }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label style="display:block;font-size:.72rem;font-weight:600;color:#475569;margin-bottom:4px">Section</label>
+        <select name="section"
+          style="padding:7px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:.83rem;min-width:100px">
+          <option value="">All</option>
+          {% for s in sections %}
+          <option value="{{ s }}" {% if s == section %}selected{% endif %}>Section {{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label style="display:block;font-size:.72rem;font-weight:600;color:#475569;margin-bottom:4px">Subject</label>
+        <select name="subject"
+          style="padding:7px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:.83rem;min-width:100px">
+          <option value="">— Subject —</option>
+          {% for s in subjects %}
+          <option value="{{ s }}" {% if s == subject %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label style="display:block;font-size:.72rem;font-weight:600;color:#475569;margin-bottom:4px">DT</label>
+        <select name="dt_number"
+          style="padding:7px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:.83rem;min-width:75px">
+          <option value="">— DT —</option>
+          {% for n in dt_numbers %}
+          <option value="{{ n }}" {% if n == dt_number %}selected{% endif %}>DT{{ n }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label style="display:block;font-size:.72rem;font-weight:600;color:#475569;margin-bottom:4px">Max marks</label>
         <input type="number" name="max_marks" step="0.5" min="1"
                value="{{ dt.max_marks if dt else 25 }}"
-               style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;
-                      font-size:.83rem;width:130px">
+               style="padding:7px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:.83rem;width:90px">
       </div>
+
       <div>
         <label style="display:block;font-size:.72rem;font-weight:600;color:#475569;margin-bottom:4px">
           Test date <span style="font-weight:400;color:#94a3b8">(optional)</span>
         </label>
         <input type="date" name="test_date"
                value="{{ dt.test_date.strftime('%Y-%m-%d') if dt and dt.test_date else '' }}"
-               style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.83rem">
+               style="padding:7px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:.83rem">
       </div>
-      <div style="display:flex;gap:8px;margin-left:auto">
-        <button type="submit" class="btn btn-primary">
-          💾 Save marks
-        </button>
-        <a href="{{ url_for(role_prefix + '_dt_upload',
-                    grade=grade, section=section,
-                    subject=subject, dt_number=dt_number) }}"
-           class="btn btn-secondary">
-          ↑ Upload CSV
-        </a>
+
+      <div style="display:flex;gap:8px;align-self:flex-end">
+        <button type="submit" class="btn btn-primary">Load students</button>
+        {% if grade and subject and dt_number %}
+        <a href="{{ url_for(role_prefix + '_dt') }}" class="btn btn-secondary">Clear</a>
+        {% endif %}
       </div>
-    </div>
 
-    {% if dt %}
-    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;
-                padding:10px 14px;font-size:.83rem;color:#166534;margin-bottom:1rem">
-      After saving marks, open
-      <a href="{{ url_for(role_prefix + '_dt_graph') }}"
-         style="font-weight:600;color:#166534">View student graphs</a>
-      above to generate a DT PDF across all subjects or a complete DT progress report for parents.
     </div>
-    {% endif %}
+  </form>
+</div>
 
-    {# ── MARKS TABLE ── #}
-    {% if students %}
+{# ── MARKS TABLE ── #}
+{% if grade and subject and dt_number %}
+<form method="POST" action="{{ url_for(role_prefix + '_dt') }}">
+  <input type="hidden" name="grade"     value="{{ grade }}">
+  <input type="hidden" name="section"   value="{{ section }}">
+  <input type="hidden" name="subject"   value="{{ subject }}">
+  <input type="hidden" name="dt_number" value="{{ dt_number }}">
+  <input type="hidden" name="max_marks" value="{{ dt.max_marks if dt else 25 }}">
+  <input type="hidden" name="test_date" value="{{ dt.test_date.strftime('%Y-%m-%d') if dt and dt.test_date else '' }}">
+
+  {% if dt %}
+  <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;
+              padding:10px 14px;font-size:.83rem;color:#166534;margin-bottom:1rem">
+    After saving marks, open
+    <a href="{{ url_for(role_prefix + '_dt_graph') }}"
+       style="font-weight:600;color:#166534">View student graphs</a>
+    to generate PDF reports for parents.
+  </div>
+  {% endif %}
+
+  {% if students %}
+  <div class="card">
     <table style="width:100%;border-collapse:collapse;font-size:.83rem">
       <thead>
         <tr style="background:#f8fafc">
-          <th style="padding:10px 14px;text-align:left;font-size:.72rem;color:#64748b;
-                     text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #e2e8f0">#</th>
-          <th style="padding:10px 14px;text-align:left;font-size:.72rem;color:#64748b;
-                     text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #e2e8f0">Student</th>
-          <th style="padding:10px 14px;text-align:left;font-size:.72rem;color:#64748b;
-                     text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #e2e8f0">Username</th>
-          <th style="padding:10px 14px;text-align:left;font-size:.72rem;color:#64748b;
-                     text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #e2e8f0">
+          <th style="padding:10px 14px;text-align:left;font-size:.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #e2e8f0">#</th>
+          <th style="padding:10px 14px;text-align:left;font-size:.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #e2e8f0">Student</th>
+          <th style="padding:10px 14px;text-align:left;font-size:.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #e2e8f0">Username</th>
+          <th style="padding:10px 14px;text-align:left;font-size:.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #e2e8f0">
             Marks / {{ dt.max_marks if dt else 25 }}
           </th>
-          <th style="padding:10px 14px;text-align:left;font-size:.72rem;color:#64748b;
-                     text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #e2e8f0">Remarks</th>
+          <th style="padding:10px 14px;text-align:left;font-size:.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #e2e8f0">Remarks</th>
         </tr>
       </thead>
       <tbody>
@@ -161,15 +140,15 @@
             <input type="number" name="marks_{{ student.id }}"
                    value="{{ em.marks if em else '' }}"
                    step="0.5" min="0"
-                   placeholder="—"
-                   style="width:90px;padding:6px 10px;border:1px solid #e2e8f0;
+                   placeholder="Blank = absent"
+                   style="width:110px;padding:6px 10px;border:1px solid #e2e8f0;
                           border-radius:6px;font-size:.83rem;text-align:center">
           </td>
           <td style="padding:10px 14px">
             <input type="text" name="remark_{{ student.id }}"
                    value="{{ em.remarks if em else '' }}"
                    placeholder="Optional note"
-                   style="width:100%;max-width:220px;padding:6px 10px;
+                   style="width:100%;max-width:200px;padding:6px 10px;
                           border:1px solid #e2e8f0;border-radius:6px;font-size:.83rem">
           </td>
         </tr>
@@ -177,31 +156,28 @@
       </tbody>
     </table>
 
-    <div style="margin-top:1rem;display:flex;justify-content:flex-end">
-      <button type="submit" class="btn btn-primary">💾 Save marks</button>
+    <div style="padding:1rem 0 0;display:flex;justify-content:flex-end">
+      <button type="submit" class="btn btn-primary" style="padding:10px 28px">
+        💾 Save marks
+      </button>
     </div>
-
-    {% else %}
-    <div style="text-align:center;padding:2.5rem;color:#94a3b8">
-      <div style="font-size:1.5rem;margin-bottom:.5rem">👥</div>
-      <div style="font-size:.88rem">No students found for
-        {{ grade }}{% if section %} Section {{ section }}{% endif %}.
-      </div>
-    </div>
-    {% endif %}
   </div>
+
+  {% else %}
+  <div class="card" style="text-align:center;padding:2.5rem;color:#94a3b8">
+    <div style="font-size:1.5rem;margin-bottom:.5rem">👥</div>
+    <div style="font-size:.88rem">
+      No students found for {{ grade }}{% if section %} Section {{ section }}{% endif %}.
+    </div>
+  </div>
+  {% endif %}
 </form>
 
 {% else %}
-{# ── PLACEHOLDER WHEN FILTERS NOT SET ── #}
 <div class="card" style="text-align:center;padding:3rem;color:#94a3b8">
   <div style="font-size:2.5rem;margin-bottom:.75rem">📝</div>
-  <div style="font-size:.95rem;font-weight:600;color:#64748b;margin-bottom:.4rem">
-    Select all filters above
-  </div>
-  <div style="font-size:.83rem">
-    Choose Grade, Subject and Diagnostic Test number, then click Load Students.
-  </div>
+  <div style="font-size:.95rem;font-weight:600;color:#64748b;margin-bottom:.4rem">Select all filters above</div>
+  <div style="font-size:.83rem">Choose Grade, Subject and DT number, then click Load Students.</div>
 </div>
 {% endif %}
 
