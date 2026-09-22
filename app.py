@@ -348,7 +348,9 @@ APTITUDE_STRANDS = {
     },
     'Digital Literacy': {
         'subjects':    ['ICT'],
+        'weight_fa':   0.00,
         'weight_dt':   1,
+        'weight_sa':   0.00,
     },
     'Language Skills': {
         'subjects':    ['English', 'Hindi', 'Urdu'],
@@ -359,6 +361,8 @@ APTITUDE_STRANDS = {
     'Creativity & Innovation': {
         'subjects':    ['Arts'],
         'weight_fa':   1,
+        'weight_dt':   0.00,
+        'weight_sa':   0.00,
     },
 }
 
