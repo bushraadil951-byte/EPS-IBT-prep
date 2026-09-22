@@ -1405,6 +1405,7 @@ def admin_teachers():
     teachers = User.query.filter_by(role='teacher').order_by(User.name).all()
     return render_template('admin/teachers.html', teachers=teachers)
 
+```python
 @app.route('/admin/tests', methods=['GET', 'POST'])
 @login_required('Resource_Manager')
 def admin_tests():
@@ -1415,33 +1416,28 @@ def admin_tests():
             db.session.add(MockTest(
                 name=request.form['name'],
                 subject=request.form['subject'],
-                grade=grade,            # saves 'All Grades' as-is — one card
+                grade=grade,
                 difficulty=request.form['difficulty'],
                 duration=int(request.form['duration']),
                 status=request.form['status']
             ))
             db.session.commit()
             flash('Test created successfully.', 'success')
-            else:
-                db.session.add(MockTest(
-                    name=request.form['name'], subject=request.form['subject'],
-                    grade=grade, difficulty=request.form['difficulty'],
-                    duration=int(request.form['duration']), status=request.form['status']))
-                db.session.commit()
-                flash('Test created.', 'success')
+
         elif action == 'edit':
             test_id = request.form.get('test_id')
             if test_id:
                 t = db.session.get(MockTest, int(test_id))
                 if t:
-                    t.name       = request.form.get('name', t.name)
-                    t.subject    = request.form.get('subject', t.subject)
-                    t.grade      = request.form.get('grade', t.grade)
+                    t.name = request.form.get('name', t.name)
+                    t.subject = request.form.get('subject', t.subject)
+                    t.grade = request.form.get('grade', t.grade)
                     t.difficulty = request.form.get('difficulty', t.difficulty)
-                    t.duration   = int(request.form.get('duration', t.duration))
-                    t.status     = request.form.get('status', t.status)
+                    t.duration = int(request.form.get('duration', t.duration))
+                    t.status = request.form.get('status', t.status)
                     db.session.commit()
                     flash('Test updated.', 'success')
+
         elif action == 'delete':
             test_id = request.form.get('test_id')
             if test_id:
@@ -1450,6 +1446,7 @@ def admin_tests():
                     db.session.delete(t)
                     db.session.commit()
                     flash('Test deleted.', 'success')
+
         elif action == 'toggle':
             test_id = request.form.get('test_id')
             if test_id:
@@ -1457,10 +1454,10 @@ def admin_tests():
                 if t:
                     t.status = 'active' if t.status == 'draft' else 'draft'
                     db.session.commit()
+
     tests = MockTest.query.order_by(MockTest.created.desc()).all()
     all_grades = ['All Grades'] + GRADES
     return render_template('admin/tests.html', tests=tests, subjects=SUBJECTS, grades=GRADES, all_grades=all_grades)
-
 
 @app.route('/admin/tests/<int:test_id>/questions', methods=['GET', 'POST'])
 @login_required('Resource_Manager')
