@@ -152,6 +152,97 @@
   {% endfor %}
 </div>
 
+<!-- Trend Analysis Tab -->
+{% if selected_student and aptitude %}
+<div style="margin-top:1.5rem">
+  <div style="display:flex;gap:4px;background:#f1f5f9;border-radius:10px;
+              padding:4px;width:fit-content;margin-bottom:1.25rem">
+    <button onclick="showSection('aptitude',this)"
+            id="tab-aptitude-btn"
+            style="padding:7px 18px;border-radius:8px;font-size:.83rem;font-weight:600;
+                   cursor:pointer;border:none;background:#fff;color:#6366f1;
+                   box-shadow:0 1px 4px rgba(0,0,0,.08)">
+      🧠 Aptitude
+    </button>
+    <button onclick="showSection('trend',this)"
+            id="tab-trend-btn"
+            style="padding:7px 18px;border-radius:8px;font-size:.83rem;font-weight:600;
+                   cursor:pointer;border:none;background:transparent;color:#64748b">
+      📈 DT / FA / SA Trend
+    </button>
+  </div>
+
+  <!-- Aptitude section (shown by default) -->
+  <div id="section-aptitude">
+    <!-- Your existing radar + score cards already here — wrap them in this div -->
+  </div>
+
+  <!-- Trend section -->
+  <div id="section-trend" style="display:none">
+    <div class="card" style="margin-bottom:1.25rem">
+      <h3 style="font-size:.95rem;font-weight:700;margin-bottom:1rem">
+        📈 Score Trend — {{ selected_student.name }}
+      </h3>
+      <canvas id="trendChart" height="120" role="img"
+              aria-label="Line chart showing DT, FA and SA scores over time"></canvas>
+    </div>
+
+    <!-- Subject-wise breakdown table -->
+    <div class="card">
+      <h3 style="font-size:.88rem;font-weight:700;margin-bottom:1rem;color:#1e293b">
+        Subject-wise Breakdown
+      </h3>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:.83rem">
+          <thead>
+            <tr style="background:#f8fafc">
+              <th style="padding:10px 14px;text-align:left;border-bottom:2px solid #e2e8f0;font-size:.72rem;color:#64748b;text-transform:uppercase">Subject</th>
+              <th style="padding:10px 14px;text-align:center;border-bottom:2px solid #e2e8f0;font-size:.72rem;color:#0ea5e9;text-transform:uppercase">DT Avg</th>
+              <th style="padding:10px 14px;text-align:center;border-bottom:2px solid #e2e8f0;font-size:.72rem;color:#6366f1;text-transform:uppercase">FA Avg</th>
+              <th style="padding:10px 14px;text-align:center;border-bottom:2px solid #e2e8f0;font-size:.72rem;color:#10b981;text-transform:uppercase">SA Avg</th>
+              <th style="padding:10px 14px;text-align:center;border-bottom:2px solid #e2e8f0;font-size:.72rem;color:#64748b;text-transform:uppercase">Gap (FA−DT)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for strand, data in aptitude.items() %}
+            {% set gap = (data.fa_score - data.dt_score) | round(1)
+                         if data.fa_score is not none and data.dt_score is not none
+                         else none %}
+            <tr style="border-bottom:1px solid #f1f5f9">
+              <td style="padding:10px 14px;font-weight:600;color:#1e293b">{{ strand }}</td>
+              <td style="padding:10px 14px;text-align:center">
+                {% if data.dt_score is not none %}
+                <span style="font-weight:600;color:#0ea5e9">{{ data.dt_score }}%</span>
+                {% else %}<span style="color:#e2e8f0">—</span>{% endif %}
+              </td>
+              <td style="padding:10px 14px;text-align:center">
+                {% if data.fa_score is not none %}
+                <span style="font-weight:600;color:#6366f1">{{ data.fa_score }}%</span>
+                {% else %}<span style="color:#e2e8f0">—</span>{% endif %}
+              </td>
+              <td style="padding:10px 14px;text-align:center">
+                {% if data.sa_score is not none %}
+                <span style="font-weight:600;color:#10b981">{{ data.sa_score }}%</span>
+                {% else %}<span style="color:#e2e8f0">—</span>{% endif %}
+              </td>
+              <td style="padding:10px 14px;text-align:center">
+                {% if gap is not none %}
+                <span style="font-weight:700;
+                       color:{% if gap >= 0 %}#10b981{% elif gap >= -15 %}#f59e0b{% else %}#ef4444{% endif %}">
+                  {{ '+' if gap > 0 else '' }}{{ gap }}%
+                </span>
+                {% else %}<span style="color:#e2e8f0">—</span>{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <!-- Legend -->
 <div class="card" style="display:flex;gap:1.5rem;flex-wrap:wrap;align-items:center">
   <div style="font-size:.78rem;font-weight:600;color:#475569">Score guide:</div>
@@ -168,7 +259,7 @@
     <span style="color:#475569">Below 50% Needs focus</span>
   </div>
   <div style="margin-left:auto;font-size:.72rem;color:#94a3b8">
-    FA 40% · DT 35% · SA 25% · Arts: SA 100%
+    FA 30% · DT 35% · SA 35% · Arts: FA 100%
   </div>
 </div>
 
@@ -207,5 +298,50 @@ if (radarCtx) {
   });
 }
 {% endif %}
+// Tab switching
+function showSection(name, btn) {
+  ['aptitude','trend'].forEach(function(s) {
+    document.getElementById('section-'+s).style.display = s===name ? 'block' : 'none';
+  });
+  document.querySelectorAll('[id^=tab-]').forEach(function(b) {
+    b.style.background    = 'transparent';
+    b.style.color         = '#64748b';
+    b.style.boxShadow     = 'none';
+  });
+  btn.style.background = '#fff';
+  btn.style.color      = '#6366f1';
+  btn.style.boxShadow  = '0 1px 4px rgba(0,0,0,.08)';
+}
+
+// Trend chart
+var aptData = {{ aptitude | tojson }};
+var strandList = {{ strands | tojson }};
+var dtScores = strandList.map(function(s){ return aptData[s] ? aptData[s].dt_score || 0 : 0; });
+var faScores = strandList.map(function(s){ return aptData[s] ? aptData[s].fa_score || 0 : 0; });
+var saScores = strandList.map(function(s){ return aptData[s] ? aptData[s].sa_score || 0 : 0; });
+
+var trendCtx = document.getElementById('trendChart');
+if (trendCtx) {
+  new Chart(trendCtx, {
+    type: 'bar',
+    data: {
+      labels: strandList,
+      datasets: [
+        { label:'DT Avg', data:dtScores, backgroundColor:'rgba(14,165,233,0.75)', borderRadius:4, borderSkipped:false },
+        { label:'FA Avg', data:faScores, backgroundColor:'rgba(99,102,241,0.75)',  borderRadius:4, borderSkipped:false },
+        { label:'SA Avg', data:saScores, backgroundColor:'rgba(16,185,129,0.75)', borderRadius:4, borderSkipped:false },
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend:{ position:'top', labels:{ font:{size:11}, boxWidth:12 } } },
+      scales: {
+        y: { min:0, max:100, ticks:{ font:{size:10}, callback:function(v){ return v+'%'; } },
+             grid:{ color:'rgba(0,0,0,0.05)' } },
+        x: { grid:{ display:false }, ticks:{ font:{size:10} } }
+      }
+    }
+  });
+}
 </script>
 {% endblock %}
