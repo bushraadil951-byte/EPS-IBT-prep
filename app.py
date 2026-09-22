@@ -1412,14 +1412,16 @@ def admin_tests():
         action = request.form.get('action')
         if action == 'add':
             grade = request.form['grade']
-            if grade == 'All Grades':
-                for g in GRADES:
-                    db.session.add(MockTest(
-                        name=request.form['name'], subject=request.form['subject'],
-                        grade=g, difficulty=request.form['difficulty'],
-                        duration=int(request.form['duration']), status=request.form['status']))
-                db.session.commit()
-                flash('Test created for all grades.', 'success')
+            db.session.add(MockTest(
+                name=request.form['name'],
+                subject=request.form['subject'],
+                grade=grade,            # saves 'All Grades' as-is — one card
+                difficulty=request.form['difficulty'],
+                duration=int(request.form['duration']),
+                status=request.form['status']
+            ))
+            db.session.commit()
+            flash('Test created successfully.', 'success')
             else:
                 db.session.add(MockTest(
                     name=request.form['name'], subject=request.form['subject'],
