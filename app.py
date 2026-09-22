@@ -3042,6 +3042,7 @@ def dt_upload():
             )
             for sub in present_subjects
         }
+
         # If the slot already existed from a previous upload, make sure its
         # max_marks reflects whatever was entered this time
         for sub, dt in dt_by_subject.items():
@@ -3054,10 +3055,12 @@ def dt_upload():
             username = (row.get('username') or '').strip()
             if not username:
                 continue
+
             student = User.query.filter_by(username=username, role='student').first()
             if not student:
                 skipped += 1
                 continue
+
             if teacher_grade and student.grade != teacher_grade:
                 skipped += 1
                 continue
@@ -3067,55 +3070,55 @@ def dt_upload():
             row_lower = {(k or '').strip().lower(): v for k, v in row.items()}
 
             for sub in present_subjects:
-            raw_val = (row_lower.get(sub.lower()) or '').strip()
+                raw_val = (row_lower.get(sub.lower()) or '').strip()
 
-            dt = dt_by_subject[sub]
+                dt = dt_by_subject[sub]
 
-            # Blank cell = remove any previously saved mark
-            if raw_val == '':
+                # Blank cell = remove any previously saved mark
+                if raw_val == '':
+                    existing = DTMark.query.filter_by(
+                        dt_id=dt.id,
+                        student_id=student.id
+                    ).first()
+
+                    if existing:
+                        db.session.delete(existing)
+
+                    continue
+
                 existing = DTMark.query.filter_by(
                     dt_id=dt.id,
                     student_id=student.id
                 ).first()
 
                 if existing:
-                    db.session.delete(existing)
+                    existing.marks_obtained = marks_value
+                    existing.entered_by = session['user_id']
+                    existing.entered_at = datetime.utcnow()
+                else:
+                    db.session.add(DTMark(
+                        dt_id=dt.id,
+                        student_id=student.id,
+                        marks_obtained=marks_value,
+                        entered_by=session['user_id']
+                    ))
 
-                continue
+                # Blank cell = absent = skip without saving or deleting
+                if marks_raw == '' or marks_raw.strip() in ('', '-', 'A', 'a', 'AB', 'ab', 'absent', 'Absent'):
+                    # If blank — delete existing mark so it shows as no data
+                    existing = DTMark.query.filter_by(dt_id=dt.id, student_id=student.id).first()
+                    if existing:
+                        db.session.delete(existing)
+                    continue
 
-            existing = DTMark.query.filter_by(
-                dt_id=dt.id,
-                student_id=student.id
-            ).first()
-
-            if existing:
-                existing.marks_obtained = marks_value
-                existing.entered_by = session['user_id']
-                existing.entered_at = datetime.utcnow()
-            else:
-                db.session.add(DTMark(
-                    dt_id=dt.id,
-                    student_id=student.id,
-                    marks_obtained=marks_value,
-                    entered_by=session['user_id']
-                ))
-
-       # Blank cell = absent = skip without saving or deleting
-       if marks_raw == '' or marks_raw.strip() in ('', '-', 'A', 'a', 'AB', 'ab', 'absent', 'Absent'):
-           # If blank — delete existing mark so it shows as no data
-           existing = DTMark.query.filter_by(dt_id=dt.id, student_id=student.id).first()
-           if existing:
-               db.session.delete(existing)
-           continue
-
-       try:
-           marks_value = float(marks_raw.strip())
-           if marks_value < 0 or marks_value > max_marks:
-               skipped += 1
-               continue
-       except ValueError:
-           skipped += 1
-           continue     
+                try:
+                    marks_value = float(marks_raw.strip())
+                    if marks_value < 0 or marks_value > max_marks:
+                        skipped += 1
+                        continue
+                except ValueError:
+                    skipped += 1
+                    continue
 
         db.session.commit()
         flash(f'{added} marks uploaded across {len(present_subjects)} subject(s) ({skipped} skipped — check usernames/marks/grade)', 'success')
