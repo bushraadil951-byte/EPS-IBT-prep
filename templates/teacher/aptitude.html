@@ -283,7 +283,11 @@ if (radarCtx) {
         data: {{ aptitude.values() | map(attribute='score') | list | tojson }}.map(function(v){ return v || 0; }),
         borderColor: '#6366f1',
         backgroundColor: 'rgba(99,102,241,0.15)',
-        borderWidth: 2, pointRadius: 5, pointBackgroundColor: '#6366f1',
+        borderWidth: 2,
+        pointRadius: 5,
+        pointBackgroundColor: {{ aptitude.values() | map(attribute='score') | list | tojson }}.map(function(v, i, arr) {
+          return v === Math.max.apply(null, arr) ? '#10b981' : '#6366f1';
+        }),
       }]
     },
     options: {
