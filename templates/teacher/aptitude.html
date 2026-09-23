@@ -84,74 +84,6 @@
   </div>
 </div>
 
-{% if aptitude %}
-
-<!-- Radar chart -->
-<div class="card" style="margin-bottom:.5rem;padding:.75rem">
-    <h3 style="font-size:.95rem;font-weight:700;margin-bottom:.5rem">
-        🧠 Aptitude Overview
-    </h3>
-    <div style="max-width:650px;margin:0 auto">
-        <canvas id="aptitudeRadar" role="img" aria-label="Radar chart of aptitude scores"></canvas>
-    </div>
-</div>
-
-<!-- Score cards -->
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
-            gap:1rem;margin-bottom:1.25rem">
-  {% for strand, data in aptitude.items() %}
-  {% set score = data.score %}
-  {% set color = '#10b981' if score and score >= 75
-                 else '#f59e0b' if score and score >= 50
-                 else '#ef4444' if score else '#94a3b8' %}
-  {% set label = 'Strong' if score and score >= 75
-                 else 'Developing' if score and score >= 50
-                 else 'Needs focus' if score else 'No data yet' %}
-  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;
-              padding:1.125rem;border-top:3px solid {{ color }}">
-    <div style="font-size:.83rem;font-weight:700;color:#1e293b;margin-bottom:.5rem">{{ strand }}</div>
-    <div style="font-size:2rem;font-weight:800;color:{{ color }};line-height:1">
-      {% if score %}{{ score }}%{% else %}—{% endif %}
-    </div>
-    <div style="font-size:.72rem;color:#94a3b8;margin-top:3px">{{ label }}</div>
-
-    {% if data.has_data %}
-    <div style="margin-top:.875rem;display:flex;flex-direction:column;gap:5px">
-      {% if data.fa_score is not none %}
-      <div style="display:flex;align-items:center;gap:6px;font-size:.72rem">
-        <span style="color:#64748b;width:22px">FA</span>
-        <div style="flex:1;height:5px;background:#f1f5f9;border-radius:99px;overflow:hidden">
-          <div style="height:100%;width:{{ data.fa_score }}%;background:#6366f1;border-radius:99px"></div>
-        </div>
-        <span style="color:#1e293b;font-weight:600;min-width:34px">{{ data.fa_score }}%</span>
-      </div>
-      {% endif %}
-      {% if data.dt_score is not none %}
-      <div style="display:flex;align-items:center;gap:6px;font-size:.72rem">
-        <span style="color:#64748b;width:22px">DT</span>
-        <div style="flex:1;height:5px;background:#f1f5f9;border-radius:99px;overflow:hidden">
-          <div style="height:100%;width:{{ data.dt_score }}%;background:#0ea5e9;border-radius:99px"></div>
-        </div>
-        <span style="color:#1e293b;font-weight:600;min-width:34px">{{ data.dt_score }}%</span>
-      </div>
-      {% endif %}
-      {% if data.sa_score is not none %}
-      <div style="display:flex;align-items:center;gap:6px;font-size:.72rem">
-        <span style="color:#64748b;width:22px">SA</span>
-        <div style="flex:1;height:5px;background:#f1f5f9;border-radius:99px;overflow:hidden">
-          <div style="height:100%;width:{{ data.sa_score }}%;background:#10b981;border-radius:99px"></div>
-        </div>
-        <span style="color:#1e293b;font-weight:600;min-width:34px">{{ data.sa_score }}%</span>
-      </div>
-      {% endif %}
-    </div>
-    {% else %}
-    <div style="font-size:.72rem;color:#cbd5e1;margin-top:.5rem">Marks not recorded yet</div>
-    {% endif %}
-  </div>
-  {% endfor %}
-</div>
-
 <!-- Trend Analysis Tab -->
 {% if selected_student and aptitude %}
 <div style="margin-top:1.5rem">
@@ -242,6 +174,74 @@
   </div>
 </div>
 {% endif %}
+
+{% if aptitude %}
+
+<!-- Radar chart -->
+<div class="card" style="margin-bottom:.5rem;padding:.75rem">
+    <h3 style="font-size:.95rem;font-weight:700;margin-bottom:.5rem">
+        🧠 Aptitude Overview
+    </h3>
+    <div style="max-width:650px;margin:0 auto">
+        <canvas id="aptitudeRadar" role="img" aria-label="Radar chart of aptitude scores"></canvas>
+    </div>
+</div>
+
+<!-- Score cards -->
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+            gap:1rem;margin-bottom:1.25rem">
+  {% for strand, data in aptitude.items() %}
+  {% set score = data.score %}
+  {% set color = '#10b981' if score and score >= 75
+                 else '#f59e0b' if score and score >= 50
+                 else '#ef4444' if score else '#94a3b8' %}
+  {% set label = 'Strong' if score and score >= 75
+                 else 'Developing' if score and score >= 50
+                 else 'Needs focus' if score else 'No data yet' %}
+  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;
+              padding:1.125rem;border-top:3px solid {{ color }}">
+    <div style="font-size:.83rem;font-weight:700;color:#1e293b;margin-bottom:.5rem">{{ strand }}</div>
+    <div style="font-size:2rem;font-weight:800;color:{{ color }};line-height:1">
+      {% if score %}{{ score }}%{% else %}—{% endif %}
+    </div>
+    <div style="font-size:.72rem;color:#94a3b8;margin-top:3px">{{ label }}</div>
+
+    {% if data.has_data %}
+    <div style="margin-top:.875rem;display:flex;flex-direction:column;gap:5px">
+      {% if data.fa_score is not none %}
+      <div style="display:flex;align-items:center;gap:6px;font-size:.72rem">
+        <span style="color:#64748b;width:22px">FA</span>
+        <div style="flex:1;height:5px;background:#f1f5f9;border-radius:99px;overflow:hidden">
+          <div style="height:100%;width:{{ data.fa_score }}%;background:#6366f1;border-radius:99px"></div>
+        </div>
+        <span style="color:#1e293b;font-weight:600;min-width:34px">{{ data.fa_score }}%</span>
+      </div>
+      {% endif %}
+      {% if data.dt_score is not none %}
+      <div style="display:flex;align-items:center;gap:6px;font-size:.72rem">
+        <span style="color:#64748b;width:22px">DT</span>
+        <div style="flex:1;height:5px;background:#f1f5f9;border-radius:99px;overflow:hidden">
+          <div style="height:100%;width:{{ data.dt_score }}%;background:#0ea5e9;border-radius:99px"></div>
+        </div>
+        <span style="color:#1e293b;font-weight:600;min-width:34px">{{ data.dt_score }}%</span>
+      </div>
+      {% endif %}
+      {% if data.sa_score is not none %}
+      <div style="display:flex;align-items:center;gap:6px;font-size:.72rem">
+        <span style="color:#64748b;width:22px">SA</span>
+        <div style="flex:1;height:5px;background:#f1f5f9;border-radius:99px;overflow:hidden">
+          <div style="height:100%;width:{{ data.sa_score }}%;background:#10b981;border-radius:99px"></div>
+        </div>
+        <span style="color:#1e293b;font-weight:600;min-width:34px">{{ data.sa_score }}%</span>
+      </div>
+      {% endif %}
+    </div>
+    {% else %}
+    <div style="font-size:.72rem;color:#cbd5e1;margin-top:.5rem">Marks not recorded yet</div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
 
 <!-- Legend -->
 <div class="card" style="display:flex;gap:1.5rem;flex-wrap:wrap;align-items:center">
