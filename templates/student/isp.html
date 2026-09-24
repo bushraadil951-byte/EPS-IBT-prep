@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+{% block title %}My ISP Profile{% endblock %}
+{% block page_title %}My ISP Profile{% endblock %}
+
+{% block content %}
+
+<!-- Profile Overview -->
+{% if self_ratings or teacher_ratings %}
+
+<div class="card" style="margin-bottom:1.25rem">
+
+  <h3 style="font-size:.95rem;font-weight:700;margin-bottom:1rem">
+    📊 ISP Profile Overview
+  </h3>
+
+  <div style="max-width:400px;margin:0 auto">
+    <canvas id="ispRadarChart"
+            role="img"
+            aria-label="Radar chart of ISP profile ratings">
+    </canvas>
+  </div>
+
+</div>
+
+{% endif %}
+
+
+<!-- Self Assessment -->
+<form method="POST">
+
+  <div class="card">
+
+    <h3 style="font-size:.95rem;font-weight:700;margin-bottom:.5rem">
+      ☪️ ISP Profile — Self Assessment
+    </h3>
+
+    <p style="font-size:.78rem;color:#64748b;margin-bottom:1rem">
+      Rate yourself honestly. Your teacher's rating is shown alongside yours.
+    </p>
+
+
+    {% for attr, emoji, descs in isp_profile %}
+
+    <div style="padding:14px 0;
+                border-bottom:1px solid #f1f5f9">
+
+      <!-- Attribute -->
+      <div style="display:flex;align-items:flex-start;
+                  gap:12px;margin-bottom:.5rem">
+
+        <div style="font-size:1.5rem;flex-shrink:0">
+          {{ emoji }}
+        </div>
+
+        <div style="flex:1">
+
+          <div style="font-size:.88rem;font-weight:600;color:#0f172a">
+            {{ attr }}
+          </div>
+
+          {% for desc in descs %}
+          <div style="font-size:.72rem;color:#64748b;
+                      margin-top:3px">
+            {{ desc }}
+          </div>
+          {% endfor %}
+
+        </div>
+
+      </div>
+
+
+      <!-- Teacher rating -->
+      {% set tr = teacher_ratings.get(attr) %}
+
+      {% if tr %}
+
+      <div style="font-size:.72rem;
+                  margin-bottom:.5rem;
+                  margin-left:2.5rem">
+
+        Teacher rated:
+
+        <span style="font-weight:700;
+                     color:{{ isp_rating_colors[tr] }}">
+
+          {{ tr }} — {{ isp_rating_scale[tr] }}
+
+        </span>
+
+      </div>
+
+      {% endif %}
+
+
+      <!-- Self rating buttons -->
+      <div style="display:flex;
+                  gap:8px;
+                  margin-bottom:.5rem;
+                  margin-left:2.5rem">
+
+        {% for val, label in isp_rating_scale.items() %}
+
+        <div onclick="selectISPSelfRating(this, '{{ attr }}', {{ val }})"
+             data-attr="{{ attr }}"
+             data-val="{{ val }}"
+
+             style="flex:1;
+                    text-align:center;
+                    padding:10px 6px;
+                    cursor:pointer;
+                    border:2px solid
+                    {% if self_ratings.get(attr) == val %}
+                      {{ isp_rating_colors[val] }}
+                    {% else %}
+                      #e2e8f0
+                    {% endif %};
+
+                    background:
+                    {% if self_ratings.get(attr) == val %}
+                      {{ isp_rating_colors[val] }}22
+                    {% else %}
+                      #f8fafc
+                    {% endif %};
+
+                    color:
+                    {% if self_ratings.get(attr) == val %}
+                      {{ isp_rating_colors[val] }}
+                    {% else %}
+                      #94a3b8
+                    {% endif %};
+
+                    border-radius:10px;
+                    font-size:.8rem;
+                    font-weight:700;
+                    user-select:none;
+                    -webkit-user-select:none;
+                    transition:all .15s">
+
+          {{ val }}<br>
+
+          <span style="font-size:.62rem;font-weight:400">
+            {{ label }}
+          </span>
+
+          <input type="radio"
+                 name="rating_{{ attr }}"
+                 value="{{ val }}"
+                 {% if self_ratings.get(attr) == val %}checked{% endif %}
+                 style="position:absolute;
+                        opacity:0;
+                        pointer-events:none;
+                        width:0;
+                        height:0">
+
+        </div>
+
+        {% endfor %}
+
+      </div>
+
+
+      <!-- Reflection -->
+      <div style="margin-left:2.5rem">
+
+        <textarea name="reflection_{{ attr }}"
+                  rows="2"
+                  placeholder="Write a short reflection on how you show {{ attr }}..."
+                  style="width:100%;
+                         padding:6px 10px;
+                         border:1px solid #e2e8f0;
+                         border-radius:6px;
+                         font-size:.78rem;
+                         resize:vertical;
+                         font-family:inherit;
+                         color:#374151">{{ reflections.get(attr, '') }}</textarea>
+
+      </div>
+
+    </div>
+
+    {% endfor %}
+
+
+    <button type="submit"
+            class="btn btn-primary"
+            style="width:100%;
+                   justify-content:center;
+                   padding:14px;
+                   margin-top:1.25rem;
+                   font-size:.95rem">
+
+      💾 Save My ISP Self-Assessment
+
+    </button>
+
+  </div>
+
+</form>
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+
+<script>
+
+const ISP_COLORS = {
+  1:'#ef4444',
+  2:'#f59e0b',
+  3:'#3b82f6',
+  4:'#10b981'
+};
+
+
+function selectISPSelfRating(div, attr, val) {
+
+  document.querySelectorAll(
+    '[data-attr="' + attr + '"]'
+  ).forEach(function(d) {
+
+    d.style.borderColor = '#e2e8f0';
+    d.style.background  = '#f8fafc';
+    d.style.color       = '#94a3b8';
+
+    var inp = d.querySelector('input[type=radio]');
+
+    if (inp) {
+      inp.checked = false;
+    }
+
+  });
+
+
+  var c = ISP_COLORS[val];
+
+  div.style.borderColor = c;
+  div.style.background  = c + '22';
+  div.style.color       = c;
+
+  var inp = div.querySelector('input[type=radio]');
+
+  if (inp) {
+    inp.checked = true;
+  }
+
+}
+
+
+/* Radar chart */
+
+var labels = {{ isp_profile | map(attribute=0) | list | tojson }};
+
+var selfData = [
+  {% for attr, emoji, descs in isp_profile %}
+    {{ self_ratings.get(attr, 0) }},
+  {% endfor %}
+];
+
+var teacherData = [
+  {% for attr, emoji, descs in isp_profile %}
+    {{ teacher_ratings.get(attr, 0) }},
+  {% endfor %}
+];
+
+
+var ctx = document.getElementById('ispRadarChart');
+
+if (ctx &&
+    (selfData.some(function(v){ return v > 0; }) ||
+     teacherData.some(function(v){ return v > 0; }))) {
+
+  new Chart(ctx, {
+
+    type: 'radar',
+
+    data: {
+
+      labels: labels,
+
+      datasets: [
+
+        {
+          label: 'My self-rating',
+          data: selfData,
+          borderColor: '#6366f1',
+          backgroundColor: 'rgba(99,102,241,0.15)',
+          borderWidth: 2,
+          pointRadius: 4
+        },
+
+        {
+          label: 'Teacher rating',
+          data: teacherData,
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16,185,129,0.10)',
+          borderWidth: 2,
+          borderDash: [5,4],
+          pointRadius: 4
+        }
+
+      ]
+
+    },
+
+    options: {
+
+      responsive: true,
+
+      scales: {
+
+        r: {
+
+          min: 0,
+          max: 4,
+
+          ticks: {
+            stepSize: 1,
+            backdropColor: 'transparent',
+            font: { size: 10 }
+          },
+
+          pointLabels: {
+            font: { size: 11 }
+          }
+
+        }
+
+      },
+
+      plugins: {
+
+        legend: {
+          position: 'bottom',
+          labels: {
+            font: { size: 11 }
+          }
+        }
+
+      }
+
+    }
+
+  });
+
+}
+
+</script>
+
+{% endblock %}
