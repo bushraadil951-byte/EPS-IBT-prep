@@ -11,40 +11,55 @@
 
 {% block content %}
 
-<!-- Filter bar -->
+<!-- Section filter -->
 <div class="card" style="margin-bottom:1.25rem">
-  <form method="GET"
-        style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+  <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+
+    {% if session.role == 'Resource_Manager' %}
+    <div>
+      <label style="display:block;font-size:.75rem;font-weight:600;
+                    color:#475569;margin-bottom:4px">Grade</label>
+      <select name="grade" onchange="this.form.submit()"
+        style="padding:7px 12px;border:1px solid #e2e8f0;
+               border-radius:8px;font-size:.83rem;min-width:140px">
+        <option value="">All grades</option>
+        {% for g in ['Grade 1','Grade 2','Grade 3','Grade 4','Grade 5'] %}
+        <option value="{{ g }}"
+          {% if g == request.args.get('grade','') %}selected{% endif %}>
+          {{ g }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    {% endif %}
 
     <div>
       <label style="display:block;font-size:.75rem;font-weight:600;
-                    color:#475569;margin-bottom:4px">
-        Section
-      </label>
-
+                    color:#475569;margin-bottom:4px">Section</label>
       <select name="section" onchange="this.form.submit()"
-              style="padding:7px 12px;border:1px solid #e2e8f0;
-                     border-radius:8px;font-size:.83rem;min-width:160px">
-
-        <option value="">— All sections —</option>
-
-        {% for section in sections %}
-        <option value="{{ section }}"
-          {% if section == filter_section %}selected{% endif %}>
-          {{ section }}
+        style="padding:7px 12px;border:1px solid #e2e8f0;
+               border-radius:8px;font-size:.83rem;min-width:160px">
+        <option value="">All sections</option>
+        {% for s in sections %}
+        <option value="{{ s }}"
+          {% if s == filter_section %}selected{% endif %}>
+          Section {{ s }}
         </option>
         {% endfor %}
-
       </select>
     </div>
 
-    <a href="{{ url_for('isp_rate') }}"
-       class="btn btn-primary btn-sm">
-      ✏️ Rate Students
+    {% if filter_section or request.args.get('grade') %}
+    <a href="{{ url_for('ib_dashboard') }}" class="btn btn-secondary btn-sm">
+      Clear filters
     </a>
+    {% endif %}
+
+    <div style="font-size:1rem;color:#94a3b8;align-self:center">
+      Showing <strong>{{ students|length }}</strong> student(s)
+    </div>
   </form>
 </div>
-
 
 <!-- Overview -->
 <div class="card" style="margin-bottom:1.25rem">
