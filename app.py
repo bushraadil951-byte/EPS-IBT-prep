@@ -93,7 +93,7 @@ ISP_PROFILE = [
         'Tell the truth, no matter what price you have to pay.',
         'Your actions must always match with your beliefs and your words.'
     ]),
-    ('Courage', '🦁', [
+    ('Courage', '🌟', [
         'Do the right thing even when it is difficult.',
         'Always be brave.'
     ]),
