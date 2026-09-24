@@ -2203,14 +2203,25 @@ def student_atl_self():
 @login_required(('Resource_Manager', 'teacher'))
 def isp_dashboard():
     current_user_obj = db.session.get(User, session['user_id'])
+
     sq = User.query.filter_by(role='student')
+
+    # Teacher: only their assigned grade
     if current_user_obj.role == 'teacher' and current_user_obj.grade:
         sq = sq.filter_by(grade=current_user_obj.grade)
+
+    # Resource Manager: Grade filter
+    filter_grade = request.args.get('grade', '')
+    if current_user_obj.role == 'Resource_Manager' and filter_grade:
+        sq = sq.filter_by(grade=filter_grade)
+
+    # Section filter for both roles
     filter_section = request.args.get('section', '')
     if filter_section:
         sq = sq.filter_by(section=filter_section)
+
     students = sq.order_by(User.name).all()
- 
+
     # Class averages per attribute
     isp_avgs = {}
     for attr, emoji, descs in ISP_PROFILE:
@@ -2220,9 +2231,9 @@ def isp_dashboard():
         isp_avgs[attr] = round(
             sum(r.rating for r in ratings) / len(ratings), 1
         ) if ratings else 0
- 
+
     total_ratings = ISPRating.query.filter_by(rater_type='teacher').count()
- 
+
     return render_template('isp/dashboard.html',
         students=students,
         isp_profile=ISP_PROFILE,
@@ -2231,9 +2242,9 @@ def isp_dashboard():
         isp_rating_colors=ISP_RATING_COLORS,
         total_ratings=total_ratings,
         filter_section=filter_section,
+        filter_grade=filter_grade,
         sections=DT_SECTIONS,
     )
- 
  
 # ── ISP Teacher Rating ────────────────────────────────────────────
 @app.route('/isp/rate', methods=['GET', 'POST'])
