@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+{% block title %}ISP Profile Development{% endblock %}
+{% block page_title %}ISP Profile Development{% endblock %}
+
+{% block back_button %}
+<a href="{{ url_for('ib_dashboard') }}" class="btn btn-sm btn-secondary">← Back</a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Filter bar -->
+<div class="card" style="margin-bottom:1.25rem">
+  <form method="GET"
+        style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+
+    <div>
+      <label style="display:block;font-size:.75rem;font-weight:600;
+                    color:#475569;margin-bottom:4px">
+        Section
+      </label>
+
+      <select name="section" onchange="this.form.submit()"
+              style="padding:7px 12px;border:1px solid #e2e8f0;
+                     border-radius:8px;font-size:.83rem;min-width:160px">
+
+        <option value="">— All sections —</option>
+
+        {% for section in sections %}
+        <option value="{{ section }}"
+          {% if section == filter_section %}selected{% endif %}>
+          {{ section }}
+        </option>
+        {% endfor %}
+
+      </select>
+    </div>
+
+    <a href="{{ url_for('isp_rate') }}"
+       class="btn btn-primary btn-sm">
+      ✏️ Rate Students
+    </a>
+  </form>
+</div>
+
+
+<!-- Overview -->
+<div class="card" style="margin-bottom:1.25rem">
+
+  <div style="display:flex;justify-content:space-between;
+              align-items:center;margin-bottom:1rem">
+
+    <div>
+      <h3 style="font-size:.95rem;font-weight:700;margin:0">
+        ☪️ ISP Profile Overview
+      </h3>
+
+      <p style="font-size:.75rem;color:#64748b;margin:.3rem 0 0">
+        Islamic Studies Programme character attributes
+      </p>
+    </div>
+
+    <div style="font-size:.75rem;color:#64748b">
+      {{ total_ratings }} teacher ratings
+    </div>
+
+  </div>
+
+
+  <!-- Attribute averages -->
+  <div style="display:grid;
+              grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+              gap:.75rem">
+
+    {% for attr, emoji, descs in isp_profile %}
+
+    {% set avg = isp_avgs.get(attr, 0) %}
+
+    <div style="background:#f8fafc;
+                border:1px solid #e2e8f0;
+                border-radius:10px;
+                padding:.875rem">
+
+      <div style="display:flex;align-items:center;gap:8px;
+                  margin-bottom:.5rem">
+
+        <span style="font-size:1.35rem">
+          {{ emoji }}
+        </span>
+
+        <span style="font-size:.86rem;font-weight:700;color:#1e293b">
+          {{ attr }}
+        </span>
+
+      </div>
+
+      {% if avg %}
+      <div style="font-size:1.15rem;font-weight:700;
+                  color:
+                  {% if avg >= 3 %}#10b981
+                  {% elif avg >= 2 %}#f59e0b
+                  {% else %}#ef4444{% endif %}">
+        {{ avg }}/4
+      </div>
+
+      <div style="font-size:.68rem;color:#64748b;margin-top:2px">
+        Class average
+      </div>
+
+      {% else %}
+
+      <div style="font-size:.75rem;color:#94a3b8">
+        No ratings yet
+      </div>
+
+      {% endif %}
+
+    </div>
+
+    {% endfor %}
+
+  </div>
+</div>
+
+
+<!-- Student list -->
+<div class="card">
+
+  <div style="display:flex;justify-content:space-between;
+              align-items:center;margin-bottom:1rem">
+
+    <h3 style="font-size:.95rem;font-weight:700;margin:0">
+      👩‍🎓 Students
+    </h3>
+
+    <span style="font-size:.72rem;color:#64748b">
+      {{ students|length }} students
+    </span>
+
+  </div>
+
+
+  {% if students %}
+
+  <div style="display:grid;
+              grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+              gap:.75rem">
+
+    {% for student in students %}
+
+    <div style="background:#f8fafc;
+                border:1px solid #e2e8f0;
+                border-radius:10px;
+                padding:.875rem">
+
+      <div style="display:flex;justify-content:space-between;
+                  align-items:flex-start;gap:10px">
+
+        <div>
+          <div style="font-size:.88rem;font-weight:700;color:#0f172a">
+            {{ student.name }}
+          </div>
+
+          <div style="font-size:.72rem;color:#64748b;margin-top:3px">
+            {{ student.grade }} {{ student.section }}
+          </div>
+        </div>
+
+        <span style="font-size:1.35rem">
+          ☪️
+        </span>
+
+      </div>
+
+      <div style="display:flex;gap:6px;margin-top:.75rem">
+
+        <a href="{{ url_for('isp_rate') }}?student_id={{ student.id }}"
+           class="btn btn-primary btn-sm"
+           style="flex:1;justify-content:center">
+          Rate
+        </a>
+
+        <a href="{{ url_for('isp_student_report',
+                             student_id=student.id) }}"
+           class="btn btn-secondary btn-sm"
+           style="flex:1;justify-content:center">
+          Report
+        </a>
+
+      </div>
+
+    </div>
+
+    {% endfor %}
+
+  </div>
+
+  {% else %}
+
+  <div style="text-align:center;padding:2.5rem;color:#94a3b8">
+
+    <div style="font-size:2.5rem;margin-bottom:.75rem">
+      ☪️
+    </div>
+
+    <div style="font-size:.95rem;font-weight:600;margin-bottom:.25rem">
+      No students found
+    </div>
+
+    <div style="font-size:.83rem">
+      Try changing the section filter.
+    </div>
+
+  </div>
+
+  {% endif %}
+
+</div>
+
+{% endblock %}
