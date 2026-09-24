@@ -9,8 +9,6 @@
   </a>
 </div> 
 
-{% block content %}
-
 <!-- Section filter -->
 <div class="card" style="margin-bottom:1.25rem">
   <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
@@ -50,7 +48,7 @@
     </div>
 
     {% if filter_section or request.args.get('grade') %}
-    <a href="{{ url_for('ib_dashboard') }}" class="btn btn-secondary btn-sm">
+    <a href="{{ url_for('isp_dashboard') }}" class="btn btn-secondary btn-sm">
       Clear filters
     </a>
     {% endif %}
