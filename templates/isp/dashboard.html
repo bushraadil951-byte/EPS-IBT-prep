@@ -12,29 +12,7 @@
 <div class="card" style="margin-bottom:1.25rem">
   <form method="GET"
         style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
-    {% if current_user.role == 'Resource_Manager' %}
-    <!-- Grade Filter - Resource Manager only -->
-    <div>
-      <label style="display:block;font-size:.75rem;font-weight:600;
-                    color:#475569;margin-bottom:4px">
-        Grade
-      </label>
-      <select name="grade" onchange="this.form.submit()"
-              style="padding:7px 12px;border:1px solid #e2e8f0;
-                     border-radius:8px;font-size:.83rem;min-width:160px">
 
-        <option value="">— All grades —</option>
-        {% for grade in grades %}
-        <option value="{{ grade }}"
-          {% if grade == filter_grade %}selected{% endif %}>
-          {{ grade }}
-        </option>
-        {% endfor %}
-      </select>
-    </div>
-    {% endif %}
-
-    <!-- Section Filter -->
     <div>
       <label style="display:block;font-size:.75rem;font-weight:600;
                     color:#475569;margin-bottom:4px">
@@ -57,6 +35,10 @@
       </select>
     </div>
 
+    <a href="{{ url_for('isp_rate') }}"
+       class="btn btn-primary btn-sm">
+      ✏️ Rate Students
+    </a>
   </form>
 </div>
 
