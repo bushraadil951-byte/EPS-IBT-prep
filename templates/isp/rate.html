@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+{% block title %}ISP Profile Rating{% endblock %}
+{% block page_title %}ISP Profile Development{% endblock %}
+
+{% block back_button %}
+<a href="{{ url_for('isp_dashboard') }}" class="btn btn-sm btn-secondary">
+  ← Back
+</a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Filter bar -->
+<div class="card" style="margin-bottom:1.25rem">
+
+  <form method="GET"
+        style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+
+    <div>
+      <label style="display:block;font-size:.75rem;font-weight:600;
+                    color:#475569;margin-bottom:4px">
+        Student
+      </label>
+
+      <select name="student_id"
+              onchange="this.form.submit()"
+              style="padding:7px 12px;border:1px solid #e2e8f0;
+                     border-radius:8px;font-size:.83rem;min-width:220px">
+
+        <option value="">— Select student —</option>
+
+        {% for s in students %}
+
+        <option value="{{ s.id }}"
+          {% if s.id == selected_student %}selected{% endif %}>
+          {{ s.name }} ({{ s.grade }} {{ s.section }})
+        </option>
+
+        {% endfor %}
+
+      </select>
+    </div>
+
+  </form>
+
+</div>
+
+
+{% if selected_student %}
+
+<form method="POST">
+
+  <input type="hidden"
+         name="student_id"
+         value="{{ selected_student }}">
+
+
+  <div style="display:grid;
+              grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+              gap:1rem;
+              margin-bottom:1.25rem">
+
+    {% for attr, emoji, descs in isp_profile %}
+
+    {% set current_rating = existing_ratings.get(attr) %}
+
+    <div class="card">
+
+      <!-- Attribute heading -->
+      <div style="display:flex;align-items:flex-start;
+                  gap:10px;margin-bottom:.75rem">
+
+        <span style="font-size:1.5rem;flex-shrink:0">
+          {{ emoji }}
+        </span>
+
+        <div>
+
+          <div style="font-size:.88rem;font-weight:700;color:#0f172a">
+            {{ attr }}
+          </div>
+
+          {% for desc in descs %}
+          <div style="font-size:.72rem;color:#64748b;
+                      line-height:1.4;margin-top:3px">
+            {{ desc }}
+          </div>
+          {% endfor %}
+
+        </div>
+
+      </div>
+
+
+      <!-- Rating -->
+      <div style="display:flex;gap:6px;margin-bottom:.625rem">
+
+        {% for val, label in isp_rating_scale.items() %}
+
+        {% set is_sel = current_rating == val %}
+
+        <div onclick="selectISPRating(this, '{{ attr }}', {{ val }})"
+             data-attr="{{ attr }}"
+             data-val="{{ val }}"
+             style="flex:1;text-align:center;
+                    padding:7px 2px;
+                    cursor:pointer;
+                    border:2px solid
+                    {% if is_sel %}
+                      {{ isp_rating_colors[val] }}
+                    {% else %}
+                      #e2e8f0
+                    {% endif %};
+                    background:
+                    {% if is_sel %}
+                      {{ isp_rating_colors[val] }}22
+                    {% else %}
+                      #f8fafc
+                    {% endif %};
+                    color:
+                    {% if is_sel %}
+                      {{ isp_rating_colors[val] }}
+                    {% else %}
+                      #94a3b8
+                    {% endif %};
+                    border-radius:8px;
+                    font-size:.75rem;
+                    font-weight:600;
+                    user-select:none;
+                    -webkit-user-select:none;
+                    transition:all .15s">
+
+          {{ val }}<br>
+
+          <span style="font-size:.62rem;font-weight:400">
+            {{ label }}
+          </span>
+
+          <input type="radio"
+                 name="rating_{{ attr }}"
+                 value="{{ val }}"
+                 {% if is_sel %}checked{% endif %}
+                 style="position:absolute;
+                        opacity:0;
+                        pointer-events:none;
+                        width:0;
+                        height:0">
+
+        </div>
+
+        {% endfor %}
+
+      </div>
+
+    </div>
+
+    {% endfor %}
+
+  </div>
+
+
+  <button type="submit"
+          class="btn btn-primary"
+          style="width:100%;
+                 justify-content:center;
+                 padding:12px;
+                 font-size:.95rem">
+
+    💾 Save ISP Profile Ratings
+
+  </button>
+
+</form>
+
+
+{% else %}
+
+<div class="card"
+     style="text-align:center;
+            padding:3rem;
+            color:#94a3b8">
+
+  <div style="font-size:2.5rem;margin-bottom:.75rem">
+    ☪️
+  </div>
+
+  <div style="font-size:.95rem;font-weight:600;margin-bottom:.25rem">
+    Select a student to begin
+  </div>
+
+  <div style="font-size:.83rem">
+    Choose a student from the filter above
+  </div>
+
+</div>
+
+{% endif %}
+
+
+<script>
+
+function selectISPRating(div, attr, val) {
+
+  document.querySelectorAll(
+    '[data-attr="' + attr + '"]'
+  ).forEach(function(d) {
+
+    d.style.borderColor = '#e2e8f0';
+    d.style.background  = '#f8fafc';
+    d.style.color       = '#94a3b8';
+
+    var inp = d.querySelector('input[type=radio]');
+
+    if (inp) {
+      inp.checked = false;
+    }
+
+  });
+
+
+  var colors = {
+    1: '#ef4444',
+    2: '#f59e0b',
+    3: '#3b82f6',
+    4: '#10b981'
+  };
+
+  var c = colors[val];
+
+  div.style.borderColor = c;
+  div.style.background  = c + '22';
+  div.style.color       = c;
+
+  var inp = div.querySelector('input[type=radio]');
+
+  if (inp) {
+    inp.checked = true;
+  }
+
+}
+
+</script>
+
+{% endblock %}
