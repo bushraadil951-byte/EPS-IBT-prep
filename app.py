@@ -86,6 +86,58 @@ LEARNER_PROFILE = [
     ('Reflective',    '\U0001FA9E', 'Thoughtfully considers learning and experiences to improve understanding and growth.'),
 ]
 
+# ISP PROFILE
+
+ISP_PROFILE = [
+    ('Honesty', '🤍', [
+        'Tell the truth, no matter what price you have to pay.',
+        'Your actions must always match with your beliefs and your words.'
+    ]),
+    ('Courage', '🦁', [
+        'Do the right thing even when it is difficult.',
+        'Always be brave.'
+    ]),
+    ('Gratitude', '🌸', [
+        'Being thankful by words and by actions, no matter what the situation is.'
+    ]),
+    ('Justice', '⚖️', [
+        'Being fair and impartial with ourselves and with everyone around us no matter what the cost is.'
+    ]),
+    ('Forgiveness', '🕊️', [
+        'Forgive everyone in personal matters and no longer feel angry and bitter towards them.',
+        'But in critical, collective/institutional matters, forgiveness may even be harmful.'
+    ]),
+    ('Humility', '🌿', [
+        'Always be ready to admit small and big mistakes.',
+        'Never feel superior or even better than others.'
+    ]),
+    ('Compassion', '❤️', [
+        'Always be ready to help and support everyone in need.'
+    ]),
+    ('Generosity', '🎁', [
+        'Spending your time, energy, kind words, attention and money to help others.'
+    ]),
+    ('Patience', '⏳', [
+        'Waiting without complaining.'
+    ]),
+]
+
+
+ISP_RATING_SCALE = {
+    1: 'Beginning',
+    2: 'Developing',
+    3: 'Achieved',
+    4: 'Exceeding',
+}
+
+
+ISP_RATING_COLORS = {
+    1: '#ef4444',
+    2: '#f59e0b',
+    3: '#3b82f6',
+    4: '#10b981',
+}
+
 # ATL skills: category -> grade -> list of descriptor sentences
 ATL_SKILLS = {
     'Communication': {
@@ -422,6 +474,13 @@ PORTAL_MODULES = {
             'endpoint': 'admin_dt_dashboard',
         },
         {
+            'key':      'isp',
+            'name':     'ISP Profile Development',
+            'icon':     '☪️',
+            'desc':     'Track Islamic Studies Programme character attributes for each student.',
+            'endpoint': 'isp_dashboard'
+        },
+        {
             'key':      'assessments',
             'name':     'FA & SA — Formative & Summative',
             'icon':     '📋',
@@ -472,6 +531,11 @@ PORTAL_MODULES = {
             'desc':     'Rate your students on Learner Profile attributes and ATL skills each term.',
             'endpoint': 'ib_dashboard',
         },
+        { 
+            'key': 'isp', 'name': 'ISP Profile Development', 'icon': '☪️',
+            'desc': 'Rate students on ISP character attributes anytime.',
+            'endpoint': 'isp_dashboard'
+        },
         {
             'key':      'aptitude',
             'name':     'Aptitude Analytics',
@@ -501,6 +565,11 @@ PORTAL_MODULES = {
             'icon':     '🌱',
             'desc':     'See your Learner Profile growth, self-rate each term, and write reflections.',
             'endpoint': 'student_ib',
+        },
+        { 
+            'key': 'isp', 'name': 'My ISP Profile', 'icon': '☪️',
+            'desc': 'Self-assess your Islamic character attributes anytime.',
+            'endpoint': 'student_isp'
         },
         {
             'key':      'aptitude',
@@ -593,6 +662,24 @@ class LearnerProfileRating(db.Model):
     created_at   = db.Column(db.DateTime, default=datetime.utcnow)
     student      = db.relationship('User', foreign_keys=[student_id])
     teacher      = db.relationship('User', foreign_keys=[teacher_id])
+
+class ISPRating(db.Model):
+    __tablename__ = 'isp_rating'
+    id           = db.Column(db.Integer, primary_key=True)
+    student_id   = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    rater_id     = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    rater_type   = db.Column(db.String(10), nullable=False, default='teacher')  # teacher / student
+    attribute    = db.Column(db.String(50), nullable=False)
+    rating       = db.Column(db.Integer, nullable=False)   # 1-4
+    reflection   = db.Column(db.Text, nullable=True)
+    created_at   = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at   = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    student      = db.relationship('User', foreign_keys=[student_id])
+    rater        = db.relationship('User', foreign_keys=[rater_id])
+    __table_args__ = (
+        db.UniqueConstraint('student_id', 'rater_type', 'attribute',
+                            name='uq_isp_rating'),
+    )
 
 class ATLSelfRating(db.Model):
     __tablename__ = 'atl_self_rating'
@@ -2110,6 +2197,179 @@ def student_atl_self():
     flash('ATL self-assessment saved!', 'success')
     return redirect(url_for('student_ib',
                             term=term.replace(' ', '+')))
+
+# ── ISP Dashboard ─────────────────────────────────────────────────
+@app.route('/isp')
+@login_required(('Resource_Manager', 'teacher'))
+def isp_dashboard():
+    current_user_obj = db.session.get(User, session['user_id'])
+    sq = User.query.filter_by(role='student')
+    if current_user_obj.role == 'teacher' and current_user_obj.grade:
+        sq = sq.filter_by(grade=current_user_obj.grade)
+    filter_section = request.args.get('section', '')
+    if filter_section:
+        sq = sq.filter_by(section=filter_section)
+    students = sq.order_by(User.name).all()
+ 
+    # Class averages per attribute
+    isp_avgs = {}
+    for attr, emoji, descs in ISP_PROFILE:
+        ratings = ISPRating.query.filter_by(
+            attribute=attr, rater_type='teacher'
+        ).all()
+        isp_avgs[attr] = round(
+            sum(r.rating for r in ratings) / len(ratings), 1
+        ) if ratings else 0
+ 
+    total_ratings = ISPRating.query.filter_by(rater_type='teacher').count()
+ 
+    return render_template('isp/dashboard.html',
+        students=students,
+        isp_profile=ISP_PROFILE,
+        isp_avgs=isp_avgs,
+        isp_rating_scale=ISP_RATING_SCALE,
+        isp_rating_colors=ISP_RATING_COLORS,
+        total_ratings=total_ratings,
+        filter_section=filter_section,
+        sections=DT_SECTIONS,
+    )
+ 
+ 
+# ── ISP Teacher Rating ────────────────────────────────────────────
+@app.route('/isp/rate', methods=['GET', 'POST'])
+@login_required(('Resource_Manager', 'teacher'))
+def isp_rate():
+    current_user_obj = db.session.get(User, session['user_id'])
+    sq = User.query.filter_by(role='student')
+    if current_user_obj.role == 'teacher' and current_user_obj.grade:
+        sq = sq.filter_by(grade=current_user_obj.grade)
+    students = sq.order_by(User.name).all()
+ 
+    if request.method == 'POST':
+        student_id = int(request.form.get('student_id'))
+        student    = db.session.get(User, student_id)
+        saved = 0
+        for attr, emoji, descs in ISP_PROFILE:
+            val = request.form.get(f'rating_{attr}')
+            if val:
+                existing = ISPRating.query.filter_by(
+                    student_id=student_id,
+                    rater_type='teacher',
+                    attribute=attr
+                ).first()
+                if existing:
+                    existing.rating    = int(val)
+                    existing.updated_at = datetime.utcnow()
+                else:
+                    db.session.add(ISPRating(
+                        student_id=student_id,
+                        rater_id=session['user_id'],
+                        rater_type='teacher',
+                        attribute=attr,
+                        rating=int(val),
+                    ))
+                saved += 1
+        db.session.commit()
+        flash(f'ISP ratings saved for {student.name}.', 'success')
+        return redirect(url_for('isp_dashboard'))
+ 
+    selected_student = request.args.get('student_id', type=int)
+    existing_ratings = {}
+    if selected_student:
+        for r in ISPRating.query.filter_by(
+            student_id=selected_student, rater_type='teacher'
+        ).all():
+            existing_ratings[r.attribute] = r.rating
+ 
+    return render_template('isp/rate.html',
+        students=students,
+        isp_profile=ISP_PROFILE,
+        isp_rating_scale=ISP_RATING_SCALE,
+        isp_rating_colors=ISP_RATING_COLORS,
+        selected_student=selected_student,
+        existing_ratings=existing_ratings,
+    )
+ 
+ 
+# ── ISP Student Self-Assessment ───────────────────────────────────
+@app.route('/student/isp', methods=['GET', 'POST'])
+@login_required('student')
+def student_isp():
+    student = db.session.get(User, session['user_id'])
+ 
+    if request.method == 'POST':
+        for attr, emoji, descs in ISP_PROFILE:
+            val        = request.form.get(f'rating_{attr}')
+            reflection = request.form.get(f'reflection_{attr}', '').strip()
+            if val:
+                existing = ISPRating.query.filter_by(
+                    student_id=student.id,
+                    rater_type='student',
+                    attribute=attr
+                ).first()
+                if existing:
+                    existing.rating     = int(val)
+                    existing.reflection = reflection
+                    existing.updated_at = datetime.utcnow()
+                else:
+                    db.session.add(ISPRating(
+                        student_id=student.id,
+                        rater_type='student',
+                        attribute=attr,
+                        rating=int(val),
+                        reflection=reflection,
+                    ))
+        db.session.commit()
+        flash('Your ISP self-assessment has been saved!', 'success')
+        return redirect(url_for('student_isp'))
+ 
+    # Load self ratings
+    self_ratings    = {}
+    teacher_ratings = {}
+    reflections     = {}
+    for r in ISPRating.query.filter_by(student_id=student.id).all():
+        if r.rater_type == 'student':
+            self_ratings[r.attribute] = r.rating
+            if r.reflection:
+                reflections[r.attribute] = r.reflection
+        elif r.rater_type == 'teacher':
+            teacher_ratings[r.attribute] = r.rating
+ 
+    return render_template('student/isp.html',
+        student=student,
+        isp_profile=ISP_PROFILE,
+        isp_rating_scale=ISP_RATING_SCALE,
+        isp_rating_colors=ISP_RATING_COLORS,
+        self_ratings=self_ratings,
+        teacher_ratings=teacher_ratings,
+        reflections=reflections,
+    )
+ 
+ 
+# ── ISP Student Report ────────────────────────────────────────────
+@app.route('/isp/report/<int:student_id>')
+@login_required(('Resource_Manager', 'teacher'))
+def isp_student_report(student_id):
+    student = db.session.get(User, student_id)
+    if not student:
+        flash('Student not found.', 'error')
+        return redirect(url_for('isp_dashboard'))
+    ratings = {}
+    for r in ISPRating.query.filter_by(student_id=student_id).all():
+        if r.attribute not in ratings:
+            ratings[r.attribute] = {}
+        if r.rater_type == 'teacher':
+            ratings[r.attribute]['teacher']    = r.rating
+        elif r.rater_type == 'student':
+            ratings[r.attribute]['student']    = r.rating
+            ratings[r.attribute]['reflection'] = r.reflection or ''
+    return render_template('isp/student_report.html',
+        student=student,
+        isp_profile=ISP_PROFILE,
+        isp_rating_scale=ISP_RATING_SCALE,
+        isp_rating_colors=ISP_RATING_COLORS,
+        ratings=ratings,
+    )
 
 # ── TEACHER ───────────────────────────────────────────────────────────────────
 
