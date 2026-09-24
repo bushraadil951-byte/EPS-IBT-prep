@@ -2355,32 +2355,6 @@ def student_isp():
         teacher_ratings=teacher_ratings,
         reflections=reflections,
     )
- 
- 
-# ── ISP Student Report ────────────────────────────────────────────
-@app.route('/isp/report/<int:student_id>')
-@login_required(('Resource_Manager', 'teacher'))
-def isp_student_report(student_id):
-    student = db.session.get(User, student_id)
-    if not student:
-        flash('Student not found.', 'error')
-        return redirect(url_for('isp_dashboard'))
-    ratings = {}
-    for r in ISPRating.query.filter_by(student_id=student_id).all():
-        if r.attribute not in ratings:
-            ratings[r.attribute] = {}
-        if r.rater_type == 'teacher':
-            ratings[r.attribute]['teacher']    = r.rating
-        elif r.rater_type == 'student':
-            ratings[r.attribute]['student']    = r.rating
-            ratings[r.attribute]['reflection'] = r.reflection or ''
-    return render_template('isp/student_report.html',
-        student=student,
-        isp_profile=ISP_PROFILE,
-        isp_rating_scale=ISP_RATING_SCALE,
-        isp_rating_colors=ISP_RATING_COLORS,
-        ratings=ratings,
-    )
 
 # ── TEACHER ───────────────────────────────────────────────────────────────────
 
