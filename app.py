@@ -484,7 +484,7 @@ PORTAL_MODULES = {
             'key':      'assessments',
             'name':     'FA & SA — Formative & Summative',
             'icon':     '📋',
-            'desc':     'Enter formative and summative marks and compare student progress across both.',
+            'desc':     'Enter formative and summative marks.',
             'endpoint': 'assessment_hub',
         },
         {
@@ -521,7 +521,7 @@ PORTAL_MODULES = {
             'key':      'assessments',
             'name':     'FA & SA — Formative & Summative',
             'icon':     '📋',
-            'desc':     'Enter formative and summative marks and compare student progress across both.',
+            'desc':     'Enter formative and summative marks.',
             'endpoint': 'assessment_hub',
         },
         {
@@ -3788,48 +3788,6 @@ def assessment_cross_grade_analytics_view(atype):
     return render_template('assessment/cross_grade_analytics.html',
         atype=atype, atype_label=cfg['label'], academic_year=ACADEMIC_YEAR,
         grades=DT_GRADES, subjects=cfg['subjects'], grade_data=grade_data)
- 
- 
-@app.route('/assessment/progress')
-@login_required(('teacher', 'Resource_Manager'))
-def assessment_progress():
-    """Shows one student's Formative and Summative marks together, per
-    subject. Both datasets are always sent to the template — the chart's
-    legend (default Chart.js behaviour) lets the user click 'Formative' or
-    'Summative' to show only one, or leave both visible together."""
-    teacher_grade = current_teacher_grade()
-    student_id = request.args.get('student_id', type=int)
-    grade      = teacher_grade or request.args.get('grade', DT_GRADES[0])
-    section    = request.args.get('section', '')
-    query = User.query.filter_by(role='student', grade=grade)
-    if section:
-        query = query.filter_by(section=section)
-    students = query.order_by(User.name).all()
- 
-    fa_cfg = ASSESSMENT_TYPES['FA']
-    sa_cfg = ASSESSMENT_TYPES['SA']
-    # FA and SA share the same subject list, so one subject list covers both
-    subjects = fa_cfg['subjects']
- 
-    fa_series = None
-    sa_series = None
-    student = None
-    if student_id:
-        candidate = db.session.get(User, student_id)
-        if candidate and (not teacher_grade or candidate.grade == teacher_grade):
-            student = candidate
-            fa_series = assessment_student_series('FA', student_id)
-            sa_series = assessment_student_series('SA', student_id)
-        else:
-            flash('Access denied — that student is outside your grade.', 'error')
- 
-    return render_template('assessment/progress.html',
-        students=students, grades=[teacher_grade] if teacher_grade else DT_GRADES,
-        sections=DT_SECTIONS, grade=grade, section=section,
-        student=student, fa_series=fa_series, sa_series=sa_series,
-        subjects=subjects, fa_numbers=fa_cfg['numbers'], sa_numbers=sa_cfg['numbers'],
-        academic_year=ACADEMIC_YEAR, grade_locked=bool(teacher_grade))
- 
  
 # ── SINGLE DT PDF ────────────────────────────────────────────────────────────
 
