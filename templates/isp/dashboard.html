@@ -2,9 +2,12 @@
 {% block title %}ISP Profile Development{% endblock %}
 {% block page_title %}ISP Profile Development{% endblock %}
 
-{% block back_button %}
-<a href="{{ url_for('ib_dashboard') }}" class="btn btn-sm btn-secondary">← Back</a>
-{% endblock %}
+{% block content %}
+<div style="display:flex;right-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+  <a href="/portal" class="btn btn-secondary btn-sm">
+    🏠 Home
+  </a>
+</div> 
 
 {% block content %}
 
