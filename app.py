@@ -476,7 +476,7 @@ PORTAL_MODULES = {
         {
             'key':      'isp',
             'name':     'ISP Profile Development',
-            'icon':     '☪️',
+            'icon':     '📖',
             'desc':     'Track Islamic Studies Programme character attributes for each student.',
             'endpoint': 'isp_dashboard'
         },
@@ -497,7 +497,7 @@ PORTAL_MODULES = {
         {
             'key':      'aptitude',
             'name':     'Aptitude Analytics',
-            'icon':     '🧠',
+            'icon':     '🎯',
             'desc':     'View class aptitude heatmap and per-strand student rankings.',
             'endpoint': 'teacher_aptitude',
         },
@@ -539,7 +539,7 @@ PORTAL_MODULES = {
         {
             'key':      'aptitude',
             'name':     'Aptitude Analytics',
-            'icon':     '🧠',
+            'icon':     '🎯',
             'desc':     'View class aptitude heatmap and per-strand student rankings.',
             'endpoint': 'teacher_aptitude',
         },
@@ -574,7 +574,7 @@ PORTAL_MODULES = {
         {
             'key':      'aptitude',
             'name':     'Aptitude Profile',
-            'icon':     '🧠',
+            'icon':     '🎯',
             'desc':     'See your 8 aptitude scores computed from DT marks, ATL skills and Learner Profile.',
             'endpoint': 'student_aptitude',
         },
