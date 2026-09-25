@@ -532,7 +532,7 @@ PORTAL_MODULES = {
             'endpoint': 'ib_dashboard',
         },
         { 
-            'key': 'isp', 'name': 'ISP Profile Development', 'icon': '☪️',
+            'key': 'isp', 'name': 'ISP Profile Development', 'icon': '📖',
             'desc': 'Rate students on ISP character attributes anytime.',
             'endpoint': 'isp_dashboard'
         },
@@ -567,7 +567,7 @@ PORTAL_MODULES = {
             'endpoint': 'student_ib',
         },
         { 
-            'key': 'isp', 'name': 'My ISP Profile', 'icon': '☪️',
+            'key': 'isp', 'name': 'My ISP Profile', 'icon': '📖',
             'desc': 'Self-assess your Islamic character attributes anytime.',
             'endpoint': 'student_isp'
         },
