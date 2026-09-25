@@ -3,349 +3,329 @@
 {% block page_title %}Aptitude Analytics{% endblock %}
 
 {% block content %}
-<p style="font-size:.83rem;color:#64748b;margin-bottom:1.25rem">
-  Select a student to view their aptitude profile computed from FA, DT and SA marks.
-</p>
+<style>
+.analytics-intro{font-size:.83rem;color:#6b7280;margin-bottom:1.25rem}
+.analytics-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.04)}
+.analytics-filter{padding:18px;margin-bottom:1.25rem}
+.filter-form{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+.filter-group label{display:block;font-size:.72rem;font-weight:600;color:#475569;margin-bottom:5px}
+.filter-group select{padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;color:#374151;font-family:'Inter',sans-serif;font-size:.83rem;min-width:120px;outline:none}
+.filter-group select:focus{border-color:#a5b4fc;box-shadow:0 0 0 3px rgba(99,102,241,.08)}
+.student-select{min-width:220px!important}
+.empty-card{text-align:center;padding:3.5rem 1rem;color:#94a3b8}
+.empty-icon{font-size:2.5rem;margin-bottom:.75rem}
+.empty-title{font-size:.95rem;font-weight:600;color:#64748b;margin-bottom:.4rem}
+.empty-text{font-size:.83rem}
+.student-bar{display:flex;align-items:center;gap:12px;padding:16px 18px;margin-bottom:1.25rem}
+.student-avatar{width:42px;height:42px;border-radius:50%;background:#eef2ff;color:#6366f1;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0}
+.student-name{font-size:1rem;font-weight:700;color:#1a1a2e}
+.student-meta{font-size:.78rem;color:#6b7280;margin-top:2px}
+.analytics-tabs{display:flex;gap:4px;background:#f1f5f9;border-radius:10px;padding:4px;width:fit-content;margin-bottom:1.25rem}
+.analytics-tab{padding:8px 18px;border-radius:8px;font-size:.83rem;font-weight:600;cursor:pointer;border:none;font-family:'Inter',sans-serif}
+.analytics-tab.active{background:#fff;color:#6366f1;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.analytics-tab:not(.active){background:transparent;color:#64748b}
+.chart-card{padding:18px;margin-bottom:1.25rem}
+.card-heading{font-size:.95rem;font-weight:700;color:#1a1a2e;margin-bottom:1rem}
+.radar-wrap{max-width:650px;margin:0 auto}
+.score-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;margin-bottom:1.25rem}
+.score-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:1.125rem;border-top:3px solid var(--score-color);box-shadow:0 2px 10px rgba(0,0,0,.03)}
+.score-title{font-size:.83rem;font-weight:700;color:#1a1a2e;margin-bottom:.5rem}
+.score-value{font-size:2rem;font-weight:800;color:var(--score-color);line-height:1}
+.score-label{font-size:.72rem;color:#94a3b8;margin-top:4px}
+.score-bars{margin-top:.875rem;display:flex;flex-direction:column;gap:6px}
+.score-row{display:flex;align-items:center;gap:6px;font-size:.72rem}
+.score-type{color:#64748b;width:22px}
+.progress{flex:1;height:5px;background:#f1f5f9;border-radius:99px;overflow:hidden}
+.progress-fill{height:100%;border-radius:99px}
+.score-number{color:#1e293b;font-weight:600;min-width:34px}
+.no-data{font-size:.72rem;color:#cbd5e1;margin-top:.5rem}
+.legend-card{display:flex;gap:1.5rem;flex-wrap:wrap;align-items:center;padding:15px 18px}
+.legend-title{font-size:.78rem;font-weight:600;color:#475569}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:.78rem;color:#475569}
+.legend-dot{width:10px;height:10px;border-radius:3px}
+.legend-note{margin-left:auto;font-size:.72rem;color:#94a3b8}
+.trend-table{width:100%;border-collapse:collapse;font-size:.83rem}
+.trend-table th{padding:10px 14px;text-align:center;border-bottom:2px solid #e2e8f0;background:#f8fafc;font-size:.72rem;text-transform:uppercase;font-weight:600}
+.trend-table th:first-child{text-align:left;color:#64748b}
+.trend-table td{padding:10px 14px;border-bottom:1px solid #f1f5f9;text-align:center}
+.trend-table td:first-child{text-align:left;font-weight:600;color:#1e293b}
+.trend-table tr:hover td{background:#fafafa}
+@media(max-width:700px){
+.filter-form{align-items:stretch;flex-direction:column}
+.filter-group select,.student-select{width:100%;min-width:0!important}
+.score-grid{grid-template-columns:1fr}
+.analytics-tabs{width:100%}
+.analytics-tab{flex:1}
+.legend-note{width:100%;margin-left:0}
+}
+</style>
 
-<!-- Filters -->
-<div class="card" style="margin-bottom:1.25rem">
-  <form method="GET" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+<p class="analytics-intro">Select a student to view their aptitude profile computed from FA, DT and SA marks.</p>
 
-    {% if grade_choices|length > 1 %}
-    <div>
-      <label style="display:block;font-size:.72rem;font-weight:600;color:#475569;margin-bottom:4px">Grade</label>
-      <select name="grade" onchange="this.form.submit()"
-        style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.83rem;min-width:110px">
-        {% for g in grade_choices %}
-        <option value="{{ g }}" {% if g == grade %}selected{% endif %}>{{ g }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    {% endif %}
-
-    <div>
-      <label style="display:block;font-size:.72rem;font-weight:600;color:#475569;margin-bottom:4px">Section</label>
-      <select name="section" onchange="this.form.submit()"
-        style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.83rem;min-width:120px">
-        <option value="">All sections</option>
-        {% for s in sections %}
-        <option value="{{ s }}" {% if s == section %}selected{% endif %}>Section {{ s }}</option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div>
-      <label style="display:block;font-size:.72rem;font-weight:600;color:#475569;margin-bottom:4px">Student</label>
-      <select name="student_id" onchange="this.form.submit()"
-        style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.83rem;min-width:220px">
-        <option value="">— Select student —</option>
-        {% for s in students %}
-        <option value="{{ s.id }}"
-          {% if selected_student and selected_student.id == s.id %}selected{% endif %}>
-          {{ s.name }} ({{ s.section or '—' }})
-        </option>
-        {% endfor %}
-      </select>
-    </div>
-
-    {% if selected_student %}
-    <a href="{{ url_for(role_prefix + '_aptitude') }}?grade={{ grade }}"
-       class="btn btn-secondary btn-sm">Clear</a>
-    {% endif %}
-
-  </form>
-</div>
-
-{% if not selected_student %}
-<!-- Placeholder -->
-<div class="card" style="text-align:center;padding:3rem;color:#94a3b8">
-  <div style="font-size:2.5rem;margin-bottom:.75rem">🧠</div>
-  <div style="font-size:.95rem;font-weight:600;color:#64748b;margin-bottom:.4rem">
-    Select a student above
-  </div>
-  <div style="font-size:.83rem">
-    Choose grade, section and student to view their aptitude profile.
-  </div>
-</div>
-
-{% else %}
-<!-- Student info bar -->
-<div class="card" style="margin-bottom:1.25rem;display:flex;align-items:center;gap:12px">
-  <div style="width:40px;height:40px;border-radius:50%;background:#6366f1;
-              color:#fff;display:flex;align-items:center;justify-content:center;
-              font-weight:700;font-size:14px;flex-shrink:0">
-    {{ selected_student.name[:2].upper() }}
-  </div>
-  <div>
-    <div style="font-size:1rem;font-weight:700;color:#1e293b">{{ selected_student.name }}</div>
-    <div style="font-size:.78rem;color:#64748b">
-      {{ selected_student.grade }} · Section {{ selected_student.section or '—' }}
-    </div>
-  </div>
-</div>
-
-<!-- Trend Analysis Tab -->
-{% if selected_student and aptitude %}
-<div style="margin-top:1.5rem">
-  <div style="display:flex;gap:4px;background:#f1f5f9;border-radius:10px;
-              padding:4px;width:fit-content;margin-bottom:1.25rem">
-    <button onclick="showSection('aptitude',this)"
-            id="tab-aptitude-btn"
-            style="padding:7px 18px;border-radius:8px;font-size:.83rem;font-weight:600;
-                   cursor:pointer;border:none;background:#fff;color:#6366f1;
-                   box-shadow:0 1px 4px rgba(0,0,0,.08)">
-      🧠 Aptitude
-    </button>
-    <button onclick="showSection('trend',this)"
-            id="tab-trend-btn"
-            style="padding:7px 18px;border-radius:8px;font-size:.83rem;font-weight:600;
-                   cursor:pointer;border:none;background:transparent;color:#64748b">
-      📈 DT / FA / SA Trend
-    </button>
-  </div>
-
-  <!-- Aptitude section (shown by default) -->
-  <div id="section-aptitude">
-    <!-- Your existing radar + score cards already here — wrap them in this div -->
-  </div>
-
-  <!-- Trend section -->
-  <div id="section-trend" style="display:none">
-    <div class="card" style="margin-bottom:1.25rem">
-      <h3 style="font-size:.95rem;font-weight:700;margin-bottom:1rem">
-        📈 Score Trend — {{ selected_student.name }}
-      </h3>
-      <canvas id="trendChart" height="120" role="img"
-              aria-label="Line chart showing DT, FA and SA scores over time"></canvas>
-    </div>
-
-    <!-- Subject-wise breakdown table -->
-    <div class="card">
-      <h3 style="font-size:.88rem;font-weight:700;margin-bottom:1rem;color:#1e293b">
-        Subject-wise Breakdown
-      </h3>
-      <div style="overflow-x:auto">
-        <table style="width:100%;border-collapse:collapse;font-size:.83rem">
-          <thead>
-            <tr style="background:#f8fafc">
-              <th style="padding:10px 14px;text-align:left;border-bottom:2px solid #e2e8f0;font-size:.72rem;color:#64748b;text-transform:uppercase">Subject</th>
-              <th style="padding:10px 14px;text-align:center;border-bottom:2px solid #e2e8f0;font-size:.72rem;color:#0ea5e9;text-transform:uppercase">DT Avg</th>
-              <th style="padding:10px 14px;text-align:center;border-bottom:2px solid #e2e8f0;font-size:.72rem;color:#6366f1;text-transform:uppercase">FA Avg</th>
-              <th style="padding:10px 14px;text-align:center;border-bottom:2px solid #e2e8f0;font-size:.72rem;color:#10b981;text-transform:uppercase">SA Avg</th>
-              <th style="padding:10px 14px;text-align:center;border-bottom:2px solid #e2e8f0;font-size:.72rem;color:#64748b;text-transform:uppercase">Gap (FA−DT)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for strand, data in aptitude.items() %}
-            {% set gap = (data.fa_score - data.dt_score) | round(1)
-                         if data.fa_score is not none and data.dt_score is not none
-                         else none %}
-            <tr style="border-bottom:1px solid #f1f5f9">
-              <td style="padding:10px 14px;font-weight:600;color:#1e293b">{{ strand }}</td>
-              <td style="padding:10px 14px;text-align:center">
-                {% if data.dt_score is not none %}
-                <span style="font-weight:600;color:#0ea5e9">{{ data.dt_score }}%</span>
-                {% else %}<span style="color:#e2e8f0">—</span>{% endif %}
-              </td>
-              <td style="padding:10px 14px;text-align:center">
-                {% if data.fa_score is not none %}
-                <span style="font-weight:600;color:#6366f1">{{ data.fa_score }}%</span>
-                {% else %}<span style="color:#e2e8f0">—</span>{% endif %}
-              </td>
-              <td style="padding:10px 14px;text-align:center">
-                {% if data.sa_score is not none %}
-                <span style="font-weight:600;color:#10b981">{{ data.sa_score }}%</span>
-                {% else %}<span style="color:#e2e8f0">—</span>{% endif %}
-              </td>
-              <td style="padding:10px 14px;text-align:center">
-                {% if gap is not none %}
-                <span style="font-weight:700;
-                       color:{% if gap >= 0 %}#10b981{% elif gap >= -15 %}#f59e0b{% else %}#ef4444{% endif %}">
-                  {{ '+' if gap > 0 else '' }}{{ gap }}%
-                </span>
-                {% else %}<span style="color:#e2e8f0">—</span>{% endif %}
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
+<div class="analytics-card analytics-filter">
+<form method="GET" class="filter-form">
+{% if grade_choices|length > 1 %}
+<div class="filter-group">
+<label>Grade</label>
+<select name="grade" onchange="this.form.submit()">
+{% for g in grade_choices %}
+<option value="{{ g }}" {% if g == grade %}selected{% endif %}>{{ g }}</option>
+{% endfor %}
+</select>
 </div>
 {% endif %}
 
+<div class="filter-group">
+<label>Section</label>
+<select name="section" onchange="this.form.submit()">
+<option value="">All sections</option>
+{% for s in sections %}
+<option value="{{ s }}" {% if s == section %}selected{% endif %}>Section {{ s }}</option>
+{% endfor %}
+</select>
+</div>
+
+<div class="filter-group">
+<label>Student</label>
+<select name="student_id" onchange="this.form.submit()" class="student-select">
+<option value="">— Select student —</option>
+{% for s in students %}
+<option value="{{ s.id }}" {% if selected_student and selected_student.id == s.id %}selected{% endif %}>{{ s.name }} ({{ s.section or '—' }})</option>
+{% endfor %}
+</select>
+</div>
+
+{% if selected_student %}
+<a href="{{ url_for(role_prefix + '_aptitude') }}?grade={{ grade }}" class="btn btn-secondary btn-sm">Clear</a>
+{% endif %}
+</form>
+</div>
+
+{% if not selected_student %}
+<div class="analytics-card empty-card">
+<div class="empty-icon">🧠</div>
+<div class="empty-title">Select a student above</div>
+<div class="empty-text">Choose grade, section and student to view their aptitude profile.</div>
+</div>
+
+{% else %}
+
+<div class="analytics-card student-bar">
+<div class="student-avatar">{{ selected_student.name[:2].upper() }}</div>
+<div>
+<div class="student-name">{{ selected_student.name }}</div>
+<div class="student-meta">{{ selected_student.grade }} · Section {{ selected_student.section or '—' }}</div>
+</div>
+</div>
+
+{% if selected_student and aptitude %}
+<div class="analytics-tabs">
+<button onclick="showSection('aptitude',this)" id="tab-aptitude-btn" class="analytics-tab active">🧠 Aptitude</button>
+<button onclick="showSection('trend',this)" id="tab-trend-btn" class="analytics-tab">📈 DT / FA / SA Trend</button>
+</div>
+
+<div id="section-aptitude">
+
 {% if aptitude %}
-
-<!-- Radar chart -->
-<div class="card" style="margin-bottom:.5rem;padding:.75rem">
-    <h3 style="font-size:.95rem;font-weight:700;margin-bottom:.5rem">
-        🧠 Aptitude Overview
-    </h3>
-    <div style="max-width:650px;margin:0 auto">
-        <canvas id="aptitudeRadar" role="img" aria-label="Radar chart of aptitude scores"></canvas>
-    </div>
+<div class="analytics-card chart-card">
+<h3 class="card-heading">🧠 Aptitude Overview</h3>
+<div class="radar-wrap">
+<canvas id="aptitudeRadar" role="img" aria-label="Radar chart of aptitude scores"></canvas>
+</div>
 </div>
 
-<!-- Score cards -->
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
-            gap:1rem;margin-bottom:1.25rem">
-  {% for strand, data in aptitude.items() %}
-  {% set score = data.score %}
-  {% set color = '#10b981' if score and score >= 75
-                 else '#f59e0b' if score and score >= 50
-                 else '#ef4444' if score else '#94a3b8' %}
-  {% set label = 'Strong' if score and score >= 75
-                 else 'Developing' if score and score >= 50
-                 else 'Needs focus' if score else 'No data yet' %}
-  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;
-              padding:1.125rem;border-top:3px solid {{ color }}">
-    <div style="font-size:.83rem;font-weight:700;color:#1e293b;margin-bottom:.5rem">{{ strand }}</div>
-    <div style="font-size:2rem;font-weight:800;color:{{ color }};line-height:1">
-      {% if score %}{{ score }}%{% else %}—{% endif %}
-    </div>
-    <div style="font-size:.72rem;color:#94a3b8;margin-top:3px">{{ label }}</div>
+<div class="score-grid">
+{% for strand,data in aptitude.items() %}
+{% set score=data.score %}
+{% set color='#10b981' if score and score >= 75 else '#f59e0b' if score and score >= 50 else '#ef4444' if score else '#94a3b8' %}
+{% set label='Strong' if score and score >= 75 else 'Developing' if score and score >= 50 else 'Needs focus' if score else 'No data yet' %}
+<div class="score-card" style="--score-color:{{ color }}">
+<div class="score-title">{{ strand }}</div>
+<div class="score-value">{% if score %}{{ score }}%{% else %}—{% endif %}</div>
+<div class="score-label">{{ label }}</div>
 
-    {% if data.has_data %}
-    <div style="margin-top:.875rem;display:flex;flex-direction:column;gap:5px">
-      {% if data.fa_score is not none %}
-      <div style="display:flex;align-items:center;gap:6px;font-size:.72rem">
-        <span style="color:#64748b;width:22px">FA</span>
-        <div style="flex:1;height:5px;background:#f1f5f9;border-radius:99px;overflow:hidden">
-          <div style="height:100%;width:{{ data.fa_score }}%;background:#6366f1;border-radius:99px"></div>
-        </div>
-        <span style="color:#1e293b;font-weight:600;min-width:34px">{{ data.fa_score }}%</span>
-      </div>
-      {% endif %}
-      {% if data.dt_score is not none %}
-      <div style="display:flex;align-items:center;gap:6px;font-size:.72rem">
-        <span style="color:#64748b;width:22px">DT</span>
-        <div style="flex:1;height:5px;background:#f1f5f9;border-radius:99px;overflow:hidden">
-          <div style="height:100%;width:{{ data.dt_score }}%;background:#0ea5e9;border-radius:99px"></div>
-        </div>
-        <span style="color:#1e293b;font-weight:600;min-width:34px">{{ data.dt_score }}%</span>
-      </div>
-      {% endif %}
-      {% if data.sa_score is not none %}
-      <div style="display:flex;align-items:center;gap:6px;font-size:.72rem">
-        <span style="color:#64748b;width:22px">SA</span>
-        <div style="flex:1;height:5px;background:#f1f5f9;border-radius:99px;overflow:hidden">
-          <div style="height:100%;width:{{ data.sa_score }}%;background:#10b981;border-radius:99px"></div>
-        </div>
-        <span style="color:#1e293b;font-weight:600;min-width:34px">{{ data.sa_score }}%</span>
-      </div>
-      {% endif %}
-    </div>
-    {% else %}
-    <div style="font-size:.72rem;color:#cbd5e1;margin-top:.5rem">Marks not recorded yet</div>
-    {% endif %}
-  </div>
-  {% endfor %}
+{% if data.has_data %}
+<div class="score-bars">
+{% if data.fa_score is not none %}
+<div class="score-row">
+<span class="score-type">FA</span>
+<div class="progress"><div class="progress-fill" style="width:{{ data.fa_score }}%;background:#6366f1"></div></div>
+<span class="score-number">{{ data.fa_score }}%</span>
+</div>
+{% endif %}
+{% if data.dt_score is not none %}
+<div class="score-row">
+<span class="score-type">DT</span>
+<div class="progress"><div class="progress-fill" style="width:{{ data.dt_score }}%;background:#0ea5e9"></div></div>
+<span class="score-number">{{ data.dt_score }}%</span>
+</div>
+{% endif %}
+{% if data.sa_score is not none %}
+<div class="score-row">
+<span class="score-type">SA</span>
+<div class="progress"><div class="progress-fill" style="width:{{ data.sa_score }}%;background:#10b981"></div></div>
+<span class="score-number">{{ data.sa_score }}%</span>
+</div>
+{% endif %}
+</div>
+{% else %}
+<div class="no-data">Marks not recorded yet</div>
+{% endif %}
+</div>
+{% endfor %}
 </div>
 
-<!-- Legend -->
-<div class="card" style="display:flex;gap:1.5rem;flex-wrap:wrap;align-items:center">
-  <div style="font-size:.78rem;font-weight:600;color:#475569">Score guide:</div>
-  <div style="display:flex;align-items:center;gap:5px;font-size:.78rem">
-    <div style="width:10px;height:10px;border-radius:2px;background:#10b981"></div>
-    <span style="color:#475569">75%+ Strong</span>
-  </div>
-  <div style="display:flex;align-items:center;gap:5px;font-size:.78rem">
-    <div style="width:10px;height:10px;border-radius:2px;background:#f59e0b"></div>
-    <span style="color:#475569">50–74% Developing</span>
-  </div>
-  <div style="display:flex;align-items:center;gap:5px;font-size:.78rem">
-    <div style="width:10px;height:10px;border-radius:2px;background:#ef4444"></div>
-    <span style="color:#475569">Below 50% Needs focus</span>
-  </div>
-  <div style="margin-left:auto;font-size:.72rem;color:#94a3b8">
-    FA 30% · DT 35% · SA 35% · Arts: FA 100%
-  </div>
+<div class="analytics-card legend-card">
+<div class="legend-title">Score guide:</div>
+<div class="legend-item"><div class="legend-dot" style="background:#10b981"></div>75%+ Strong</div>
+<div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div>50–74% Developing</div>
+<div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div>Below 50% Needs focus</div>
+<div class="legend-note">FA 30% · DT 35% · SA 35% · Arts: FA 100%</div>
+</div>
+{% endif %}
 </div>
 
+<div id="section-trend" style="display:none">
+
+<div class="analytics-card chart-card">
+<h3 class="card-heading">📈 Score Trend — {{ selected_student.name }}</h3>
+<canvas id="trendChart" height="120" role="img" aria-label="Line chart showing DT, FA and SA scores over time"></canvas>
+</div>
+
+<div class="analytics-card chart-card">
+<h3 class="card-heading">Subject-wise Breakdown</h3>
+<div style="overflow-x:auto">
+<table class="trend-table">
+<thead>
+<tr>
+<th>Subject</th>
+<th style="color:#0ea5e9">DT Avg</th>
+<th style="color:#6366f1">FA Avg</th>
+<th style="color:#10b981">SA Avg</th>
+<th style="color:#64748b">Gap (FA−DT)</th>
+</tr>
+</thead>
+<tbody>
+{% for strand,data in aptitude.items() %}
+{% set gap=(data.fa_score-data.dt_score)|round(1) if data.fa_score is not none and data.dt_score is not none else none %}
+<tr>
+<td>{{ strand }}</td>
+<td>{% if data.dt_score is not none %}<span style="font-weight:600;color:#0ea5e9">{{ data.dt_score }}%</span>{% else %}—{% endif %}</td>
+<td>{% if data.fa_score is not none %}<span style="font-weight:600;color:#6366f1">{{ data.fa_score }}%</span>{% else %}—{% endif %}</td>
+<td>{% if data.sa_score is not none %}<span style="font-weight:600;color:#10b981">{{ data.sa_score }}%</span>{% else %}—{% endif %}</td>
+<td>
+{% if gap is not none %}
+<span style="font-weight:700;color:{% if gap >= 0 %}#10b981{% elif gap >= -15 %}#f59e0b{% else %}#ef4444{% endif %}">
+{{ '+' if gap > 0 else '' }}{{ gap }}%
+</span>
+{% else %}—{% endif %}
+</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</div>
+</div>
+{% endif %}
 {% endif %}
 {% endif %}
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script>
 {% if aptitude %}
-const isDark = matchMedia('(prefers-color-scheme:dark)').matches;
-const gc = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
-const tc = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.4)';
-var radarCtx = document.getElementById('aptitudeRadar');
-if (radarCtx) {
-  new Chart(radarCtx, {
-    type: 'radar',
-    data: {
-      labels: {{ strands | tojson }},
-      datasets: [{
-        label: '{{ selected_student.name }}',
-        data: {{ aptitude.values() | map(attribute='score') | list | tojson }}.map(function(v){ return v || 0; }),
-        borderColor: '#6366f1',
-        backgroundColor: 'rgba(99,102,241,0.15)',
-        borderWidth: 2,
-        pointRadius: 5,
-        pointBackgroundColor: {{ aptitude.values() | map(attribute='score') | list | tojson }}.map(function(v, i, arr) {
-          return v === Math.max.apply(null, arr) ? '#10b981' : '#6366f1';
-        }),
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: { r: { min:0, max:100,
-        ticks:{ stepSize:25, backdropColor:'transparent', font:{size:10},
-                color:tc, callback: function(v){ return v+'%'; } },
-        grid:{ color:gc }, pointLabels:{ font:{size:11}, color:tc }
-      }},
-      plugins: { legend:{ display:false } }
-    }
-  });
+const gc='rgba(0,0,0,0.06)';
+const tc='#64748b';
+
+var radarCtx=document.getElementById('aptitudeRadar');
+if(radarCtx){
+new Chart(radarCtx,{
+type:'radar',
+data:{
+labels:{{ strands|tojson }},
+datasets:[{
+label:'{{ selected_student.name }}',
+data:{{ aptitude.values()|map(attribute='score')|list|tojson }}.map(function(v){return v||0;}),
+borderColor:'#6366f1',
+backgroundColor:'rgba(99,102,241,0.12)',
+borderWidth:2,
+pointRadius:5,
+pointBackgroundColor:{{ aptitude.values()|map(attribute='score')|list|tojson }}.map(function(v,i,arr){
+return v===Math.max.apply(null,arr)?'#10b981':'#6366f1';
+})
+}]
+},
+options:{
+responsive:true,
+scales:{
+r:{
+min:0,
+max:100,
+ticks:{
+stepSize:25,
+backdropColor:'transparent',
+font:{size:10},
+color:tc,
+callback:function(v){return v+'%';}
+},
+grid:{color:gc},
+angleLines:{color:gc},
+pointLabels:{font:{size:11,weight:'600'},color:'#475569'}
+}
+},
+plugins:{legend:{display:false}}
+}
+});
 }
 {% endif %}
-// Tab switching
-function showSection(name, btn) {
-  ['aptitude','trend'].forEach(function(s) {
-    document.getElementById('section-'+s).style.display = s===name ? 'block' : 'none';
-  });
-  document.querySelectorAll('[id^=tab-]').forEach(function(b) {
-    b.style.background    = 'transparent';
-    b.style.color         = '#64748b';
-    b.style.boxShadow     = 'none';
-  });
-  btn.style.background = '#fff';
-  btn.style.color      = '#6366f1';
-  btn.style.boxShadow  = '0 1px 4px rgba(0,0,0,.08)';
+
+function showSection(name,btn){
+['aptitude','trend'].forEach(function(s){
+document.getElementById('section-'+s).style.display=s===name?'block':'none';
+});
+document.querySelectorAll('.analytics-tab').forEach(function(b){
+b.classList.remove('active');
+});
+btn.classList.add('active');
 }
 
-// Trend chart
-var aptData = {{ aptitude | tojson }};
-var strandList = {{ strands | tojson }};
-var dtScores = strandList.map(function(s){ return aptData[s] ? aptData[s].dt_score || 0 : 0; });
-var faScores = strandList.map(function(s){ return aptData[s] ? aptData[s].fa_score || 0 : 0; });
-var saScores = strandList.map(function(s){ return aptData[s] ? aptData[s].sa_score || 0 : 0; });
+var aptData={{ aptitude|tojson }};
+var strandList={{ strands|tojson }};
+var dtScores=strandList.map(function(s){return aptData[s]?aptData[s].dt_score||0:0;});
+var faScores=strandList.map(function(s){return aptData[s]?aptData[s].fa_score||0:0;});
+var saScores=strandList.map(function(s){return aptData[s]?aptData[s].sa_score||0:0;});
 
-var trendCtx = document.getElementById('trendChart');
-if (trendCtx) {
-  new Chart(trendCtx, {
-    type: 'bar',
-    data: {
-      labels: strandList,
-      datasets: [
-        { label:'DT Avg', data:dtScores, backgroundColor:'rgba(14,165,233,0.75)', borderRadius:4, borderSkipped:false },
-        { label:'FA Avg', data:faScores, backgroundColor:'rgba(99,102,241,0.75)',  borderRadius:4, borderSkipped:false },
-        { label:'SA Avg', data:saScores, backgroundColor:'rgba(16,185,129,0.75)', borderRadius:4, borderSkipped:false },
-      ]
-    },
-    options: {
-      responsive: true,
-      plugins: { legend:{ position:'top', labels:{ font:{size:11}, boxWidth:12 } } },
-      scales: {
-        y: { min:0, max:100, ticks:{ font:{size:10}, callback:function(v){ return v+'%'; } },
-             grid:{ color:'rgba(0,0,0,0.05)' } },
-        x: { grid:{ display:false }, ticks:{ font:{size:10} } }
-      }
-    }
-  });
+var trendCtx=document.getElementById('trendChart');
+if(trendCtx){
+new Chart(trendCtx,{
+type:'bar',
+data:{
+labels:strandList,
+datasets:[
+{label:'DT Avg',data:dtScores,backgroundColor:'rgba(14,165,233,.75)',borderRadius:5,borderSkipped:false},
+{label:'FA Avg',data:faScores,backgroundColor:'rgba(99,102,241,.75)',borderRadius:5,borderSkipped:false},
+{label:'SA Avg',data:saScores,backgroundColor:'rgba(16,185,129,.75)',borderRadius:5,borderSkipped:false}
+]
+},
+options:{
+responsive:true,
+plugins:{
+legend:{position:'top',labels:{font:{size:11},boxWidth:12,color:'#475569'}}
+},
+scales:{
+y:{
+min:0,
+max:100,
+ticks:{font:{size:10},color:'#64748b',callback:function(v){return v+'%';}},
+grid:{color:'rgba(0,0,0,.05)'}
+},
+x:{
+grid:{display:false},
+ticks:{font:{size:10},color:'#64748b'}
+}
+}
+}
+});
 }
 </script>
 {% endblock %}
