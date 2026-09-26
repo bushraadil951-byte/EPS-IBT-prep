@@ -6,63 +6,36 @@
 <title>Eastern Public School — Academic Hub</title>
 
 <link rel="stylesheet" href="/static/style.css"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet"/>
 
 <style>
-*{
-    box-sizing:border-box;
-}
+*{box-sizing:border-box}
 
 body{
     margin:0;
     min-height:100vh;
-    font-family:'Inter',sans-serif;
-    color:#fff;
-}
-
-/* BACKGROUND */
-.login-page{
-    min-height:100vh;
     display:flex;
     align-items:center;
     justify-content:center;
+    font-family:'Inter',sans-serif;
     background:
-        radial-gradient(circle at 50% 5%,rgba(129,180,255,.45),transparent 35%),
-        linear-gradient(135deg,#172554 0%,#1d4ed8 48%,#0f3d91 100%);
-    position:relative;
-    overflow:hidden;
+        radial-gradient(circle at 20% 20%,rgba(99,102,241,.35),transparent 32%),
+        radial-gradient(circle at 80% 80%,rgba(37,99,235,.30),transparent 35%),
+        linear-gradient(135deg,#111827,#1e1b4b 50%,#172554);
 }
 
-/* subtle glow */
-.login-page::before{
-    content:"";
-    position:absolute;
-    width:500px;
-    height:500px;
-    border-radius:50%;
-    background:rgba(255,255,255,.06);
-    top:-250px;
-    left:-180px;
-}
-
-.login-page::after{
-    content:"";
-    position:absolute;
-    width:600px;
-    height:600px;
-    border-radius:50%;
-    background:rgba(0,0,0,.08);
-    bottom:-400px;
-    right:-200px;
-}
-
-/* LOGIN AREA */
+/* CENTER BLOCK */
 .login-wrap{
     width:100%;
     max-width:430px;
-    padding:30px 25px;
-    position:relative;
-    z-index:2;
+    padding:20px;
+}
+
+.login-card{
+    background:#fff;
+    border-radius:20px;
+    padding:42px 38px 34px;
+    box-shadow:0 25px 60px rgba(0,0,0,.28);
 }
 
 /* LOGO */
@@ -72,16 +45,16 @@ body{
 }
 
 .school-crest{
-    width:76px;
-    height:76px;
-    margin:0 auto 16px;
-    border-radius:50%;
-    background:rgba(255,255,255,.12);
-    border:1px solid rgba(255,255,255,.35);
+    width:72px;
+    height:72px;
+    margin:0 auto 15px;
+    border-radius:16px;
+    background:#eef2ff;
+    border:1px solid #e0e7ff;
     display:flex;
     align-items:center;
     justify-content:center;
-    backdrop-filter:blur(8px);
+    overflow:hidden;
 }
 
 .school-crest img{
@@ -92,155 +65,171 @@ body{
 
 .school-name{
     font-family:'Poppins',sans-serif;
-    font-size:1.45rem;
-    font-weight:600;
-    letter-spacing:.04em;
-    text-transform:uppercase;
+    font-size:1.38rem;
+    font-weight:800;
+    color:#172033;
+    letter-spacing:-.02em;
 }
 
 .portal-tag{
-    font-size:.78rem;
-    letter-spacing:.25em;
-    color:rgba(255,255,255,.72);
-    margin-top:7px;
-    text-transform:uppercase;
+    font-size:.88rem;
+    color:#6366f1;
+    font-weight:600;
+    margin-top:4px;
 }
 
 .hub-tagline{
-    font-size:.68rem;
-    color:rgba(255,255,255,.58);
-    margin-top:12px;
+    font-size:.74rem;
+    color:#94a3b8;
+    font-style:italic;
+    margin-top:7px;
     line-height:1.5;
 }
 
-/* LOGIN TITLE */
-.login-title{
-    text-align:center;
-    font-family:'Poppins',sans-serif;
-    font-size:1.15rem;
-    font-weight:500;
-    letter-spacing:.18em;
-    text-transform:uppercase;
-    margin:35px 0 27px;
+/* DIVIDER */
+.login-divider{
+    height:1px;
+    background:#eef2f7;
+    margin:27px 0;
 }
 
-/* ALERTS */
-.alert{
-    padding:9px 12px;
-    border-radius:5px;
-    font-size:.75rem;
-    margin-bottom:16px;
-    background:rgba(255,255,255,.12);
-    color:#fff;
-    border:1px solid rgba(255,255,255,.2);
+/* TITLE */
+.login-title{
+    font-family:'Poppins',sans-serif;
+    font-size:1.35rem;
+    font-weight:700;
+    text-align:center;
+    color:#172033;
+    margin-bottom:6px;
+}
+
+.login-subtitle{
+    font-size:.84rem;
+    color:#64748b;
+    text-align:center;
+    margin:0 0 25px;
 }
 
 /* FORM */
 .form-group{
-    margin-bottom:20px;
+    margin-bottom:18px;
 }
 
 .form-label{
-    display:none;
-}
-
-.input-wrap{
-    position:relative;
-}
-
-.input-icon{
-    position:absolute;
-    left:0;
-    top:50%;
-    transform:translateY(-50%);
-    font-size:15px;
-    color:rgba(255,255,255,.85);
+    display:block;
+    font-size:.78rem;
+    font-weight:600;
+    color:#334155;
+    margin-bottom:7px;
 }
 
 .form-input{
     width:100%;
-    height:44px;
-    padding:8px 35px;
-    border:0;
-    border-bottom:1px solid rgba(255,255,255,.65);
-    border-radius:0;
-    outline:none;
-    background:transparent;
-    color:#fff;
+    padding:12px 14px;
+    border:1px solid #dbe2ea;
+    border-radius:9px;
+    background:#fff;
+    color:#1e293b;
     font-family:'Inter',sans-serif;
-    font-size:.82rem;
+    font-size:.88rem;
+    outline:none;
     transition:.2s;
 }
 
 .form-input::placeholder{
-    color:rgba(255,255,255,.72);
+    color:#9ca3af;
 }
 
 .form-input:focus{
-    border-bottom-color:#fff;
-    box-shadow:none;
+    border-color:#818cf8;
+    box-shadow:0 0 0 3px rgba(99,102,241,.09);
 }
 
-/* PASSWORD EYE */
+.password-box{
+    position:relative;
+}
+
+.password-box .form-input{
+    padding-right:44px;
+}
+
 .password-toggle{
     position:absolute;
-    right:0;
+    right:10px;
     top:50%;
     transform:translateY(-50%);
     border:0;
     background:none;
-    color:rgba(255,255,255,.75);
+    color:#64748b;
     cursor:pointer;
-    font-size:15px;
+    font-size:17px;
+    padding:5px;
 }
 
 /* BUTTON */
 .login-button{
     width:100%;
-    height:45px;
-    margin-top:18px;
+    padding:12px;
+    margin-top:4px;
     border:0;
-    background:rgba(3,62,145,.75);
+    border-radius:9px;
+    background:#6366f1;
     color:#fff;
     font-family:'Inter',sans-serif;
-    font-size:.78rem;
-    font-weight:600;
-    letter-spacing:.16em;
-    text-transform:uppercase;
+    font-size:.88rem;
+    font-weight:700;
     cursor:pointer;
     transition:.2s;
-    border:1px solid rgba(255,255,255,.08);
 }
 
 .login-button:hover{
-    background:#064fae;
-    box-shadow:0 8px 20px rgba(0,0,0,.15);
+    background:#4f46e5;
+    box-shadow:0 6px 18px rgba(99,102,241,.22);
 }
 
 /* FOOTER */
 .footer-note{
+    font-size:.72rem;
+    color:#94a3b8;
     text-align:center;
-    font-size:.66rem;
-    color:rgba(255,255,255,.55);
-    margin-top:22px;
     line-height:1.5;
+    margin:21px 0 0;
 }
 
 .login-footer{
     text-align:center;
-    font-size:.6rem;
-    color:rgba(255,255,255,.35);
-    margin-top:28px;
-    letter-spacing:.04em;
+    font-size:.65rem;
+    color:#cbd5e1;
+    margin-top:24px;
+}
+
+/* ALERT */
+.alert{
+    padding:10px 13px;
+    border-radius:8px;
+    font-size:.78rem;
+    margin-bottom:15px;
+}
+
+.alert-success{
+    background:#f0fdf4;
+    color:#166534;
+    border:1px solid #bbf7d0;
+}
+
+.alert-error{
+    background:#fef2f2;
+    color:#991b1b;
+    border:1px solid #fecaca;
 }
 
 @media(max-width:500px){
-    .school-name{
-        font-size:1.2rem;
+    .login-card{
+        padding:34px 25px 28px;
     }
 
-    .login-wrap{
-        padding:25px;
+    .school-name{
+        font-size:1.22rem;
     }
 }
 </style>
@@ -248,11 +237,10 @@ body{
 
 <body>
 
-<div class="login-page">
-
 <div class="login-wrap">
 
-    <!-- EPS BRANDING -->
+<div class="login-card">
+
     <div class="login-logo">
 
         <div class="school-crest">
@@ -275,53 +263,60 @@ body{
 
     </div>
 
+    <div class="login-divider"></div>
+
     <div class="login-title">
         Welcome Back
     </div>
 
+    <p class="login-subtitle">
+        Sign in with your school credentials
+    </p>
+
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% for cat, msg in messages %}
-            <div class="alert">{{ msg }}</div>
+            <div class="alert alert-{{ 'success' if cat=='success' else 'error' }}">
+                {{ msg }}
+            </div>
         {% endfor %}
     {% endwith %}
 
     <form method="POST" autocomplete="off">
 
-        <!-- USERNAME -->
         <div class="form-group">
-            <div class="input-wrap">
+            <label class="form-label" for="username-field">
+                Username
+            </label>
 
-                <span class="input-icon">✉</span>
-
-                <input
-                    class="form-input"
-                    type="text"
-                    name="username"
-                    id="username-field"
-                    placeholder="Username"
-                    required
-                    autocomplete="off"
-                    autocapitalize="off"
-                    autocorrect="off"
-                    spellcheck="false"
-                    value=""
-                >
-
-            </div>
+            <input
+                class="form-input"
+                type="text"
+                name="username"
+                id="username-field"
+                placeholder="Enter your username"
+                required
+                autocomplete="off"
+                autocapitalize="off"
+                autocorrect="off"
+                spellcheck="false"
+                value=""
+            >
         </div>
 
-        <!-- PASSWORD -->
         <div class="form-group">
-            <div class="input-wrap">
 
-                <span class="input-icon">▣</span>
+            <label class="form-label" for="password-field">
+                Password
+            </label>
+
+            <div class="password-box">
 
                 <input
                     class="form-input"
                     type="password"
                     name="password"
                     id="password-field"
-                    placeholder="Password"
+                    placeholder="Enter your password"
                     required
                     autocomplete="new-password"
                     value=""
@@ -336,10 +331,11 @@ body{
                 </button>
 
             </div>
+
         </div>
 
         <button type="submit" class="login-button">
-            Sign In
+            Sign In →
         </button>
 
     </form>
