@@ -6,8 +6,7 @@
 <title>Eastern Public School — Academic Hub</title>
 
 <link rel="stylesheet" href="/static/style.css"/>
-
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet"/>
 
 <style>
 *{
@@ -17,252 +16,231 @@
 body{
     margin:0;
     min-height:100vh;
+    font-family:'Inter',sans-serif;
+    color:#fff;
+}
+
+/* BACKGROUND */
+.login-page{
+    min-height:100vh;
     display:flex;
     align-items:center;
     justify-content:center;
-    font-family:'Inter',sans-serif;
-    background:#f1f5f9;
+    background:
+        radial-gradient(circle at 50% 5%,rgba(129,180,255,.45),transparent 35%),
+        linear-gradient(135deg,#172554 0%,#1d4ed8 48%,#0f3d91 100%);
     position:relative;
     overflow:hidden;
 }
 
-/* Subtle background */
-body::before{
+/* subtle glow */
+.login-page::before{
     content:"";
     position:absolute;
-    width:520px;
-    height:520px;
+    width:500px;
+    height:500px;
     border-radius:50%;
-    background:#e0e7ff;
+    background:rgba(255,255,255,.06);
     top:-250px;
-    right:-180px;
-    opacity:.55;
+    left:-180px;
 }
 
-body::after{
+.login-page::after{
     content:"";
     position:absolute;
-    width:420px;
-    height:420px;
+    width:600px;
+    height:600px;
     border-radius:50%;
-    background:#e2e8f0;
-    bottom:-230px;
-    left:-180px;
-    opacity:.6;
+    background:rgba(0,0,0,.08);
+    bottom:-400px;
+    right:-200px;
 }
 
+/* LOGIN AREA */
 .login-wrap{
     width:100%;
     max-width:430px;
-    padding:20px;
+    padding:30px 25px;
     position:relative;
     z-index:2;
 }
 
-.login-card{
-    background:#ffffff;
-    border:1px solid #e2e8f0;
-    border-radius:18px;
-    padding:40px 40px 30px;
-    box-shadow:0 20px 50px rgba(15,23,42,.10);
-}
-
-/* School branding */
+/* LOGO */
 .login-logo{
     text-align:center;
-    margin-bottom:26px;
+    margin-bottom:24px;
 }
 
 .school-crest{
-    width:72px;
-    height:72px;
-    margin:0 auto 14px;
+    width:76px;
+    height:76px;
+    margin:0 auto 16px;
+    border-radius:50%;
+    background:rgba(255,255,255,.12);
+    border:1px solid rgba(255,255,255,.35);
     display:flex;
     align-items:center;
     justify-content:center;
-    border-radius:14px;
-    background:#eef2ff;
-    border:1px solid #e0e7ff;
-    overflow:hidden;
+    backdrop-filter:blur(8px);
 }
 
 .school-crest img{
-    width:58px;
-    height:58px;
+    width:60px;
+    height:60px;
     object-fit:contain;
 }
 
 .school-name{
     font-family:'Poppins',sans-serif;
-    font-size:1.22rem;
-    font-weight:800;
-    color:#172033;
-    letter-spacing:-.02em;
+    font-size:1.45rem;
+    font-weight:600;
+    letter-spacing:.04em;
+    text-transform:uppercase;
 }
 
 .portal-tag{
     font-size:.78rem;
-    color:#6366f1;
-    font-weight:600;
-    margin-top:4px;
+    letter-spacing:.25em;
+    color:rgba(255,255,255,.72);
+    margin-top:7px;
+    text-transform:uppercase;
 }
 
 .hub-tagline{
     font-size:.68rem;
-    color:#94a3b8;
-    margin-top:7px;
+    color:rgba(255,255,255,.58);
+    margin-top:12px;
     line-height:1.5;
 }
 
-/* Divider */
-.login-divider{
-    height:1px;
-    background:#eef2f7;
-    margin:25px 0;
-}
-
-/* Heading */
+/* LOGIN TITLE */
 .login-title{
+    text-align:center;
     font-family:'Poppins',sans-serif;
-    font-size:1.18rem;
-    font-weight:700;
-    color:#172033;
-    text-align:center;
-    margin-bottom:5px;
+    font-size:1.15rem;
+    font-weight:500;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    margin:35px 0 27px;
 }
 
-.login-subtitle{
-    font-size:.78rem;
-    color:#64748b;
-    text-align:center;
-    margin:0 0 24px;
+/* ALERTS */
+.alert{
+    padding:9px 12px;
+    border-radius:5px;
+    font-size:.75rem;
+    margin-bottom:16px;
+    background:rgba(255,255,255,.12);
+    color:#fff;
+    border:1px solid rgba(255,255,255,.2);
 }
 
-/* Form */
+/* FORM */
 .form-group{
-    margin-bottom:17px;
+    margin-bottom:20px;
 }
 
 .form-label{
-    display:block;
-    font-size:.74rem;
-    font-weight:600;
-    color:#334155;
-    margin-bottom:6px;
+    display:none;
+}
+
+.input-wrap{
+    position:relative;
+}
+
+.input-icon{
+    position:absolute;
+    left:0;
+    top:50%;
+    transform:translateY(-50%);
+    font-size:15px;
+    color:rgba(255,255,255,.85);
 }
 
 .form-input{
     width:100%;
-    padding:11px 13px;
-    border:1px solid #dbe2ea;
-    border-radius:8px;
-    background:#fff;
-    color:#1e293b;
-    font-family:'Inter',sans-serif;
-    font-size:.83rem;
+    height:44px;
+    padding:8px 35px;
+    border:0;
+    border-bottom:1px solid rgba(255,255,255,.65);
+    border-radius:0;
     outline:none;
-    transition:.18s;
+    background:transparent;
+    color:#fff;
+    font-family:'Inter',sans-serif;
+    font-size:.82rem;
+    transition:.2s;
 }
 
 .form-input::placeholder{
-    color:#a1aab8;
+    color:rgba(255,255,255,.72);
 }
 
 .form-input:focus{
-    border-color:#818cf8;
-    box-shadow:0 0 0 3px rgba(99,102,241,.09);
+    border-bottom-color:#fff;
+    box-shadow:none;
 }
 
-/* Password */
-.password-box{
-    position:relative;
-}
-
-.password-box .form-input{
-    padding-right:42px;
-}
-
+/* PASSWORD EYE */
 .password-toggle{
     position:absolute;
-    right:9px;
+    right:0;
     top:50%;
     transform:translateY(-50%);
     border:0;
-    background:transparent;
-    color:#64748b;
+    background:none;
+    color:rgba(255,255,255,.75);
     cursor:pointer;
-    font-size:16px;
-    padding:5px;
+    font-size:15px;
 }
 
-.password-toggle:hover{
-    color:#4f46e5;
-}
-
-/* Button */
+/* BUTTON */
 .login-button{
     width:100%;
+    height:45px;
+    margin-top:18px;
     border:0;
-    border-radius:8px;
-    padding:11px;
-    margin-top:3px;
-    background:#6366f1;
+    background:rgba(3,62,145,.75);
     color:#fff;
     font-family:'Inter',sans-serif;
-    font-size:.83rem;
+    font-size:.78rem;
     font-weight:600;
+    letter-spacing:.16em;
+    text-transform:uppercase;
     cursor:pointer;
-    transition:.18s;
+    transition:.2s;
+    border:1px solid rgba(255,255,255,.08);
 }
 
 .login-button:hover{
-    background:#4f46e5;
-    box-shadow:0 5px 14px rgba(99,102,241,.20);
+    background:#064fae;
+    box-shadow:0 8px 20px rgba(0,0,0,.15);
 }
 
-/* Footer */
+/* FOOTER */
 .footer-note{
-    font-size:.68rem;
-    color:#94a3b8;
     text-align:center;
+    font-size:.66rem;
+    color:rgba(255,255,255,.55);
+    margin-top:22px;
     line-height:1.5;
-    margin:20px 0 0;
 }
 
 .login-footer{
     text-align:center;
-    font-size:.63rem;
-    color:#cbd5e1;
-    margin-top:22px;
-}
-
-/* Alerts */
-.alert{
-    padding:9px 12px;
-    border-radius:7px;
-    font-size:.75rem;
-    margin-bottom:14px;
-}
-
-.alert-success{
-    background:#f0fdf4;
-    color:#166534;
-    border:1px solid #bbf7d0;
-}
-
-.alert-error{
-    background:#fef2f2;
-    color:#991b1b;
-    border:1px solid #fecaca;
+    font-size:.6rem;
+    color:rgba(255,255,255,.35);
+    margin-top:28px;
+    letter-spacing:.04em;
 }
 
 @media(max-width:500px){
-    .login-card{
-        padding:32px 25px 26px;
+    .school-name{
+        font-size:1.2rem;
     }
 
-    .school-name{
-        font-size:1.12rem;
+    .login-wrap{
+        padding:25px;
     }
 }
 </style>
@@ -270,67 +248,57 @@ body::after{
 
 <body>
 
+<div class="login-page">
+
 <div class="login-wrap">
 
-    <div class="login-card">
+    <!-- EPS BRANDING -->
+    <div class="login-logo">
 
-        <!-- SCHOOL BRANDING -->
-        <div class="login-logo">
-
-            <div class="school-crest">
-                <img
-                    src="{{ url_for('static', filename='images/eps-logo.png') }}"
-                    alt="Eastern Public School Logo">
-            </div>
-
-            <div class="school-name">
-                Eastern Public School
-            </div>
-
-            <div class="portal-tag">
-                PYP Academic Hub
-            </div>
-
-            <div class="hub-tagline">
-                Developing Minds. Discovering Potential. Shaping Futures.
-            </div>
-
+        <div class="school-crest">
+            <img
+                src="{{ url_for('static', filename='images/eps-logo.png') }}"
+                alt="Eastern Public School">
         </div>
 
-        <div class="login-divider"></div>
-
-        <!-- LOGIN HEADING -->
-        <div class="login-title">
-            Welcome back
+        <div class="school-name">
+            Eastern Public School
         </div>
 
-        <p class="login-subtitle">
-            Sign in with your school credentials
-        </p>
+        <div class="portal-tag">
+            PYP Academic Hub
+        </div>
 
-        <!-- FLASH MESSAGES -->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% for cat, msg in messages %}
-                <div class="alert alert-{{ 'success' if cat=='success' else 'error' }}">
-                    {{ msg }}
-                </div>
-            {% endfor %}
-        {% endwith %}
+        <div class="hub-tagline">
+            Developing Minds. Discovering Potential. Shaping Futures.
+        </div>
 
-        <!-- LOGIN FORM -->
-        <form method="POST" autocomplete="off">
+    </div>
 
-            <div class="form-group">
-                <label class="form-label" for="username-field">
-                    Username
-                </label>
+    <div class="login-title">
+        Welcome Back
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for cat, msg in messages %}
+            <div class="alert">{{ msg }}</div>
+        {% endfor %}
+    {% endwith %}
+
+    <form method="POST" autocomplete="off">
+
+        <!-- USERNAME -->
+        <div class="form-group">
+            <div class="input-wrap">
+
+                <span class="input-icon">✉</span>
 
                 <input
                     class="form-input"
                     type="text"
                     name="username"
                     id="username-field"
-                    placeholder="Enter your username"
+                    placeholder="Username"
                     required
                     autocomplete="off"
                     autocapitalize="off"
@@ -338,82 +306,79 @@ body::after{
                     spellcheck="false"
                     value=""
                 >
-            </div>
-
-            <div class="form-group">
-
-                <label class="form-label" for="password-field">
-                    Password
-                </label>
-
-                <div class="password-box">
-
-                    <input
-                        class="form-input"
-                        type="password"
-                        name="password"
-                        id="password-field"
-                        placeholder="Enter your password"
-                        required
-                        autocomplete="new-password"
-                        value=""
-                    >
-
-                    <button
-                        type="button"
-                        class="password-toggle"
-                        onclick="togglePassword(this)"
-                        aria-label="Show password">
-                        👁
-                    </button>
-
-                </div>
 
             </div>
-
-            <button type="submit" class="login-button">
-                Sign In →
-            </button>
-
-        </form>
-
-        <p class="footer-note">
-            Contact your school administrator if you forgot your login details.
-        </p>
-
-        <div class="login-footer">
-            Eastern Public School · PYP Academic Hub
         </div>
 
+        <!-- PASSWORD -->
+        <div class="form-group">
+            <div class="input-wrap">
+
+                <span class="input-icon">▣</span>
+
+                <input
+                    class="form-input"
+                    type="password"
+                    name="password"
+                    id="password-field"
+                    placeholder="Password"
+                    required
+                    autocomplete="new-password"
+                    value=""
+                >
+
+                <button
+                    type="button"
+                    class="password-toggle"
+                    onclick="togglePassword(this)"
+                    aria-label="Show password">
+                    👁
+                </button>
+
+            </div>
+        </div>
+
+        <button type="submit" class="login-button">
+            Sign In
+        </button>
+
+    </form>
+
+    <p class="footer-note">
+        Contact your school administrator if you forgot your login details.
+    </p>
+
+    <div class="login-footer">
+        Eastern Public School · PYP Academic Hub
     </div>
 
 </div>
 
-<script>
-window.addEventListener('DOMContentLoaded', function(){
+</div>
 
-    document.getElementById('username-field').value = '';
-    document.getElementById('password-field').value = '';
+<script>
+window.addEventListener('DOMContentLoaded',function(){
+
+    document.getElementById('username-field').value='';
+    document.getElementById('password-field').value='';
 
     setTimeout(function(){
-        document.getElementById('username-field').value = '';
-        document.getElementById('password-field').value = '';
+        document.getElementById('username-field').value='';
+        document.getElementById('password-field').value='';
     },100);
 
 });
 
 function togglePassword(button){
 
-    const password = document.getElementById('password-field');
+    const password=document.getElementById('password-field');
 
-    if(password.type === 'password'){
-        password.type = 'text';
-        button.textContent = '⊘';
-        button.setAttribute('aria-label','Hide password');
+    if(password.type==='password'){
+        password.type='text';
+        button.textContent='⊘';
     }else{
-        password.type = 'password';
-        button.textContent = '👁';
-        button.setAttribute('aria-label','Show password');
+        password.type='password';
+        button.textContent='👁';
     }
 
 }
