@@ -3,21 +3,6 @@
 {% block page_title %}My IB Profile{% endblock %}
 
 {% block content %}
-
-<!-- UOI selector -->
-<div style="display:flex;gap:8px;margin-bottom:.8rem;flex-wrap:wrap">
-  {% for t in terms %}
-  <a href="?term={{ t | replace(' ', '+') }}"
-     style="padding:7px 18px;border-radius:20px;font-size:.83rem;font-weight:600;
-            text-decoration:none;
-            {% if t == selected_term %}background:#6366f1;color:#fff;
-            {% else %}background:#f1f5f9;color:#475569{% endif %}">
-    {{ t }}
-  </a>
-  {% endfor %}
-</div>
-
-
 <!-- Radar chart -->
 {% if self_ratings or teacher_ratings %}
 <div class="card" style="margin-bottom:.8rem;padding:10px 16px">
@@ -36,6 +21,18 @@
 </div>
 {% endif %}
 
+<!-- UOI selector -->
+<div style="display:flex;gap:8px;margin-bottom:.8rem;flex-wrap:wrap">
+  {% for t in terms %}
+  <a href="?term={{ t | replace(' ', '+') }}"
+     style="padding:7px 18px;border-radius:20px;font-size:.83rem;font-weight:600;
+            text-decoration:none;
+            {% if t == selected_term %}background:#6366f1;color:#fff;
+            {% else %}background:#f1f5f9;color:#475569{% endif %}">
+    {{ t }}
+  </a>
+  {% endfor %}
+</div>
 
 <!-- ATL ratings from teacher -->
 {% if atl_ratings %}
