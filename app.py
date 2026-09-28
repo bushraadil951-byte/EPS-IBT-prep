@@ -2068,7 +2068,7 @@ def ib_student_report(student_id):
 @app.route('/student/ib', methods=['GET', 'POST'])
 @login_required('student')
 def student_ib():
-    student  = db.session.get(User, session['user_id'])
+    student = db.session.get(User, session['user_id'])
     selected_term = request.args.get('term', TERMS[0])
     selected_term = selected_term.replace('+', ' ')
 
@@ -2150,6 +2150,7 @@ def student_ib():
             'desc': r.descriptor,
             'rating': r.rating
         })
+
     # Load student ATL self ratings
     atl_self_ratings = {}
     self_atl = ATLSelfRating.query.filter_by(
@@ -2158,38 +2159,42 @@ def student_ib():
     for r in self_atl:
         atl_self_ratings[(r.skill, r.descriptor)] = r.rating
 
+    # Pre-built chart data — avoids Jinja2 extract filter
+    lp_attrs = [attr for attr, _e, _d in LEARNER_PROFILE]
+
+    # Load ALL ratings across ALL UOIs for the radar chart
+    all_self_lp = LearnerProfileRating.query.filter_by(
+        student_id=student.id, rater_type='student'
+    ).all()
+    all_teacher_lp = LearnerProfileRating.query.filter_by(
+        student_id=student.id, rater_type='teacher'
+    ).all()
+
+    # Average per attribute across all UOIs
+    def avg_by_attr(records):
+        from collections import defaultdict
+        grouped = defaultdict(list)
+        for r in records:
+            grouped[r.attribute].append(r.rating)
+        return {attr: round(sum(vals) / len(vals), 1) for attr, vals in grouped.items()}
+
+    all_self_avgs = avg_by_attr(all_self_lp)
+    all_teacher_avgs = avg_by_attr(all_teacher_lp)
+
+    lp_self_data = [all_self_avgs.get(attr, 0) for attr in lp_attrs]
+    lp_teacher_data = [all_teacher_avgs.get(attr, 0) for attr in lp_attrs]
+
     return render_template('student/ib.html',
         student=student, terms=TERMS, selected_term=selected_term,
         learner_profile=LEARNER_PROFILE, rating_scale=RATING_SCALE,
         rating_colors=RATING_COLORS,
         self_ratings=self_ratings, teacher_ratings=teacher_ratings,
         reflections=reflections, atl_ratings=atl_ratings,
-        atl_skills=ATL_SKILLS,        # ← add this
-        atl_self_ratings=atl_self_ratings,  # ← add this
-        # Pre-built chart data — avoids Jinja2 extract filter
-        lp_attrs = [attr for attr, _e, _d in LEARNER_PROFILE]
-
-        # Load ALL ratings across ALL UOIs for the radar chart
-        all_self_lp = LearnerProfileRating.query.filter_by(
-            student_id=student.id, rater_type='student'
-        ).all()
-        all_teacher_lp = LearnerProfileRating.query.filter_by(
-            student_id=student.id, rater_type='teacher'
-        ).all()
-
-        # Average per attribute across all UOIs
-        def avg_by_attr(records):
-            from collections import defaultdict
-            grouped = defaultdict(list)
-            for r in records:
-                grouped[r.attribute].append(r.rating)
-            return {attr: round(sum(vals)/len(vals), 1) for attr, vals in grouped.items()}
-
-        all_self_avgs    = avg_by_attr(all_self_lp)
-        all_teacher_avgs = avg_by_attr(all_teacher_lp)
-
-        lp_self_data    = [all_self_avgs.get(attr, 0)    for attr in lp_attrs]
-        lp_teacher_data = [all_teacher_avgs.get(attr, 0) for attr in lp_attrs]
+        atl_skills=ATL_SKILLS,
+        atl_self_ratings=atl_self_ratings,
+        lp_attrs=lp_attrs,
+        lp_self_data=lp_self_data,
+        lp_teacher_data=lp_teacher_data
     )
 
 @app.route('/student/atl-self', methods=['POST'], endpoint='student_atl_self')
