@@ -7,13 +7,13 @@
 <!-- Profile Overview -->
 {% if self_ratings or teacher_ratings %}
 
-<div class="card" style="margin-bottom:1.25rem">
+<div class="card" style="margin-bottom:.8rem;padding:10px 16px">
 
-  <h3 style="font-size:.95rem;font-weight:700;margin-bottom:1rem">
+  <h3 style="font-size:.95rem;font-weight:700;margin-bottom:0">
     📊 ISP Profile Overview
   </h3>
 
-  <div style="max-width:400px;margin:0 auto">
+  <div style="height:300px;width:100%;max-width:560px;margin:0 auto">
     <canvas id="ispRadarChart"
             role="img"
             aria-label="Radar chart of ISP profile ratings">
@@ -30,23 +30,27 @@
 
   <div class="card">
 
-    <h3 style="font-size:.95rem;font-weight:700;margin-bottom:.5rem">
+    <h3 style="font-size:.95rem;font-weight:700;margin-bottom:.4rem">
       📖 ISP Profile — Self Assessment
     </h3>
 
-    <p style="font-size:.78rem;color:#64748b;margin-bottom:1rem">
+    <p style="font-size:.78rem;color:#64748b;margin-bottom:.8rem">
       Rate yourself honestly. Your teacher's rating is shown alongside yours.
     </p>
 
 
     {% for attr, emoji, descs in isp_profile %}
 
-    <div style="padding:14px 0;
-                border-bottom:1px solid #f1f5f9">
+    <div style="
+      padding:12px 0;
+      border-bottom:1px solid #f1f5f9">
 
       <!-- Attribute -->
-      <div style="display:flex;align-items:flex-start;
-                  gap:12px;margin-bottom:.5rem">
+      <div style="
+        display:flex;
+        align-items:flex-start;
+        gap:12px;
+        margin-bottom:.5rem">
 
         <div style="font-size:1.5rem;flex-shrink:0">
           {{ emoji }}
@@ -54,13 +58,18 @@
 
         <div style="flex:1">
 
-          <div style="font-size:.88rem;font-weight:600;color:#0f172a">
+          <div style="
+            font-size:.88rem;
+            font-weight:600;
+            color:#0f172a">
             {{ attr }}
           </div>
 
           {% for desc in descs %}
-          <div style="font-size:.72rem;color:#64748b;
-                      margin-top:3px">
+          <div style="
+            font-size:.72rem;
+            color:#64748b;
+            margin-top:3px">
             {{ desc }}
           </div>
           {% endfor %}
@@ -75,17 +84,17 @@
 
       {% if tr %}
 
-      <div style="font-size:.72rem;
-                  margin-bottom:.5rem;
-                  margin-left:2.5rem">
+      <div style="
+        font-size:.72rem;
+        margin-bottom:.5rem;
+        margin-left:2.5rem">
 
         Teacher rated:
 
-        <span style="font-weight:700;
-                     color:{{ isp_rating_colors[tr] }}">
-
+        <span style="
+          font-weight:700;
+          color:{{ isp_rating_colors[tr] }}">
           {{ tr }} — {{ isp_rating_scale[tr] }}
-
         </span>
 
       </div>
@@ -94,48 +103,50 @@
 
 
       <!-- Self rating buttons -->
-      <div style="display:flex;
-                  gap:8px;
-                  margin-bottom:.5rem;
-                  margin-left:2.5rem">
+      <div style="
+        display:flex;
+        gap:8px;
+        margin-bottom:.5rem;
+        margin-left:2.5rem">
 
         {% for val, label in isp_rating_scale.items() %}
 
         <div onclick="selectISPSelfRating(this, '{{ attr }}', {{ val }})"
              data-attr="{{ attr }}"
              data-val="{{ val }}"
+             style="
+               flex:1;
+               text-align:center;
+               padding:8px 6px;
+               cursor:pointer;
 
-             style="flex:1;
-                    text-align:center;
-                    padding:10px 6px;
-                    cursor:pointer;
-                    border:2px solid
-                    {% if self_ratings.get(attr) == val %}
-                      {{ isp_rating_colors[val] }}
-                    {% else %}
-                      #e2e8f0
-                    {% endif %};
+               border:2px solid
+               {% if self_ratings.get(attr) == val %}
+                 {{ isp_rating_colors[val] }}
+               {% else %}
+                 #e2e8f0
+               {% endif %};
 
-                    background:
-                    {% if self_ratings.get(attr) == val %}
-                      {{ isp_rating_colors[val] }}22
-                    {% else %}
-                      #f8fafc
-                    {% endif %};
+               background:
+               {% if self_ratings.get(attr) == val %}
+                 {{ isp_rating_colors[val] }}22
+               {% else %}
+                 #f8fafc
+               {% endif %};
 
-                    color:
-                    {% if self_ratings.get(attr) == val %}
-                      {{ isp_rating_colors[val] }}
-                    {% else %}
-                      #94a3b8
-                    {% endif %};
+               color:
+               {% if self_ratings.get(attr) == val %}
+                 {{ isp_rating_colors[val] }}
+               {% else %}
+                 #94a3b8
+               {% endif %};
 
-                    border-radius:10px;
-                    font-size:.8rem;
-                    font-weight:700;
-                    user-select:none;
-                    -webkit-user-select:none;
-                    transition:all .15s">
+               border-radius:8px;
+               font-size:.8rem;
+               font-weight:700;
+               user-select:none;
+               -webkit-user-select:none;
+               transition:all .15s">
 
           {{ val }}<br>
 
@@ -147,11 +158,12 @@
                  name="rating_{{ attr }}"
                  value="{{ val }}"
                  {% if self_ratings.get(attr) == val %}checked{% endif %}
-                 style="position:absolute;
-                        opacity:0;
-                        pointer-events:none;
-                        width:0;
-                        height:0">
+                 style="
+                   position:absolute;
+                   opacity:0;
+                   pointer-events:none;
+                   width:0;
+                   height:0">
 
         </div>
 
@@ -166,14 +178,15 @@
         <textarea name="reflection_{{ attr }}"
                   rows="2"
                   placeholder="Write a short reflection on how you show {{ attr }}..."
-                  style="width:100%;
-                         padding:6px 10px;
-                         border:1px solid #e2e8f0;
-                         border-radius:6px;
-                         font-size:.78rem;
-                         resize:vertical;
-                         font-family:inherit;
-                         color:#374151">{{ reflections.get(attr, '') }}</textarea>
+                  style="
+                    width:100%;
+                    padding:6px 10px;
+                    border:1px solid #e2e8f0;
+                    border-radius:6px;
+                    font-size:.78rem;
+                    resize:vertical;
+                    font-family:inherit;
+                    color:#374151">{{ reflections.get(attr, '') }}</textarea>
 
       </div>
 
@@ -184,11 +197,12 @@
 
     <button type="submit"
             class="btn btn-primary"
-            style="width:100%;
-                   justify-content:center;
-                   padding:14px;
-                   margin-top:1.25rem;
-                   font-size:.95rem">
+            style="
+              width:100%;
+              justify-content:center;
+              padding:12px;
+              margin-top:1rem;
+              font-size:.95rem">
 
       💾 Save My ISP Self-Assessment
 
@@ -218,8 +232,8 @@ function selectISPSelfRating(div, attr, val) {
   ).forEach(function(d) {
 
     d.style.borderColor = '#e2e8f0';
-    d.style.background  = '#f8fafc';
-    d.style.color       = '#94a3b8';
+    d.style.background = '#f8fafc';
+    d.style.color = '#94a3b8';
 
     var inp = d.querySelector('input[type=radio]');
 
@@ -233,8 +247,8 @@ function selectISPSelfRating(div, attr, val) {
   var c = ISP_COLORS[val];
 
   div.style.borderColor = c;
-  div.style.background  = c + '22';
-  div.style.color       = c;
+  div.style.background = c + '22';
+  div.style.color = c;
 
   var inp = div.querySelector('input[type=radio]');
 
@@ -264,9 +278,29 @@ var teacherData = [
 
 var ctx = document.getElementById('ispRadarChart');
 
+
 if (ctx &&
     (selfData.some(function(v){ return v > 0; }) ||
      teacherData.some(function(v){ return v > 0; }))) {
+
+  var isDark =
+    matchMedia('(prefers-color-scheme:dark)').matches;
+
+
+  /* Darker radar view */
+
+  var radarText = isDark
+    ? '#e2e8f0'
+    : '#334155';
+
+  var radarGrid = isDark
+    ? 'rgba(255,255,255,0.28)'
+    : 'rgba(15,23,42,0.22)';
+
+  var radarAngle = isDark
+    ? 'rgba(255,255,255,0.30)'
+    : 'rgba(15,23,42,0.25)';
+
 
   new Chart(ctx, {
 
@@ -281,20 +315,32 @@ if (ctx &&
         {
           label: 'My self-rating',
           data: selfData,
+
           borderColor: '#6366f1',
-          backgroundColor: 'rgba(99,102,241,0.15)',
-          borderWidth: 2,
-          pointRadius: 4
+          backgroundColor: 'rgba(99,102,241,0.18)',
+
+          borderWidth: 2.5,
+
+          pointRadius: 5,
+          pointBackgroundColor: '#6366f1',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 1.5
         },
 
         {
           label: 'Teacher rating',
           data: teacherData,
+
           borderColor: '#10b981',
-          backgroundColor: 'rgba(16,185,129,0.10)',
-          borderWidth: 2,
+          backgroundColor: 'rgba(16,185,129,0.12)',
+
+          borderWidth: 2.5,
           borderDash: [5,4],
-          pointRadius: 4
+
+          pointRadius: 5,
+          pointBackgroundColor: '#10b981',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 1.5
         }
 
       ]
@@ -305,44 +351,63 @@ if (ctx &&
 
       responsive: true,
 
+      maintainAspectRatio: false,
+
+      layout: {
+        padding: 5
+      },
+
       scales: {
 
         r: {
 
           min: 0,
           max: 4,
-
           ticks: {
             stepSize: 1,
             backdropColor: 'transparent',
-            font: { size: 10 }
+            font: {
+              size: 9,
+              weight: '600'
+            },
+            color: radarText
           },
-
+          grid: {
+            color: radarGrid,
+            lineWidth: 1.4
+          },
+          angleLines: {
+            color: radarAngle,
+            lineWidth: 1.4
+          },
           pointLabels: {
-            font: { size: 11 }
+            color: radarText,
+            font: {
+              size: 12,
+              weight: '700'
+            }
           }
-
         }
-
       },
-
       plugins: {
-
         legend: {
+          display: true,
           position: 'bottom',
           labels: {
-            font: { size: 11 }
+            color: radarText,
+            boxWidth: 12,
+            boxHeight: 12,
+            padding: 12,
+            font: {
+              size: 11,
+              weight: '600'
+            }
           }
         }
-
       }
-
     }
-
   });
-
 }
-
 </script>
 
 {% endblock %}
