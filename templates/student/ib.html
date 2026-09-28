@@ -3,21 +3,16 @@
 {% block page_title %}My IB Profile{% endblock %}
 
 {% block content %}
-<!-- Radar chart -->
-{% if self_ratings or teacher_ratings %}
-<div class="card" style="margin-bottom:.8rem;padding:10px 16px">
-
-  <h3 style="font-size:.95rem;font-weight:700;margin-bottom:0">
-    📊 Profile Overview — {{ selected_term }}
+<!-- Radar — always visible, above tabs -->
+{% if lp_self_data|sum > 0 or lp_teacher_data|sum > 0 %}
+<div class="card" style="margin-bottom:1.25rem">
+  <h3 style="font-size:.95rem;font-weight:700;margin-bottom:1rem">
+    📊 Learner Profile — Overall Growth (All UOIs)
   </h3>
-
-  <div style="height:300px;width:100%;max-width:560px;margin:0 auto">
-    <canvas id="radarChart"
-            role="img"
-            aria-label="Radar chart of learner profile ratings">
-    </canvas>
+  <div style="max-width:500px;margin:0 auto">
+    <canvas id="radarChart" role="img"
+            aria-label="Radar chart showing overall learner profile growth"></canvas>
   </div>
-
 </div>
 {% endif %}
 
