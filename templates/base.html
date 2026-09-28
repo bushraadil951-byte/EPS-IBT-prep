@@ -13,9 +13,10 @@
 body{font-family:'Inter',sans-serif;background:#f8fafc;color:#1a1a2e}
 .app{display:flex;min-height:100vh}
 .sidebar{width:240px;min-height:100vh;background:#fff;border-right:1px solid #e5e7eb;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;overflow-y:auto}
-.sidebar-logo{padding:24px 20px 20px;border-bottom:1px solid #f1f5f9}
-.logo-mark{font-family:'Poppins',sans-serif;font-size:1.15rem;font-weight:800;color:#1a1a2e;margin-bottom:5px}
-.sidebar-meta{font-size:.68rem;color:#6b7280;line-height:1.5}
+.sidebar-logo{padding:20px 20px 18px;border-bottom:1px solid #f1f5f9}
+.sidebar-eps-logo{width:150px;height:auto;display:block;margin-bottom:12px}
+.sidebar-hub{font-family:'Poppins',sans-serif;font-size:1rem;font-weight:700;color:#1e293b;margin-bottom:5px}
+.sidebar-meta{font-size:.65rem;color:#94a3b8;line-height:1.45}
 .nav-section{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;padding:18px 20px 7px}
 .nav-link{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:.82rem;font-weight:500;color:#6b7280;text-decoration:none;transition:all .15s;border-left:3px solid transparent}
 .nav-link:hover{color:#4f46e5;background:#f5f3ff}
@@ -62,8 +63,9 @@ body{font-family:'Inter',sans-serif;background:#f8fafc;color:#1a1a2e}
 <div class="app">
 <aside class="sidebar">
 <div class="sidebar-logo">
-<div class="logo-mark">🎓 PYP Academic Hub</div>
-<div class="sidebar-meta">Eastern Public School<br/><em>Developing Minds. Discovering Potential. Shaping Futures.</em></div>
+    <img src="{{ url_for('static', filename='images/eps-logo.png') }}" class="sidebar-eps-logo" alt="Eastern Public School">
+    <div class="sidebar-hub">PYP Academic Hub</div>
+    <div class="sidebar-meta">Developing Minds. Discovering Potential. Shaping Futures.</div>
 </div>
 {% if session.role=='admin' or session.role=='Resource_Manager' %}
 <div class="nav-section">Main</div>
