@@ -3273,58 +3273,100 @@ def dt_upload():
 
     if request.method == 'POST':
         file = request.files.get('csv_file')
+
         if not file or not file.filename.lower().endswith('.csv'):
             flash('Please upload a valid .csv file.', 'error')
-            return redirect(url_for(f'{_dt_role_prefix()}_dt_upload', grade=grade, section=section, dt_number=dt_number))
+            return redirect(
+                url_for(
+                    f'{_dt_role_prefix()}_dt_upload',
+                    grade=grade,
+                    section=section,
+                    dt_number=dt_number
+                )
+            )
 
-        stream = io.StringIO(file.stream.read().decode('utf-8-sig'))
+        stream = io.StringIO(
+            file.stream.read().decode('utf-8-sig')
+        )
         reader = csv.DictReader(stream)
 
         # Match CSV headers to known subjects, case-insensitively
         subject_lookup = {s.lower(): s for s in DT_SUBJECTS}
         present_subjects = []
+
         if reader.fieldnames:
             for col in reader.fieldnames:
                 key = (col or '').strip().lower()
-                if key in subject_lookup and subject_lookup[key] not in present_subjects:
-                    present_subjects.append(subject_lookup[key])
+
+                if key in subject_lookup:
+                    canonical_subject = subject_lookup[key]
+
+                    if canonical_subject not in present_subjects:
+                        present_subjects.append(canonical_subject)
 
         if not present_subjects:
-            flash('No subject columns recognised. Expected headers like: username,english,maths,science,hindi,urdu,ict', 'error')
-            return redirect(url_for(f'{_dt_role_prefix()}_dt_upload', grade=grade, section=section, dt_number=dt_number))
+            flash(
+                'No subject columns recognised. Expected headers like: '
+                'username,english,maths,science,hindi,urdu,ict',
+                'error'
+            )
 
-        # Each subject can have its own maximum marks, taken from the form
-        # (one number field per subject, defaulting to 25 if left blank)
+            return redirect(
+                url_for(
+                    f'{_dt_role_prefix()}_dt_upload',
+                    grade=grade,
+                    section=section,
+                    dt_number=dt_number
+                )
+            )
+
+        # Each subject can have its own maximum marks,
+        # taken from the form. Default = 25.
         subject_max_marks = {}
+
         for sub in present_subjects:
             try:
-                subject_max_marks[sub] = float(request.form.get(f'max_marks_{sub}') or 25)
+                subject_max_marks[sub] = float(
+                    request.form.get(f'max_marks_{sub}') or 25
+                )
             except ValueError:
                 subject_max_marks[sub] = 25
 
         # One DiagnosticTest slot per subject found in the CSV
         dt_by_subject = {
             sub: dt_get_or_create(
-                dt_number=dt_number, subject=sub, grade=grade, section=section or None,
-                academic_year=ACADEMIC_YEAR, max_marks=subject_max_marks[sub], created_by=session['user_id']
+                dt_number=dt_number,
+                subject=sub,
+                grade=grade,
+                section=section or None,
+                academic_year=ACADEMIC_YEAR,
+                max_marks=subject_max_marks[sub],
+                created_by=session['user_id']
             )
             for sub in present_subjects
         }
 
-        # If the slot already existed from a previous upload, make sure its
-        # max_marks reflects whatever was entered this time
+        # If the slot already existed from a previous upload,
+        # update its max_marks with the value entered this time.
         for sub, dt in dt_by_subject.items():
             dt.max_marks = subject_max_marks[sub]
+
         db.session.commit()
 
         added = 0
         skipped = 0
+
         for row in reader:
             username = (row.get('username') or '').strip()
+
             if not username:
                 continue
 
-            student = User.query.filter_by(username=username, role='student').first()
+            student = User.query.filter_by(
+                username=username,
+                role='student'
+            ).first()
+
             if not student:
                 skipped += 1
                 continue
@@ -3333,17 +3375,35 @@ def dt_upload():
                 skipped += 1
                 continue
 
-            # Look up each subject's value for this row, matching header
-            # case-insensitively
-            row_lower = {(k or '').strip().lower(): v for k, v in row.items()}
+            # Look up each subject's value for this row,
+            # matching headers case-insensitively.
+            row_lower = {
+                (k or '').strip().lower(): v
+                for k, v in row.items()
+            }
 
             for sub in present_subjects:
-                raw_val = (row_lower.get(sub.lower()) or '').strip()
+
+                # Get this student's marks for the current subject
+                marks_raw = (
+                    row_lower.get(sub.lower()) or ''
+                ).strip()
 
                 dt = dt_by_subject[sub]
 
-                # Blank cell = remove any previously saved mark
-                if raw_val == '':
+                # Blank or absent marker:
+                # delete any previously saved mark.
+                if marks_raw in (
+                    '',
+                    '-',
+                    'A',
+                    'a',
+                    'AB',
+                    'ab',
+                    'absent',
+                    'Absent',
+                    'ABSENT'
+                ):
                     existing = DTMark.query.filter_by(
                         dt_id=dt.id,
                         student_id=student.id
@@ -3354,34 +3414,6 @@ def dt_upload():
 
                     continue
 
-                existing = DTMark.query.filter_by(
-                    dt_id=dt.id,
-                    student_id=student.id
-                ).first()
-
-                if existing:
-                    existing.marks_obtained = marks_value
-                    existing.entered_by = session['user_id']
-                    existing.entered_at = datetime.utcnow()
-                else:
-                    db.session.add(DTMark(
-                        dt_id=dt.id,
-                        student_id=student.id,
-                        marks_obtained=marks_value,
-                        entered_by=session['user_id']
-                    ))
-
-                marks_raw = marks_raw.strip()
-
-                # Blank or absent marker — delete existing mark
-                if marks_raw in ('', '-', 'A', 'a', 'AB', 'ab', 'absent', 'Absent', 'ABSENT'):
-                    existing = DTMark.query.filter_by(
-                        dt_id=dt.id, student_id=student.id
-                    ).first()
-                    if existing:
-                        db.session.delete(existing)
-                    continue
-
                 # Parse numeric value
                 try:
                     marks_value = float(marks_raw)
@@ -3389,41 +3421,76 @@ def dt_upload():
                     skipped += 1
                     continue
 
+                # Use the maximum marks belonging to this subject's DT
+                max_marks = dt.max_marks
+
                 # Validate range
                 if marks_value < 0 or marks_value > max_marks:
                     skipped += 1
                     continue
 
-                # Save or update
-                remarks = row.get('remarks', '').strip()
+                # Get remarks, if supplied
+                remarks = (
+                    row_lower.get('remarks') or ''
+                ).strip()
+
+                # Check whether a mark already exists
                 existing = DTMark.query.filter_by(
-                    dt_id=dt.id, student_id=student.id
+                    dt_id=dt.id,
+                    student_id=student.id
                 ).first()
 
+                # Update existing mark
                 if existing:
                     existing.marks_obtained = marks_value
                     existing.remarks = remarks
                     existing.entered_by = session['user_id']
                     existing.entered_at = datetime.utcnow()
+
+                # Otherwise create a new mark
                 else:
-                    db.session.add(DTMark(
-                        dt_id=dt.id,
-                        student_id=student.id,
-                        marks_obtained=marks_value,
-                        remarks=remarks,
-                        entered_by=session['user_id']
-                    ))
+                    db.session.add(
+                        DTMark(
+                            dt_id=dt.id,
+                            student_id=student.id,
+                            marks_obtained=marks_value,
+                            remarks=remarks,
+                            entered_by=session['user_id']
+                        )
+                    )
 
                 added += 1
-        db.session.commit()
-        flash(f'{added} marks uploaded across {len(present_subjects)} subject(s) ({skipped} skipped — check usernames/marks/grade)', 'success')
-        return redirect(url_for(f'{_dt_role_prefix()}_dt', grade=grade, section=section, dt_number=dt_number))
 
-    return render_template('dt/upload.html',
-        grade=grade, section=section, dt_number=dt_number,
+        db.session.commit()
+
+        flash(
+            f'{added} marks uploaded across '
+            f'{len(present_subjects)} subject(s) '
+            f'({skipped} skipped — check usernames/marks/grade)',
+            'success'
+        )
+
+        return redirect(
+            url_for(
+                f'{_dt_role_prefix()}_dt',
+                grade=grade,
+                section=section,
+                dt_number=dt_number
+            )
+        )
+
+    return render_template(
+        'dt/upload.html',
+        grade=grade,
+        section=section,
+        dt_number=dt_number,
         grades=[teacher_grade] if teacher_grade else DT_GRADES,
-        subjects=DT_SUBJECTS, dt_numbers=DT_NUMBERS, sections=DT_SECTIONS,
-        role_prefix=_dt_role_prefix(), grade_locked=bool(teacher_grade))
+        subjects=DT_SUBJECTS,
+        dt_numbers=DT_NUMBERS,
+        sections=DT_SECTIONS,
+        role_prefix=_dt_role_prefix(),
+        grade_locked=bool(teacher_grade)
+    )
     
 # ── DT CSV TEMPLATE ─────────────────────────────────────────────────────────
 
