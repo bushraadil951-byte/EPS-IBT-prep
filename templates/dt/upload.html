@@ -8,7 +8,7 @@
   href="/{{ role_prefix }}/dt?grade={{ grade }}&section={{ section }}&dt_number={{ dt_number }}"
   class="btn btn-secondary btn-sm"
 >
-  ← Back
+  ← Back to Diagnostic Tests
 </a>
 {% endblock %}
 
@@ -16,186 +16,605 @@
 
 {% set section_options = sections or ['A', 'B', 'C', 'D'] %}
 
-<div style="max-width:760px">
+<style>
+  .dt-upload-page {
+    max-width: 980px;
+    margin: 0 auto;
+  }
 
-  <div
-    class="card"
-    style="margin-bottom:16px;border-left:4px solid #8b5cf6"
-  >
-    <h3 style="font-size:1rem;color:#1e293b;margin-bottom:8px">
-      Upload marks for every subject at once
-    </h3>
+  .dt-header-card {
+    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 22px 24px;
+    margin-bottom: 18px;
+  }
 
-    <p style="font-size:.82rem;line-height:1.6;color:#64748b">
-      Upload one CSV per diagnostic test, covering
-      <strong>all subjects for every student in one file</strong>.
-      The first column must be <strong>username</strong>, followed by one column per subject.
-      Leave a cell blank to skip that subject for that student.
-      Existing marks for the same student, subject and diagnostic test will be updated.
-    </p>
+  .dt-header-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+  }
 
-    <p style="font-size:.76rem;color:#94a3b8;margin-top:8px">
-      Set each subject's <strong>maximum marks</strong> below — they don't need to match.
-    </p>
+  .dt-title-wrap {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
 
-    <div
-      style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-top:14px;font-family:monospace;font-size:.76rem;color:#475569;overflow-x:auto"
-    >
-      username,english,hindi,maths,science,urdu,ict<br>
-      aarav,18,20,22,19,,21<br>
-      priya,21,,24,,18,20
+  .dt-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 11px;
+    background: #f3e8ff;
+    color: #7c3aed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 21px;
+    flex-shrink: 0;
+  }
+
+  .dt-main-title {
+    margin: 0;
+    color: #0f172a;
+    font-size: 1.15rem;
+    font-weight: 750;
+  }
+
+  .dt-subtitle {
+    margin: 5px 0 0;
+    color: #64748b;
+    font-size: .84rem;
+    line-height: 1.55;
+  }
+
+  .dt-info-badge {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    padding: 8px 12px;
+    color: #475569;
+    font-size: .75rem;
+    white-space: nowrap;
+  }
+
+  .dt-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    margin-bottom: 18px;
+    overflow: hidden;
+  }
+
+  .dt-card-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #e2e8f0;
+    background: #f8fafc;
+  }
+
+  .dt-card-title {
+    margin: 0;
+    font-size: .92rem;
+    font-weight: 700;
+    color: #1e293b;
+  }
+
+  .dt-card-description {
+    margin: 4px 0 0;
+    font-size: .76rem;
+    color: #64748b;
+    line-height: 1.5;
+  }
+
+  .dt-card-body {
+    padding: 20px;
+  }
+
+  .dt-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .dt-field label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: .74rem;
+    font-weight: 650;
+    color: #475569;
+  }
+
+  .dt-field .field-input {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .dt-locked {
+    background: #f8fafc;
+    color: #334155;
+    font-weight: 650;
+    cursor: not-allowed;
+  }
+
+  .marks-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .mark-field {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 12px;
+    background: #ffffff;
+  }
+
+  .mark-field:hover {
+    border-color: #cbd5e1;
+  }
+
+  .mark-label {
+    display: block;
+    font-size: .74rem;
+    font-weight: 650;
+    color: #475569;
+    margin-bottom: 6px;
+  }
+
+  .mark-input {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .mark-input::placeholder {
+    color: #cbd5e1;
+  }
+
+  .helper-text {
+    margin-top: 10px;
+    font-size: .72rem;
+    color: #94a3b8;
+  }
+
+  .csv-box {
+    border: 1.5px dashed #cbd5e1;
+    border-radius: 12px;
+    padding: 20px;
+    background: #f8fafc;
+  }
+
+  .csv-box-inner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .csv-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    background: #ede9fe;
+    color: #7c3aed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 19px;
+    flex-shrink: 0;
+  }
+
+  .csv-title {
+    font-size: .82rem;
+    font-weight: 700;
+    color: #334155;
+  }
+
+  .csv-description {
+    margin-top: 3px;
+    font-size: .72rem;
+    color: #94a3b8;
+  }
+
+  .csv-box input[type="file"] {
+    margin-top: 14px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .format-box {
+    margin-top: 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .format-title {
+    padding: 9px 12px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: .72rem;
+    font-weight: 700;
+    color: #475569;
+  }
+
+  .format-code {
+    padding: 12px;
+    background: #ffffff;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: .72rem;
+    line-height: 1.7;
+    color: #475569;
+    overflow-x: auto;
+  }
+
+  .action-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .action-left {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .upload-note {
+    font-size: .72rem;
+    color: #94a3b8;
+  }
+
+  @media (max-width: 760px) {
+    .dt-header-row {
+      flex-direction: column;
+    }
+
+    .dt-info-badge {
+      white-space: normal;
+    }
+
+    .dt-grid,
+    .marks-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .dt-card-body,
+    .dt-header-card {
+      padding: 16px;
+    }
+  }
+
+  @media (max-width: 500px) {
+    .csv-box-inner {
+      align-items: flex-start;
+    }
+
+    .action-left {
+      width: 100%;
+    }
+
+    .action-left .btn {
+      width: 100%;
+      text-align: center;
+    }
+  }
+</style>
+
+<div class="dt-upload-page">
+
+  <div class="dt-header-card">
+    <div class="dt-header-row">
+
+      <div class="dt-title-wrap">
+
+        <div class="dt-icon">
+          ⬆
+        </div>
+
+        <div>
+          <h2 class="dt-main-title">
+            Upload Diagnostic Marks
+          </h2>
+
+          <p class="dt-subtitle">
+            Upload one CSV file containing marks for multiple subjects.
+            Existing records will be updated automatically.
+          </p>
+        </div>
+
+      </div>
+
+      <div class="dt-info-badge">
+        DT{{ dt_number }}
+        {% if grade %} · {{ grade }}{% endif %}
+        {% if section %} · Section {{ section }}{% endif %}
+      </div>
+
     </div>
   </div>
+
 
   <form
     method="POST"
     enctype="multipart/form-data"
     action="/{{ role_prefix }}/dt/upload"
-    class="card"
   >
 
-    <div
-      style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px"
-    >
+    <!-- Test Details -->
+    <div class="dt-card">
 
-      <div>
-        <label class="field-label">
-          Grade
-        </label>
+      <div class="dt-card-header">
+        <h3 class="dt-card-title">
+          Test details
+        </h3>
 
-        {% if grade_locked %}
-        <div
-          class="field-input"
-          style="background:#f1f5f9;color:#334155;font-weight:600;display:flex;align-items:center;cursor:not-allowed"
-        >
-          {{ grade }}
+        <p class="dt-card-description">
+          Select the grade, section and diagnostic test for this upload.
+        </p>
+      </div>
+
+      <div class="dt-card-body">
+
+        <div class="dt-grid">
+
+          <!-- Grade -->
+          <div class="dt-field">
+
+            <label>Grade</label>
+
+            {% if grade_locked %}
+
+            <div
+              class="field-input dt-locked"
+              style="display:flex;align-items:center;min-height:40px"
+            >
+              {{ grade }}
+            </div>
+
+            <input
+              type="hidden"
+              name="grade"
+              value="{{ grade }}"
+            >
+
+            {% else %}
+
+            <select
+              class="field-input"
+              name="grade"
+              required
+            >
+              {% for g in grades %}
+              <option
+                value="{{ g }}"
+                {{ 'selected' if g == grade }}
+              >
+                {{ g }}
+              </option>
+              {% endfor %}
+            </select>
+
+            {% endif %}
+
+          </div>
+
+
+          <!-- Section -->
+          <div class="dt-field">
+
+            <label>Section</label>
+
+            <select
+              class="field-input"
+              name="section"
+            >
+              <option value="">
+                All sections
+              </option>
+
+              {% for s in section_options %}
+              <option
+                value="{{ s }}"
+                {{ 'selected' if s == section }}
+              >
+                Section {{ s }}
+              </option>
+              {% endfor %}
+            </select>
+
+          </div>
+
+
+          <!-- Diagnostic Test -->
+          <div class="dt-field">
+
+            <label>Diagnostic test</label>
+
+            <select
+              class="field-input"
+              name="dt_number"
+              required
+            >
+              {% for n in dt_numbers %}
+              <option
+                value="{{ n }}"
+                {{ 'selected' if n == dt_number }}
+              >
+                DT{{ n }}
+              </option>
+              {% endfor %}
+            </select>
+
+          </div>
+
         </div>
-        <input type="hidden" name="grade" value="{{ grade }}">
-        {% else %}
-        <select
-          class="field-input"
-          name="grade"
-          required
-        >
-          {% for g in grades %}
-          <option
-            value="{{ g }}"
-            {{ 'selected' if g == grade }}
-          >
-            {{ g }}
-          </option>
-          {% endfor %}
-        </select>
-        {% endif %}
-      </div>
 
-      <div>
-        <label class="field-label">
-          Section
-        </label>
-
-        <select
-          class="field-input"
-          name="section"
-        >
-          <option value="">
-            All sections
-          </option>
-
-          {% for s in section_options %}
-          <option
-            value="{{ s }}"
-            {{ 'selected' if s == section }}
-          >
-            Section {{ s }}
-          </option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div>
-        <label class="field-label">
-          Diagnostic test
-        </label>
-
-        <select
-          class="field-input"
-          name="dt_number"
-          required
-        >
-          {% for n in dt_numbers %}
-          <option
-            value="{{ n }}"
-            {{ 'selected' if n == dt_number }}
-          >
-            DT{{ n }}
-          </option>
-          {% endfor %}
-        </select>
       </div>
 
     </div>
 
-    <div style="margin-top:18px">
-      <label class="field-label" style="margin-bottom:8px;display:block">
-        Maximum marks per subject
-      </label>
 
-      <div
-        style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px"
-      >
-        {% for sub in subjects %}
-        <div>
-          <label style="font-size:.72rem;color:#64748b;display:block;margin-bottom:3px">
-            {{ sub }}
-          </label>
+    <!-- Maximum Marks -->
+    <div class="dt-card">
+
+      <div class="dt-card-header">
+
+        <h3 class="dt-card-title">
+          Maximum marks
+        </h3>
+
+        <p class="dt-card-description">
+          Enter the maximum marks for each subject included in your CSV.
+        </p>
+
+      </div>
+
+      <div class="dt-card-body">
+
+        <div class="marks-grid">
+
+          {% for sub in subjects %}
+
+          <div class="mark-field">
+
+            <label
+              class="mark-label"
+              for="max_marks_{{ sub }}"
+            >
+              {{ sub }}
+            </label>
+
+            <input
+              id="max_marks_{{ sub }}"
+              class="field-input mark-input"
+              type="number"
+              name="max_marks_{{ sub }}"
+              min="1"
+              step="0.5"
+              value=""
+              placeholder="Enter maximum"
+            >
+
+          </div>
+
+          {% endfor %}
+
+        </div>
+
+        <div class="helper-text">
+          Only subjects present as columns in the CSV will be processed.
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- CSV Upload -->
+    <div class="dt-card">
+
+      <div class="dt-card-header">
+
+        <h3 class="dt-card-title">
+          CSV file
+        </h3>
+
+        <p class="dt-card-description">
+          Upload the completed student marks file.
+        </p>
+
+      </div>
+
+      <div class="dt-card-body">
+
+        <div class="csv-box">
+
+          <div class="csv-box-inner">
+
+            <div class="csv-icon">
+              📄
+            </div>
+
+            <div>
+
+              <div class="csv-title">
+                Select CSV file
+              </div>
+
+              <div class="csv-description">
+                Use a UTF-8 CSV file with username and subject columns.
+              </div>
+
+            </div>
+
+          </div>
+
           <input
             class="field-input"
-            type="number"
-            name="max_marks_{{ sub }}"
-            min="1"
-            step="0.5"
-            value="25"
+            type="file"
+            name="csv_file"
+            accept=".csv"
+            required
           >
+
         </div>
-        {% endfor %}
+
+
+        <div class="format-box">
+
+          <div class="format-title">
+            Expected CSV format
+          </div>
+
+          <div class="format-code">
+            username,english,hindi,maths,science,urdu,ict<br>
+            aarav,18,20,22,19,,21<br>
+            priya,21,,24,,18,20
+          </div>
+
+        </div>
+
       </div>
 
-      <div style="font-size:.72rem;color:#94a3b8;margin-top:6px">
-        Only subjects present as columns in your CSV will actually be uploaded — the rest are ignored.
+    </div>
+
+
+    <!-- Actions -->
+    <div class="dt-card">
+
+      <div class="dt-card-body">
+
+        <div class="action-row">
+
+          <div class="action-left">
+
+            <button
+              class="btn btn-primary"
+              type="submit"
+            >
+              ⬆ Upload marks
+            </button>
+
+            <a
+              class="btn btn-secondary"
+              href="/{{ role_prefix }}/dt/upload-template?grade={{ grade }}&section={{ section }}"
+            >
+              ⬇ Download template
+            </a>
+
+          </div>
+
+          <div class="upload-note">
+            Existing marks will be updated.
+          </div>
+
+        </div>
+
       </div>
-    </div>
 
-    <div style="margin-top:18px">
-      <label class="field-label">
-        CSV file
-      </label>
-
-      <input
-        class="field-input"
-        type="file"
-        name="csv_file"
-        accept=".csv"
-        required
-      >
-    </div>
-
-    <div
-      style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap"
-    >
-      <button
-        class="btn btn-primary"
-        type="submit"
-      >
-        ⬆ Upload marks
-      </button>
-
-      <a
-        class="btn btn-secondary"
-        href="/{{ role_prefix }}/dt/upload-template?grade={{ grade }}&section={{ section }}"
-      >
-        ⬇ Download student template
-      </a>
     </div>
 
   </form>
