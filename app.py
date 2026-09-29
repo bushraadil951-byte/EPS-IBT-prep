@@ -3371,23 +3371,50 @@ def dt_upload():
                         entered_by=session['user_id']
                     ))
 
-                # Blank cell = absent = skip without saving or deleting
-                if marks_raw == '' or marks_raw.strip() in ('', '-', 'A', 'a', 'AB', 'ab', 'absent', 'Absent'):
-                    # If blank — delete existing mark so it shows as no data
-                    existing = DTMark.query.filter_by(dt_id=dt.id, student_id=student.id).first()
+                marks_raw = marks_raw.strip()
+
+                # Blank or absent marker — delete existing mark
+                if marks_raw in ('', '-', 'A', 'a', 'AB', 'ab', 'absent', 'Absent', 'ABSENT'):
+                    existing = DTMark.query.filter_by(
+                        dt_id=dt.id, student_id=student.id
+                    ).first()
                     if existing:
                         db.session.delete(existing)
                     continue
 
+                # Parse numeric value
                 try:
-                    marks_value = float(marks_raw.strip())
-                    if marks_value < 0 or marks_value > max_marks:
-                        skipped += 1
-                        continue
+                    marks_value = float(marks_raw)
                 except ValueError:
                     skipped += 1
                     continue
 
+                # Validate range
+                if marks_value < 0 or marks_value > max_marks:
+                    skipped += 1
+                    continue
+
+                # Save or update
+                remarks = row.get('remarks', '').strip()
+                existing = DTMark.query.filter_by(
+                    dt_id=dt.id, student_id=student.id
+                ).first()
+
+                if existing:
+                    existing.marks_obtained = marks_value
+                    existing.remarks = remarks
+                    existing.entered_by = session['user_id']
+                    existing.entered_at = datetime.utcnow()
+                else:
+                    db.session.add(DTMark(
+                        dt_id=dt.id,
+                        student_id=student.id,
+                        marks_obtained=marks_value,
+                        remarks=remarks,
+                        entered_by=session['user_id']
+                    ))
+
+                added += 1
         db.session.commit()
         flash(f'{added} marks uploaded across {len(present_subjects)} subject(s) ({skipped} skipped — check usernames/marks/grade)', 'success')
         return redirect(url_for(f'{_dt_role_prefix()}_dt', grade=grade, section=section, dt_number=dt_number))
